@@ -1,0 +1,12 @@
+{
+  "name": "playscope-team",
+  "version": "0.1.0",
+  "private": true,
+  "main": "outputs/playscope-server.js",
+  "scripts": {
+    "start": "node outputs/playscope-server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
