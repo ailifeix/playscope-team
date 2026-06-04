@@ -1,6 +1,12 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+let googlePlayScraper = null;
+try {
+  googlePlayScraper = require("google-play-scraper");
+} catch (error) {
+  googlePlayScraper = null;
+}
 
 const root = path.resolve(__dirname, "..");
 const publicDir = __dirname;
@@ -9,7 +15,7 @@ const dataDir = path.join(root, "work");
 const sharedStatePath = path.join(dataDir, "playscope-shared-state.json");
 
 function readEnv() {
-  const env = {};
+  const env = { ...process.env };
   if (!fs.existsSync(envPath)) return env;
   for (const line of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
     const match = line.match(/^([A-Z0-9_]+)=(.*)$/);
@@ -22,8 +28,8 @@ let env = readEnv();
 
 function writeEnv(updates) {
   env = { ...env, ...updates };
-  const order = ["YOUTUBE_API_KEY", "OPENAI_API_KEY", "GPT_API_BASE_URL", "GPT_MODEL", "GOOGLE_CLIENT_SECRET"];
-  const keys = [...new Set([...order, ...Object.keys(env)])].filter((key) => env[key] !== undefined && env[key] !== "");
+  const order = ["YOUTUBE_API_KEY", "OPENAI_API_KEY", "GPT_API_BASE_URL", "GPT_MODEL", "SERPAPI_KEY", "GOOGLE_CLIENT_SECRET", "TEAM_PASSWORD"];
+  const keys = order.filter((key) => env[key] !== undefined && env[key] !== "");
   fs.writeFileSync(envPath, keys.map((key) => `${key}=${env[key]}`).join("\n"), "utf8");
 }
 
@@ -32,11 +38,15 @@ function getAiBaseUrl() {
 }
 
 function getAiModel() {
-  return env.GPT_MODEL || "gpt-4o-mini";
+  return env.GPT_MODEL && env.GPT_MODEL !== "auto" ? env.GPT_MODEL : "gpt-4o-mini";
 }
 
 function getTeamPassword() {
   return env.TEAM_PASSWORD || "";
+}
+
+function getSerpApiKey() {
+  return env.SERPAPI_KEY || env.SERP_API_KEY || "";
 }
 
 function isAuthed(req) {
@@ -50,7 +60,7 @@ function send(res, status, body, type = "application/json") {
     "Content-Type": type,
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type"
+    "Access-Control-Allow-Headers": "Content-Type, X-Team-Password"
   });
   res.end(type === "application/json" ? JSON.stringify(body) : body);
 }
@@ -356,6 +366,318 @@ Source: ${input.source || ""}`;
   return { source: "demo", text: fallback[input.lang] || fallback.en };
 }
 
+function decodeHtml(value = "") {
+  return String(value)
+    .replace(/\\u003d/g, "=")
+    .replace(/\\u0026/g, "&")
+    .replace(/\\u003c/g, "<")
+    .replace(/\\u003e/g, ">")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function textFromMeta(html, name) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const patterns = [
+    new RegExp(`<meta[^>]+name=["']${escaped}["'][^>]+content=["']([^"']*)["']`, "i"),
+    new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+name=["']${escaped}["']`, "i"),
+    new RegExp(`<meta[^>]+property=["']${escaped}["'][^>]+content=["']([^"']*)["']`, "i"),
+    new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+property=["']${escaped}["']`, "i")
+  ];
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match) return decodeHtml(match[1]);
+  }
+  return "";
+}
+
+function keywordSummary(text) {
+  const stop = new Set("the and for with you your our are this that from into game play apps app mobile free new now all can will get more best build create games".split(" "));
+  const counts = {};
+  String(text || "").toLowerCase().match(/[a-z][a-z0-9-]{2,}/g)?.forEach((word) => {
+    if (!stop.has(word)) counts[word] = (counts[word] || 0) + 1;
+  });
+  return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([word]) => word).join(", ");
+}
+
+function firstSentence(text) {
+  const sentence = String(text || "").split(/(?<=[.!?])\s+/)[0] || "";
+  return sentence.length > 130 ? `${sentence.slice(0, 127)}...` : sentence;
+}
+
+function inferStrength(description) {
+  const lower = String(description || "").toLowerCase();
+  if (/build|upgrade|collect|craft|manage|strategy|battle/.test(lower)) return "Feature-led positioning";
+  if (/story|world|adventure|explore|discover/.test(lower)) return "Fantasy-led opening";
+  if (/free|download|play now|join/.test(lower)) return "Clear CTA";
+  return "Description-based keywords";
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function googlePlayDetails(appId, hl = "en", gl = "US") {
+  const url = `https://play.google.com/store/apps/details?id=${encodeURIComponent(appId)}&hl=${encodeURIComponent(hl)}&gl=${encodeURIComponent(gl)}`;
+  const response = await fetchWithTimeout(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 PlayScope/1.0",
+      "Accept-Language": `${hl},en;q=0.8`
+    }
+  }, 15000);
+  if (!response.ok) throw new Error(`Google Play details HTTP ${response.status}`);
+  const html = await response.text();
+  const title = decodeHtml(textFromMeta(html, "og:title") || (html.match(/<title[^>]*>(.*?)<\/title>/i)?.[1] || "").replace(/\s*-\s*Apps on Google Play\s*$/i, ""));
+  const description = decodeHtml(textFromMeta(html, "description") || textFromMeta(html, "og:description"));
+  return {
+    id: appId,
+    name: title || appId,
+    store: "Google Play",
+    length: String(description.length || "-"),
+    message: firstSentence(description) || "Google Play description loaded",
+    strength: inferStrength(description),
+    desc: description || "Description could not be read from Google Play.",
+    keywords: keywordSummary(`${title} ${description}`),
+    url
+  };
+}
+
+function mapGooglePlayApp(item = {}, details = {}) {
+  const title = details.title || item.title || item.appId || "Google Play app";
+  const description = details.description || details.summary || item.summary || "";
+  const url = details.url || item.url || `https://play.google.com/store/apps/details?id=${encodeURIComponent(item.appId || details.appId || "")}`;
+  return {
+    id: item.appId || details.appId || title,
+    name: title,
+    store: "Google Play",
+    length: String(description.length || "-"),
+    message: firstSentence(description) || item.summary || details.genre || "Google Play description loaded",
+    strength: inferStrength(description),
+    desc: description || item.summary || "Description could not be read from Google Play.",
+    keywords: keywordSummary(`${title} ${details.genre || ""} ${details.categories?.join(" ") || ""} ${description}`),
+    url
+  };
+}
+
+function mapSerpApiGooglePlay(item = {}) {
+  const title = item.title || item.name || item.app_name || item.product_title || "Google Play app";
+  const appId = item.product_id || item.app_id || item.appId || item.package_name || "";
+  const description = item.description || item.snippet || item.summary || item.extracted_description || "";
+  const url = item.link || item.store_link || item.serpapi_link || (appId ? `https://play.google.com/store/apps/details?id=${encodeURIComponent(appId)}` : "");
+  const category = item.category || item.genre || "";
+  return {
+    id: appId || title,
+    name: title,
+    store: "Google Play",
+    length: String(description.length || "-"),
+    message: firstSentence(description) || category || "Google Play result loaded",
+    strength: inferStrength(description || category),
+    desc: description || "Description was not included in this search result.",
+    keywords: keywordSummary(`${title} ${item.author || ""} ${category} ${description}`),
+    meta: [item.author, item.rating ? `Rating ${item.rating}` : "", item.downloads ? `${item.downloads} downloads` : "", category].filter(Boolean).join(" · "),
+    url
+  };
+}
+
+function flattenSerpApiResults(data = {}) {
+  const buckets = [
+    data.organic_results,
+    data.app_highlight,
+    data.items_highlight,
+    data.ads_results,
+    data.search_information?.organic_results,
+    data.results
+  ].filter(Boolean);
+  const flat = [];
+  for (const bucket of buckets) {
+    const list = Array.isArray(bucket) ? bucket : [bucket];
+    for (const item of list) {
+      if (Array.isArray(item.items)) flat.push(...item.items);
+      else if (Array.isArray(item.apps)) flat.push(...item.apps);
+      else if (Array.isArray(item.items_highlight)) item.items_highlight.flat().forEach((entry) => flat.push(entry));
+      else flat.push(item);
+    }
+  }
+  const seen = new Set();
+  return flat.filter((item) => {
+    const key = item.product_id || item.app_id || item.appId || item.package_name || item.title || item.name;
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+async function serpApiGooglePlaySearch(input = {}) {
+  const apiKey = getSerpApiKey();
+  if (!apiKey) return null;
+  const query = String(input.query || "").trim();
+  const lang = input.lang || "en";
+  const params = new URLSearchParams({
+    engine: "google_play",
+    q: query,
+    store: "apps",
+    hl: lang,
+    gl: "us",
+    api_key: apiKey
+  });
+  const response = await fetchWithTimeout(`https://serpapi.com/search.json?${params.toString()}`, {
+    headers: {
+      "User-Agent": "PlayScope/1.0",
+      "Accept": "application/json"
+    }
+  }, 20000);
+  if (!response.ok) throw new Error(`SerpAPI HTTP ${response.status}`);
+  const data = await response.json();
+  if (data.error) throw new Error(`SerpAPI: ${data.error}`);
+  const limit = Number(input.limit || 5);
+  const results = flattenSerpApiResults(data).slice(0, limit).map(mapSerpApiGooglePlay);
+  return { ok: true, source: "serpapi-google-play", query, results };
+}
+
+async function googlePlayScraperSearch(input = {}) {
+  if (!googlePlayScraper) return null;
+  const query = String(input.query || "").trim();
+  const lang = input.lang || "en";
+  const country = input.country || "us";
+  const limit = Number(input.limit || 5);
+  const found = await googlePlayScraper.search({
+    term: query,
+    num: Math.max(limit, 5),
+    lang,
+    country: country.toLowerCase()
+  });
+  const results = [];
+  for (const item of found.slice(0, limit)) {
+    try {
+      const details = await googlePlayScraper.app({
+        appId: item.appId,
+        lang,
+        country: country.toLowerCase()
+      });
+      results.push(mapGooglePlayApp(item, details));
+    } catch (error) {
+      results.push(mapGooglePlayApp(item, {}));
+    }
+  }
+  return { ok: true, source: "google-play-scraper", query, results };
+}
+
+async function googlePlaySearch(input = {}) {
+  const query = String(input.query || "").trim();
+  if (!query) return { ok: false, error: "Search text is required.", results: [] };
+  const hl = input.lang || "en";
+  const gl = input.country || "US";
+  if (getSerpApiKey()) {
+    try {
+      const serpResult = await serpApiGooglePlaySearch({ ...input, query, lang: hl });
+      if (serpResult?.results?.length) return serpResult;
+      return { ok: false, error: "SerpAPI returned no Google Play results.", results: [] };
+    } catch (error) {
+      return { ok: false, error: `SerpAPI request failed: ${error.message}`, results: [] };
+    }
+  }
+  const scraperResult = await googlePlayScraperSearch({ ...input, query, lang: hl, country: gl }).catch(() => null);
+  if (scraperResult?.results?.length) return scraperResult;
+  if (!googlePlayScraper) {
+    return {
+      ok: false,
+      error: "Google Play parser is not installed on this local server. Run npm install, then restart the local app.",
+      results: []
+    };
+  }
+  const searchUrl = `https://play.google.com/store/search?q=${encodeURIComponent(query)}&c=apps&hl=${encodeURIComponent(hl)}&gl=${encodeURIComponent(gl)}`;
+  const response = await fetchWithTimeout(searchUrl, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 PlayScope/1.0",
+      "Accept-Language": `${hl},en;q=0.8`
+    }
+  }, 15000);
+  if (!response.ok) throw new Error(`Google Play search HTTP ${response.status}`);
+  const html = await response.text();
+  const ids = [];
+  for (const match of html.matchAll(/\/store\/apps\/details\?id=([A-Za-z0-9._]+)/g)) {
+    if (!ids.includes(match[1])) ids.push(match[1]);
+    if (ids.length >= 8) break;
+  }
+  if (!ids.length) {
+    const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(`site:play.google.com/store/apps/details ${query}`)}&hl=${encodeURIComponent(hl)}`;
+    const googleResponse = await fetchWithTimeout(googleUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 PlayScope/1.0",
+        "Accept-Language": `${hl},en;q=0.8`
+      }
+    }, 15000);
+    if (googleResponse.ok) {
+      const googleHtml = await googleResponse.text();
+      for (const match of googleHtml.matchAll(/(?:id%3D|id=)([A-Za-z0-9._]+)/g)) {
+        if (!ids.includes(match[1])) ids.push(match[1]);
+        if (ids.length >= 8) break;
+      }
+    }
+  }
+  const results = [];
+  for (const id of ids.slice(0, Number(input.limit || 5))) {
+    try {
+      results.push(await googlePlayDetails(id, hl, gl));
+    } catch (error) {
+      results.push({ id, name: id, store: "Google Play", length: "-", message: "Details could not be loaded", strength: "Search result only", desc: error.message, keywords: "", url: `https://play.google.com/store/apps/details?id=${id}` });
+    }
+  }
+  return { ok: true, source: "google-play-web", query, results };
+}
+
+function appStoreCountry(lang = "en") {
+  if (lang === "tr") return "TR";
+  if (lang === "de") return "DE";
+  if (lang === "ja") return "JP";
+  if (lang === "zh") return "CN";
+  return "US";
+}
+
+async function appStoreSearch(input = {}) {
+  const query = String(input.query || "").trim();
+  if (!query) return { ok: false, error: "Search text is required.", results: [] };
+  const country = input.country || appStoreCountry(input.lang || "en");
+  const limit = Number(input.limit || 5);
+  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=software&country=${encodeURIComponent(country)}&limit=${encodeURIComponent(limit)}`;
+  const response = await fetchWithTimeout(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 PlayScope/1.0",
+      "Accept": "application/json"
+    }
+  }, 15000);
+  if (!response.ok) throw new Error(`App Store search HTTP ${response.status}`);
+  const data = await response.json();
+  const results = (data.results || []).map((item) => {
+    const description = item.description || "";
+    const title = item.trackName || item.bundleId || "App Store app";
+    return {
+      id: String(item.trackId || item.bundleId || title),
+      name: title,
+      store: "App Store",
+      length: String(description.length || "-"),
+      message: firstSentence(description) || item.primaryGenreName || "App Store description loaded",
+      strength: inferStrength(description),
+      desc: description || "Description could not be read from App Store.",
+      keywords: keywordSummary(`${title} ${item.primaryGenreName || ""} ${item.genres?.join(" ") || ""} ${description}`),
+      url: item.trackViewUrl || ""
+    };
+  });
+  return { ok: true, source: "app-store-search", query, results };
+}
+
 function serveFile(req, res) {
   const urlPath = decodeURIComponent(req.url.split("?")[0]);
   const fileName = urlPath === "/" ? "playscope-prototype.html" : urlPath.replace(/^\/+/, "");
@@ -381,6 +703,16 @@ const server = http.createServer(async (req, res) => {
       const result = await localize(body).catch(() => ({ source: "demo", text: "Localization failed; demo mode is still available." }));
       return send(res, 200, result);
     }
+    if (req.method === "POST" && req.url === "/api/google-play-search") {
+      const body = await readJson(req);
+      const result = await googlePlaySearch(body).catch((error) => ({ ok: false, error: error.message, results: [] }));
+      return send(res, 200, result);
+    }
+    if (req.method === "POST" && req.url === "/api/app-store-search") {
+      const body = await readJson(req);
+      const result = await appStoreSearch(body).catch((error) => ({ ok: false, error: error.message, results: [] }));
+      return send(res, 200, result);
+    }
     if (req.method === "POST" && req.url === "/api/ocr-screenshot") {
       const body = await readJson(req);
       const result = await ocrScreenshot(body).catch((error) => ({ ok: false, error: error.message }));
@@ -398,6 +730,7 @@ const server = http.createServer(async (req, res) => {
       if (body.openaiApiKey) updates.OPENAI_API_KEY = body.openaiApiKey;
       if (body.openaiBaseUrl) updates.GPT_API_BASE_URL = body.openaiBaseUrl;
       if (body.openaiModel) updates.GPT_MODEL = body.openaiModel;
+      if (body.serpapiKey) updates.SERPAPI_KEY = body.serpapiKey;
       if (body.googleSecret) updates.GOOGLE_CLIENT_SECRET = body.googleSecret;
       if (body.teamPassword) updates.TEAM_PASSWORD = body.teamPassword;
       writeEnv(updates);
@@ -449,6 +782,7 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, {
         youtubeApiKey: env.YOUTUBE_API_KEY || "",
         openaiApiKey: env.OPENAI_API_KEY || "",
+        serpapiKey: getSerpApiKey(),
         openaiBaseUrl: getAiBaseUrl(),
         openaiModel: getAiModel()
       });
@@ -460,6 +794,6 @@ const server = http.createServer(async (req, res) => {
 });
 
 const port = Number(process.env.PORT || 5177);
-server.listen(port, "127.0.0.1", () => {
-  console.log(`PlayScope running at http://127.0.0.1:${port}`);
+server.listen(port, "0.0.0.0", () => {
+  console.log(`PlayScope running at http://0.0.0.0:${port}`);
 });
