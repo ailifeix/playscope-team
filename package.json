@@ -2,9 +2,13 @@
   "name": "playscope-team",
   "version": "0.1.0",
   "private": true,
+  "description": "PlayScope shared influencer research prototype",
   "main": "outputs/playscope-server.js",
   "scripts": {
     "start": "node outputs/playscope-server.js"
+  },
+  "dependencies": {
+    "google-play-scraper": "^10.0.0"
   },
   "engines": {
     "node": ">=20"
