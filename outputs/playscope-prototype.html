@@ -1012,6 +1012,13 @@
         const bt = Date.parse(b.snippet?.publishedAt || "") || 0;
         return bt - at;
       });
+      const normalVideos = ordered.filter((video) => {
+        const seconds = parseYouTubeDuration(video.contentDetails?.duration);
+        const kind = youtubeVideoKind(video);
+        return kind !== "VOD / Live replay" && seconds >= 60 && seconds <= 2400;
+      });
+      if (normalVideos.length >= 5) return normalVideos.slice(0, 10);
+      if (normalVideos.length >= 2) return normalVideos.slice(0, 10);
       return ordered.slice(0, Math.min(10, Math.max(5, ordered.length)));
     }
     function estimateDemographics(item = {}) {
@@ -1677,7 +1684,7 @@
           return { ...localResearchResult(input), notes: `YouTube API error from browser: ${reason}` };
         }
         const channel = channelData.items[0];
-        const videoSearchUrl = `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${channelId}&order=date&type=video&maxResults=10&key=${encodeURIComponent(apiKey)}`;
+        const videoSearchUrl = `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${channelId}&order=date&type=video&maxResults=30&key=${encodeURIComponent(apiKey)}`;
         const videoSearch = await fetch(videoSearchUrl).then((res) => res.json()).catch(() => ({ items: [] }));
         const videoIds = (videoSearch.items || []).map((item) => item.id?.videoId).filter(Boolean);
         let avgViews = 0;
