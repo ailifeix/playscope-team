@@ -963,9 +963,9 @@
     }
     function youtubeVideoKind(video) {
       const seconds = parseYouTubeDuration(video.contentDetails?.duration);
-      const text = [video.snippet?.title, video.snippet?.description, ...(video.snippet?.tags || [])].join(" ").toLowerCase();
+      const titleText = String(video.snippet?.title || "").toLowerCase();
       const hasLiveMeta = Boolean(video.liveStreamingDetails?.actualStartTime || video.liveStreamingDetails?.scheduledStartTime || video.liveStreamingDetails?.actualEndTime);
-      const vodSignal = /\b(vod|canli|canlı|live|livestream|stream|yayın|yayin|yayını|yayini|canlı yayın|canli yayin|full yayın|full yayin|twitch|broadcast|replay|tekrar|tekrarı|tekrari)\b/i.test(text);
+      const vodSignal = /\b(vod|canli|canlı|live|livestream|stream|yayın|yayin|yayını|yayini|canlı yayın|canli yayin|full yayın|full yayin|broadcast|replay|tekrar|tekrarı|tekrari)\b/i.test(titleText);
       if (seconds > 0 && seconds < 60) return "Short video";
       if (hasLiveMeta || vodSignal || seconds >= 2700) return "VOD / Live replay";
       if (seconds >= 180 && seconds <= 2400) return "Edited long video";
@@ -1018,9 +1018,10 @@
         const kind = youtubeVideoKind(video);
         return kind !== "VOD / Live replay" && seconds >= 60 && seconds <= 2400;
       });
+      const nonLiveVideos = ordered.filter((video) => youtubeVideoKind(video) !== "VOD / Live replay");
       if (normalVideos.length >= 5) return normalVideos.slice(0, 10);
       if (normalVideos.length >= 2) return normalVideos.slice(0, 10);
-      if (normalVideos.length === 1) return normalVideos;
+      if (nonLiveVideos.length) return nonLiveVideos.slice(0, 10);
       return [];
     }
     function estimateDemographics(item = {}) {
