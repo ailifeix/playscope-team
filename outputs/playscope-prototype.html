@@ -1013,16 +1013,34 @@
         const bt = Date.parse(b.snippet?.publishedAt || "") || 0;
         return bt - at;
       });
-      const normalVideos = ordered.filter((video) => {
+      const regularVideos = ordered.filter((video) => {
         const seconds = parseYouTubeDuration(video.contentDetails?.duration);
         const kind = youtubeVideoKind(video);
-        return kind !== "VOD / Live replay" && seconds >= 60 && seconds <= 2400;
+        return kind === "Edited long video" && seconds >= 180 && seconds <= 2400;
       });
-      const nonLiveVideos = ordered.filter((video) => youtubeVideoKind(video) !== "VOD / Live replay");
-      if (normalVideos.length >= 5) return normalVideos.slice(0, 10);
-      if (normalVideos.length >= 2) return normalVideos.slice(0, 10);
-      if (nonLiveVideos.length) return nonLiveVideos.slice(0, 10);
+      const nonLiveLongVideos = ordered.filter((video) => {
+        const seconds = parseYouTubeDuration(video.contentDetails?.duration);
+        const kind = youtubeVideoKind(video);
+        return kind !== "VOD / Live replay" && seconds >= 180 && seconds <= 2400;
+      });
+      if (regularVideos.length >= 5) return regularVideos.slice(0, 10);
+      if (regularVideos.length >= 2) return regularVideos.slice(0, 10);
+      if (nonLiveLongVideos.length) return nonLiveLongVideos.slice(0, 10);
       return [];
+    }
+    function averageVideoViews(videoItems = []) {
+      const counts = videoItems
+        .map((item) => Number(item.statistics?.viewCount || 0))
+        .filter((value) => Number.isFinite(value) && value > 0);
+      if (!counts.length) return 0;
+      return Math.round(counts.reduce((sum, value) => sum + value, 0) / counts.length);
+    }
+    function averageVideoComments(videoItems = []) {
+      const counts = videoItems
+        .map((item) => Number(item.statistics?.commentCount || 0))
+        .filter((value) => Number.isFinite(value));
+      if (!counts.length) return 0;
+      return Math.round(counts.reduce((sum, value) => sum + value, 0) / counts.length);
     }
     function estimateDemographics(item = {}) {
       const text = [item.category, item.subcategory, ...(item.genres || [])].join(" ").toLowerCase();
@@ -1116,7 +1134,7 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Channel Name</th><th>Link</th><th>GEO</th><th>Gender</th><th>Age</th><th>Category</th><th>Subcategory</th><th>Subscribers</th><th>avg Views 30 days / 10 videos</th><th>Avg Comments</th><th>Format</th><th>Duration (avg)</th><th>Keywords</th><th>${tr("fit")}</th></tr></thead>
+            <thead><tr><th>Channel Name</th><th>Link</th><th>GEO</th><th>Gender</th><th>Age</th><th>Category</th><th>Subcategory</th><th>Subscribers</th><th>avg Views 30 days / 10 videos</th><th>Format</th><th>Duration (avg)</th><th>Keywords</th><th>${tr("fit")}</th></tr></thead>
             <tbody>
               ${data.length ? data.map((item) => {
                 const rec = recommendation(item.fit);
@@ -1131,13 +1149,12 @@
                   <td>${esc(cleanSubcategory(item.subcategory || item.genres?.join(" / ") || "-", item.category))}</td>
                   <td>${esc(item.subscribers || item.audience || "-")}</td>
                   <td>${views(item.views)}</td>
-                  <td>${views(item.avgComments)}</td>
                   <td>${esc(item.format || "-")}</td>
                   <td>${esc(item.duration || "-")}</td>
                   <td class="compact-cell"><span class="cell-muted">${esc(item.keywords || item.genres?.join(", ") || "-")}</span></td>
                   <td><div class="score">${item.fit}<small>${rec[0]}</small></div></td>
                 </tr>`;
-              }).join("") : `<tr><td colspan="14" class="empty">No results</td></tr>`}
+              }).join("") : `<tr><td colspan="13" class="empty">No results</td></tr>`}
             </tbody>
           </table>
         </div>`;
@@ -1687,7 +1704,7 @@
           return { ...localResearchResult(input), notes: `YouTube API error from browser: ${reason}` };
         }
         const channel = channelData.items[0];
-        const videoSearchUrl = `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${channelId}&order=date&type=video&maxResults=30&key=${encodeURIComponent(apiKey)}`;
+        const videoSearchUrl = `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${channelId}&order=date&type=video&maxResults=50&key=${encodeURIComponent(apiKey)}`;
         const videoSearch = await fetch(videoSearchUrl).then((res) => res.json()).catch(() => ({ items: [] }));
         const videoIds = (videoSearch.items || []).map((item) => item.id?.videoId).filter(Boolean);
         let avgViews = 0;
@@ -1702,10 +1719,8 @@
           videoItems = videoData.items || [];
           metricVideos = latestMetricVideos(videoItems);
           metricVideoCount = metricVideos.length;
-          const counts = metricVideos.map((item) => Number(item.statistics?.viewCount || 0)).filter(Boolean);
-          if (counts.length) avgViews = Math.round(counts.reduce((sum, value) => sum + value, 0) / counts.length);
-          const commentCounts = metricVideos.map((item) => Number(item.statistics?.commentCount || 0)).filter((value) => Number.isFinite(value));
-          if (commentCounts.length) avgComments = Math.round(commentCounts.reduce((sum, value) => sum + value, 0) / commentCounts.length);
+          avgViews = averageVideoViews(metricVideos);
+          avgComments = averageVideoComments(metricVideos);
           avgDurationSeconds = averageCreatorDuration(metricVideos);
         }
         const totalViews = Number(channel.statistics?.viewCount || 0);
@@ -1721,8 +1736,12 @@
           classifyYouTubeVideoSet(videoItems, videoContentText)
         );
         const classification = await classifyCreatorContentWithGPT(channel, videoItems, ruleClassification);
-        const keywords = (classification.keywords?.length ? classification.keywords : extractKeywords(contentText)).join(", ");
+        const detectedGames = detectPlayedGames(contentText);
+        const keywordList = [...detectedGames, ...(classification.keywords?.length ? classification.keywords : extractKeywords(contentText))]
+          .filter(Boolean);
+        const keywords = [...new Set(keywordList)].slice(0, 12).join(", ");
         const genres = classification.genres.length ? classification.genres : extractKeywords(contentText).slice(0, 5);
+        const gameText = detectedGames.length ? ` Detected games: ${detectedGames.join(", ")}.` : "";
         const evidenceText = classification.evidence?.length ? ` Evidence: ${classification.evidence.slice(0, 3).join(" | ")}.` : "";
         const videoFormat = metricVideos.length ? dominantVideoFormat(metricVideos) : "No regular videos found";
         return {
@@ -1745,11 +1764,11 @@
           format: videoFormat,
           duration: formatAverageDuration(avgDurationSeconds),
           keywords,
-          comments: `Matched channel: ${channel.snippet?.title || searchTitle || input.name}. Latest ${metricVideoCount || videoIds.length} videos used for averages. Avg comments: ${views(avgComments)}. Category source: ${classification.source}.${evidenceText}`,
+          comments: `Matched channel: ${channel.snippet?.title || searchTitle || input.name}. Latest ${metricVideoCount || videoIds.length} videos used for averages. Avg comments: ${views(avgComments)}. Category source: ${classification.source}.${gameText}${evidenceText}`,
           genres,
           tone: "youtube live",
           audience: `${subscribers} subscribers`,
-          notes: `Live YouTube data loaded. Category: ${classification.category} / ${classification.subcategory}. Matched channel: ${channel.snippet?.title || searchTitle || input.name}. Latest ${metricVideoCount || videoIds.length} video average views: ${avgViews ? views(avgViews) : "unavailable"}. Avg comments: ${views(avgComments)}. Avg duration: ${formatAverageDuration(avgDurationSeconds)}. Total channel views: ${views(totalViews)}. Videos checked: ${videoIds.length}. ${classification.reason}${evidenceText}`,
+          notes: `Live YouTube data loaded. Category: ${classification.category} / ${classification.subcategory}. Matched channel: ${channel.snippet?.title || searchTitle || input.name}. Latest ${metricVideoCount || videoIds.length} video average views: ${avgViews ? views(avgViews) : "unavailable"}. Avg comments: ${views(avgComments)}. Avg duration: ${formatAverageDuration(avgDurationSeconds)}. Total channel views: ${views(totalViews)}. Videos checked: ${videoIds.length}. ${classification.reason}${gameText}${evidenceText}`,
           shortlisted: false,
           note: ""
         };
@@ -1832,6 +1851,73 @@
       const counts = new Map();
       words.forEach((word) => counts.set(word, (counts.get(word) || 0) + 1));
       return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([word]) => word);
+    }
+    function knownGameCatalog() {
+      return [
+        ["Metin2", ["metin2", "metin 2"]],
+        ["Minecraft", ["minecraft", "mc survival", "hypixel"]],
+        ["Roblox", ["roblox"]],
+        ["Valorant", ["valorant"]],
+        ["Counter-Strike 2", ["cs2", "counter strike 2", "counter-strike 2", "counter strike", "cs go", "csgo"]],
+        ["PUBG", ["pubg", "pubg mobile"]],
+        ["Fortnite", ["fortnite"]],
+        ["GTA V", ["gta 5", "gta v", "grand theft auto", "gta online"]],
+        ["League of Legends", ["league of legends", "lol", "wild rift"]],
+        ["Mobile Legends", ["mobile legends", "mlbb"]],
+        ["Brawl Stars", ["brawl stars"]],
+        ["Clash Royale", ["clash royale"]],
+        ["Clash of Clans", ["clash of clans"]],
+        ["Among Us", ["among us"]],
+        ["Rust", ["rust"]],
+        ["ARK", ["ark survival", "ark"]],
+        ["The Forest", ["the forest", "sons of the forest"]],
+        ["FIFA / EA FC", ["fifa", "ea fc", "fc 24", "fc 25"]],
+        ["eFootball", ["efootball", "pes "]],
+        ["Need for Speed", ["need for speed", "nfs"]],
+        ["Forza", ["forza"]],
+        ["Euro Truck Simulator", ["euro truck simulator", "ets2"]],
+        ["Farming Simulator", ["farming simulator"]],
+        ["Garry's Mod", ["garry's mod", "gmod"]],
+        ["Five Nights at Freddy's", ["fnaf", "five nights at freddy"]],
+        ["Poppy Playtime", ["poppy playtime"]],
+        ["Outlast", ["outlast"]],
+        ["Resident Evil", ["resident evil"]],
+        ["Elden Ring", ["elden ring"]],
+        ["Baldur's Gate 3", ["baldur's gate", "baldurs gate"]],
+        ["Skyrim", ["skyrim"]],
+        ["The Witcher", ["witcher"]],
+        ["Genshin Impact", ["genshin impact", "genshin"]],
+        ["Honkai: Star Rail", ["honkai star rail", "star rail"]],
+        ["Call of Duty", ["call of duty", "warzone", "modern warfare"]],
+        ["Apex Legends", ["apex legends", "apex"]],
+        ["Overwatch", ["overwatch"]],
+        ["Dota 2", ["dota 2", "dota"]],
+        ["Teamfight Tactics", ["teamfight tactics", "tft"]],
+        ["World of Warcraft", ["world of warcraft", "wow"]],
+        ["Age of Empires", ["age of empires", "aoe2", "aoe 2"]],
+        ["Civilization", ["civilization", "civ 6", "civ6"]],
+        ["Total War", ["total war"]],
+        ["Hearts of Iron IV", ["hearts of iron", "hoi4"]],
+        ["Silkroad Online", ["silkroad online", "silkroad"]],
+        ["Knight Online", ["knight online"]],
+        ["Mount & Blade", ["mount and blade", "mount & blade", "bannerlord"]],
+        ["Terraria", ["terraria"]],
+        ["Stardew Valley", ["stardew valley"]],
+        ["Palworld", ["palworld"]],
+        ["Lethal Company", ["lethal company"]]
+      ];
+    }
+    function detectPlayedGames(textValue) {
+      const text = ` ${String(textValue || "").toLowerCase().replace(/[_-]+/g, " ")} `;
+      const found = [];
+      knownGameCatalog().forEach(([name, aliases]) => {
+        const hit = aliases.some((alias) => {
+          const clean = alias.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          return new RegExp(`(^|[^a-z0-9])${clean}([^a-z0-9]|$)`, "i").test(text);
+        });
+        if (hit) found.push(name);
+      });
+      return [...new Set(found)].slice(0, 8);
     }
 
     function classifyCreatorContent(textValue) {
@@ -2024,6 +2110,7 @@
       const techSignal = /\b(tech|technology|gadget|telefon|laptop|software|pc build|unboxing|review)\b/i.test(text);
       const newsSignal = /\b(news|haber|politics|politika|gündem|gundem|son dakika)\b/i.test(text);
       const gameplaySignal = /\b(gameplay|lets play|let's play|walkthrough|playthrough|oynuyoruz|valorant|fortnite|pubg|minecraft|roblox|cs2|counter strike|steam|xbox|playstation|nintendo|mobile legends|brawl stars|clash royale)\b/i.test(text);
+      const detectedGames = detectPlayedGames(text);
       if (animeSignal && !gameplaySignal) {
         return { category: "Entertainment", subcategory: "Anime / Animation", confidence: 86, genres: ["entertainment", "anime", "animation"], reason: "Latest videos look like anime or animation content rather than gameplay.", source: "YouTube latest video metadata" };
       }
@@ -2057,13 +2144,15 @@
       }
       if (top[0] === "Gaming" || gameplaySignal) {
         const detail = classifyCreatorContent(text);
-        const subcategory = detail.category === "Gaming" ? detail.subcategory : "General Gaming";
+        const subcategory = detectedGames.length
+          ? `Gameplay / ${detectedGames.slice(0, 3).join(" + ")}`
+          : detail.category === "Gaming" ? detail.subcategory : "General Gaming";
         return {
           category: "Gaming",
           subcategory,
           confidence: Math.max(72, Math.min(92, 58 + top[1] * 5 + (gameplaySignal ? 12 : 0))),
-          genres: detail.genres?.length ? detail.genres : ["gaming"],
-          reason: `Latest videos show gaming evidence. YouTube video category majority: ${top[0]} (${top[1]}/${videoItems.length}).`,
+          genres: detectedGames.length ? ["gaming", ...detectedGames.map((game) => game.toLowerCase())] : detail.genres?.length ? detail.genres : ["gaming"],
+          reason: `Latest videos show gaming evidence. YouTube video category majority: ${top[0]} (${top[1]}/${videoItems.length}).${detectedGames.length ? ` Detected games: ${detectedGames.join(", ")}.` : ""}`,
           source: "YouTube latest video metadata"
         };
       }
@@ -2512,7 +2601,7 @@
               {
                 role: "user",
                 content: [
-                  { type: "text", text: `Read this image. It belongs to this creator/channel when provided: ${JSON.stringify(context)}. Extract every visible influencer/creator row as JSON. Return exactly: {\"rows\":[{\"Channel Name\":\"\",\"Link\":\"\",\"GEO\":\"\",\"Category\":\"\",\"Subcategory\":\"\",\"Subscribers\":\"\",\"avg Views\":\"\",\"Avg Comments\":\"\",\"Format\":\"\",\"Duration\":\"\",\"Keywords\":\"\",\"Comments\":\"\"}]}. If a cell is not visible, leave it empty. Preserve YouTube links and names exactly. For Scrumball screenshots, include followers, avg engagement, avg view rate, monthly post, audience location countries, and visible age/gender analysis in Comments.` },
+                  { type: "text", text: `Read this image. It belongs to this creator/channel when provided: ${JSON.stringify(context)}. Extract every visible influencer/creator row as JSON. Return exactly: {\"rows\":[{\"Channel Name\":\"\",\"Link\":\"\",\"GEO\":\"\",\"Category\":\"\",\"Subcategory\":\"\",\"Subscribers\":\"\",\"avg Views\":\"\",\"Format\":\"\",\"Duration\":\"\",\"Keywords\":\"\",\"Comments\":\"\"}]}. If a cell is not visible, leave it empty. Preserve YouTube links and names exactly. For Scrumball screenshots, include followers, avg engagement, avg view rate, monthly post, audience location countries, and visible age/gender analysis in Comments.` },
                   { type: "image_url", image_url: { url: dataUrl } }
                 ]
               }
@@ -2717,7 +2806,6 @@
             "Gender": scrumball.genderApprox || "",
             "Age": scrumball.ageGenderApprox || "",
             "Subscribers": scrumball.subscribers || "",
-            "Avg Comments": "",
             "Comments": [line, scrumball.avgEngagement ? `Avg engagement: ${scrumball.avgEngagement}` : "", scrumball.avgViewRate ? `Avg view rate: ${scrumball.avgViewRate}` : "", scrumball.monthlyPost ? `Monthly post: ${scrumball.monthlyPost}` : "", scrumball.audienceLocation ? `Audience location: ${scrumball.audienceLocation}` : "", scrumball.ageGenderApprox ? `Age/gender approx: ${scrumball.ageGenderApprox}` : "", scrumball.demographicsSource ? `Demographics source: ${scrumball.demographicsSource}` : ""].filter(Boolean).join("; ")
           });
         }
@@ -2946,10 +3034,10 @@
       render();
     }
     function exportCsv() {
-      const header = ["Channel Name", "Link", "GEO", "Gender", "Age", "Category", "Subcategory", "Subscribers", "avg Views 30 days / 10 videos", "Avg Comments", "Format", "Duration (avg)", "Keywords"];
+      const header = ["Channel Name", "Link", "GEO", "Gender", "Age", "Category", "Subcategory", "Subscribers", "avg Views 30 days / 10 videos", "Format", "Duration (avg)", "Keywords"];
       const data = state.influencers.map((item) => {
         const demographics = splitAgeGender(item.age, item.gender);
-        return [item.name, item.link || "", item.geo || item.country || "", demoValue(demographics.gender), demoValue(demographics.age), item.category || "", item.subcategory || "", item.subscribers || "", item.views || "", item.avgComments || "", item.format || "", item.duration || "", item.keywords || ""];
+        return [item.name, item.link || "", item.geo || item.country || "", demoValue(demographics.gender), demoValue(demographics.age), item.category || "", item.subcategory || "", item.subscribers || "", item.views || "", item.format || "", item.duration || "", item.keywords || ""];
       });
       const csv = [header, ...data].map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
