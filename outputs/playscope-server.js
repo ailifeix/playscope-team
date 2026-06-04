@@ -374,6 +374,7 @@ Rules:
 - Racing: speed, drift, upgrade, competition.
 - Simulation: build, manage, customize, daily growth.
 - Return exactly: game type, language rule, 3 translation options, and one short note.
+- Use heading labels in the target language.
 
 Requested game type: ${genre}.
 Tone: ${input.tone || "Store-ready"}.
@@ -382,19 +383,19 @@ Source: ${input.source || ""}`;
   const ai = await openAiText(prompt);
   if (ai) return { source: "openai", text: ai };
   const fallback = {
-    tr: `Game type: ${genre}
-Language rule: Ture uygun pazarlama dili kullanildi.
+    tr: `Oyun türü: ${genre}
+Dil kuralı: Türe uygun pazarlama dili kullanıldı.
 
-Option 1 - Store-ready:
-Filonu kur, ittifaklarini yonet ve akilli hamlelerle haritayi fethet.
+Seçenek 1 - Store'a hazır:
+Filonu kur, ittifaklarını yönet ve akıllı hamlelerle haritayı fethet.
 
-Option 2 - More emotional:
-Komutanligini kanitla, gucunu buyut ve rakiplerini stratejinle alt et.
+Seçenek 2 - Daha duygusal:
+Komutanlığını kanıtla, gücünü büyüt ve rakiplerini stratejinle alt et.
 
-Option 3 - Short CTA:
-Imparatorlugunu kur. Savas. Fethet.
+Seçenek 3 - Kısa CTA:
+İmparatorluğunu kur. Savaş. Fethet.
 
-Note: Demo mode.`,
+Not: Demo modu.`,
     en: `Game type: ${genre}
 Language rule: Genre-aware store wording was used.
 

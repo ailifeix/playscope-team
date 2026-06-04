@@ -205,6 +205,13 @@
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
     .note { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 9px 0 0; }
     .result-box { background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; min-height: 116px; line-height: 1.55; font-size: 14px; }
+    .loc-output { display: grid; gap: 10px; white-space: normal; }
+    .loc-output .meta { display: flex; flex-wrap: wrap; gap: 8px; color: var(--muted); font-size: 12px; }
+    .loc-output .option-card { border: 1px solid rgba(149, 120, 255, .25); border-radius: 8px; padding: 12px; background: rgba(255,255,255,.78); }
+    .loc-output .option-card strong { display: block; margin-bottom: 6px; color: var(--ink); }
+    .loc-batch-list { display: grid; gap: 10px; max-height: 360px; overflow: auto; padding-right: 4px; }
+    .loc-batch-item { border: 1px solid rgba(149, 120, 255, .22); border-radius: 8px; padding: 12px; background: rgba(255,255,255,.7); }
+    .loc-batch-item h4 { margin: 0 0 8px; font-size: 13px; }
     .task-list { display: grid; gap: 10px; }
     .task { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
     .task strong { display: block; font-size: 13px; }
@@ -680,7 +687,7 @@
         </div>
         <div class="top-actions">
           <select id="languageSelect" class="language-select" aria-label="Language">
-            <option value="tr">Turkce</option>
+            <option value="tr">Türkçe</option>
             <option value="en">English</option>
             <option value="zh">中文</option>
           </select>
@@ -740,7 +747,7 @@
       tr: {
         dashboard: "Dashboard", search: "Influencer Ara", list: "Influencer Listesi", localization: "Lokalizasyon", competitors: "Rakip Analizi", settings: "Ayarlar", help: "Yardim",
         brief: "Proje Briefi", projectName: "Proje Adi", genre: "Tur", markets: "Hedef Pazarlar", audience: "Hedef Kitle", goal: "Kampanya Hedefi", editBrief: "Briefi Duzenle", export: "Disa Aktar",
-        pageDashSub: "Kampanya, influencer, lokalizasyon ve rakip islerini tek yerden takip et.", pageSearchSub: "YouTube/Twitch adindan aday ekle veya Excel listesini yapistir.", pageListSub: "Adaylari puanla, filtrele, not al ve CSV olarak indir.", pageLocSub: "Store metnini Turkce, Ingilizce ve Cince icin uyarlamayi simule et.", pageCompSub: "Oyun turu sec, rakip store aciklamalarini karsilastir.",
+        pageDashSub: "Kampanya, influencer, lokalizasyon ve rakip işlerini tek yerden takip et.", pageSearchSub: "YouTube/Twitch adından aday ekle veya Excel listesini yapıştır.", pageListSub: "Adayları puanla, filtrele, not al ve CSV olarak indir.", pageLocSub: "Store metnini Türkçe, İngilizce ve Çince için oyun türüne göre uyarla.", pageCompSub: "Oyun türü seç, rakip store açıklamalarını karşılaştır.",
         found: "sonuc", avgViews: "Ort. Izlenme", match: "Tur Eslesmesi", rec: "Oneri", country: "Ulke", channel: "Kanal", fit: "Uygunluk", recommended: "Onerilir", review: "Degerlendir", no: "Uygun Degil",
         selected: "Secili Influencer", summary: "Analiz Ozeti", outreach: "Onerilen Outreach", shortlist: "Kisa Listeye Ekle", note: "Not Ekle", save: "Kaydet", analyze: "Analiz Et", reset: "Ornek Veriye Don",
         source: "Kaynak Metin", target: "Hedef Dil", tone: "Ton", generate: "Olustur", output: "Cikti", copy: "Kopyala", status: "Durum", cultural: "Kulturel Not", ready: "Hazir", waiting: "Bekliyor",
@@ -1281,35 +1288,101 @@
       });
     }
 
+    function locUi(key) {
+      const dict = {
+        tr: {
+          workspace: "Lokalizasyon çalışma alanı",
+          gameType: "Oyun türü",
+          auto: "Otomatik analiz",
+          fps: "FPS / Shooter",
+          mmo: "MMO / RPG",
+          strategy: "Strateji / 4X",
+          casual: "Casual / Puzzle",
+          horror: "Korku",
+          racing: "Yarış",
+          simulation: "Simülasyon",
+          storeReady: "Store'a hazır",
+          competitive: "Rekabetçi",
+          cinematic: "Sinematik",
+          friendly: "Dostça",
+          premium: "Premium",
+          excelTitle: "Excel / copy-paste lokalizasyon",
+          excelFile: "Excel / CSV dosyası",
+          uploadLocalize: "Yükle ve lokalize et",
+          excelHint: "Source, Text, Description, Copy, Game, Genre, Language gibi kolonları kullanabilirsin.",
+          pasteRows: "Satır yapıştır",
+          pastePlaceholder: "Oyun, Tür, Metin\nGalaxy Raiders, Strategy, Build your fleet and conquer space.",
+          localizeRows: "Yapıştırılan satırları lokalize et",
+          batchStatus: "Excel/CSV yükle veya çoklu store metni için satır yapıştır.",
+          guideTitle: "Tür bazlı dil rehberi",
+          type: "Tür",
+          style: "Lokalizasyon dili",
+          avoid: "Kaçın",
+          fpsStyle: "Kısa, sert, skill/combat odaklı.",
+          fpsAvoid: "Yavaş fantasy dili.",
+          mmoStyle: "Dünya, class, guild, raid, progression.",
+          mmoAvoid: "Sadece aksiyon kelimeleri.",
+          strategyStyle: "Komuta, inşa, ittifak, taktik, fetih.",
+          strategyAvoid: "Fazla casual/basit metin.",
+          casualStyle: "Net, yumuşak, kolay ödül dili.",
+          casualAvoid: "Hardcore jargon.",
+          horrorStyle: "Gizem, hayatta kalma, gerilim, atmosfer.",
+          horrorAvoid: "Aşırı gore vaadi."
+        },
+        en: {
+          workspace: "Localization workspace", gameType: "Game type", auto: "Auto analyze", fps: "FPS / Shooter", mmo: "MMO / RPG", strategy: "Strategy / 4X", casual: "Casual / Puzzle", horror: "Horror", racing: "Racing", simulation: "Simulation", storeReady: "Store-ready", competitive: "Competitive", cinematic: "Cinematic", friendly: "Friendly", premium: "Premium", excelTitle: "Excel / copy-paste localization", excelFile: "Excel / CSV file", uploadLocalize: "Upload and localize", excelHint: "Use columns like Source, Text, Description, Copy, Game, Genre, Language.", pasteRows: "Copy-paste rows", pastePlaceholder: "Game, Genre, Source\nGalaxy Raiders, Strategy, Build your fleet and conquer space.", localizeRows: "Localize pasted rows", batchStatus: "Upload Excel/CSV or paste rows to localize multiple store-copy lines.", guideTitle: "Genre language guide", type: "Type", style: "Localization style", avoid: "Avoid", fpsStyle: "Short, punchy, skill/combat words.", fpsAvoid: "Slow fantasy wording.", mmoStyle: "World, class, guild, raid, progression.", mmoAvoid: "Only action words.", strategyStyle: "Command, build, alliance, tactics, conquest.", strategyAvoid: "Too casual/simple copy.", casualStyle: "Clear, soft, easy reward language.", casualAvoid: "Hardcore jargon.", horrorStyle: "Mystery, survival, tension, atmosphere.", horrorAvoid: "Over-promising gore."
+        },
+        zh: {
+          workspace: "本地化工作台", gameType: "游戏类型", auto: "自动分析", fps: "FPS / 射击", mmo: "MMO / RPG", strategy: "策略 / 4X", casual: "休闲 / 解谜", horror: "恐怖", racing: "竞速", simulation: "模拟", storeReady: "商店文案", competitive: "竞技感", cinematic: "电影感", friendly: "亲和", premium: "高级感", excelTitle: "Excel / 粘贴本地化", excelFile: "Excel / CSV 文件", uploadLocalize: "上传并本地化", excelHint: "可使用 Source, Text, Description, Copy, Game, Genre, Language 等列。", pasteRows: "粘贴行", pastePlaceholder: "Game, Genre, Source\nGalaxy Raiders, Strategy, Build your fleet and conquer space.", localizeRows: "本地化粘贴行", batchStatus: "上传 Excel/CSV 或粘贴多行商店文案。", guideTitle: "类型语言指南", type: "类型", style: "本地化风格", avoid: "避免", fpsStyle: "短促、有冲击力，强调操作和战斗。", fpsAvoid: "缓慢的幻想叙事。", mmoStyle: "世界、职业、公会、团本、成长。", mmoAvoid: "只写动作词。", strategyStyle: "指挥、建造、联盟、战术、征服。", strategyAvoid: "过于休闲简单。", casualStyle: "清晰、轻松、奖励感。", casualAvoid: "硬核术语。", horrorStyle: "谜团、生存、紧张、氛围。", horrorAvoid: "过度血腥承诺。"
+        }
+      };
+      return (dict[state.lang] || dict.en)[key] || dict.en[key] || key;
+    }
+
     function localizationPage() {
       $("page").innerHTML = `
         ${pageHead(tr("localization"), tr("pageLocSub"))}
         <div class="grid half">
-          ${panel("Localization workspace", `<div class="form-grid">
+          ${panel(locUi("workspace"), `<div class="form-grid">
             <div><div class="field-label">${tr("source")}</div><textarea id="sourceCopy">Build your fleet, explore unknown galaxies, and outsmart rival commanders in fast mobile strategy battles.</textarea></div>
             <div>
-              <div class="field-label">Game type</div>
+              <div class="field-label">${locUi("gameType")}</div>
               <select id="locGenre">
-                <option value="auto">Auto analyze</option>
-                <option value="fps">FPS / Shooter</option>
-                <option value="mmo">MMO / RPG</option>
-                <option value="strategy">Strategy / 4X</option>
-                <option value="casual">Casual / Puzzle</option>
-                <option value="horror">Horror</option>
-                <option value="racing">Racing</option>
-                <option value="simulation">Simulation</option>
+                <option value="auto">${locUi("auto")}</option>
+                <option value="fps">${locUi("fps")}</option>
+                <option value="mmo">${locUi("mmo")}</option>
+                <option value="strategy">${locUi("strategy")}</option>
+                <option value="casual">${locUi("casual")}</option>
+                <option value="horror">${locUi("horror")}</option>
+                <option value="racing">${locUi("racing")}</option>
+                <option value="simulation">${locUi("simulation")}</option>
               </select>
               <div class="field-label" style="margin-top:12px">${tr("target")}</div>
-              <select id="locLang"><option value="tr">Turkce</option><option value="en">English</option><option value="zh">中文</option></select>
+              <select id="locLang"><option value="tr">Türkçe</option><option value="en">English</option><option value="zh">中文</option></select>
               <div class="field-label" style="margin-top:12px">${tr("tone")}</div>
-              <select id="locTone"><option>Store-ready</option><option>Competitive</option><option>Cinematic</option><option>Friendly</option><option>Premium</option></select>
+              <select id="locTone"><option>${locUi("storeReady")}</option><option>${locUi("competitive")}</option><option>${locUi("cinematic")}</option><option>${locUi("friendly")}</option><option>${locUi("premium")}</option></select>
               <button class="primary" id="locBtn" type="button" style="margin-top:12px">${tr("generate")}</button>
             </div>
-          </div><p class="note" id="locStatus">${tr("apiSafe")}</p><div class="field-label">${tr("output")}</div><div class="result-box" id="locOutput">${state.localizationOutput || "Output will appear here."}</div><button id="copyLocBtn" type="button" style="margin-top:12px">${tr("copy")}</button>`)}
-          ${panel("Genre language guide", `<table><thead><tr><th>Type</th><th>Localization style</th><th>Avoid</th></tr></thead><tbody><tr><td>FPS</td><td>Short, punchy, skill/combat words.</td><td>Slow fantasy wording.</td></tr><tr><td>MMO / RPG</td><td>World, class, guild, raid, progression.</td><td>Only action words.</td></tr><tr><td>Strategy</td><td>Command, build, alliance, tactics, conquest.</td><td>Too casual/simple copy.</td></tr><tr><td>Casual</td><td>Clear, soft, easy reward language.</td><td>Hardcore jargon.</td></tr><tr><td>Horror</td><td>Mystery, survival, tension, atmosphere.</td><td>Over-promising gore.</td></tr></tbody></table>`)}
+          </div><p class="note" id="locStatus">${tr("apiSafe")}</p><div class="field-label">${tr("output")}</div><div class="result-box" id="locOutput">${formatLocalizationOutput(state.localizationOutput || "Output will appear here.")}</div><button id="copyLocBtn" type="button" style="margin-top:12px">${tr("copy")}</button>`)}
+          ${panel(locUi("excelTitle"), `<div class="form-grid">
+            <div>
+              <div class="field-label">${locUi("excelFile")}</div>
+              <input id="locExcelFile" type="file" accept=".xlsx,.xls,.csv,.tsv,.txt">
+              <button class="primary" id="locExcelBtn" type="button" style="margin-top:12px">${locUi("uploadLocalize")}</button>
+              <p class="note">${locUi("excelHint")}</p>
+            </div>
+            <div>
+              <div class="field-label">${locUi("pasteRows")}</div>
+              <textarea id="locPasteRows" placeholder="${esc(locUi("pastePlaceholder"))}"></textarea>
+              <button class="primary" id="locPasteBtn" type="button" style="margin-top:12px">${locUi("localizeRows")}</button>
+            </div>
+          </div><p class="note" id="locBatchStatus">${locUi("batchStatus")}</p><div class="loc-batch-list" id="locBatchOutput">${renderLocalizationBatch(state.localizationBatch || [])}</div>`)}
+          ${panel(locUi("guideTitle"), `<table><thead><tr><th>${locUi("type")}</th><th>${locUi("style")}</th><th>${locUi("avoid")}</th></tr></thead><tbody><tr><td>FPS</td><td>${locUi("fpsStyle")}</td><td>${locUi("fpsAvoid")}</td></tr><tr><td>MMO / RPG</td><td>${locUi("mmoStyle")}</td><td>${locUi("mmoAvoid")}</td></tr><tr><td>Strategy</td><td>${locUi("strategyStyle")}</td><td>${locUi("strategyAvoid")}</td></tr><tr><td>Casual</td><td>${locUi("casualStyle")}</td><td>${locUi("casualAvoid")}</td></tr><tr><td>Horror</td><td>${locUi("horrorStyle")}</td><td>${locUi("horrorAvoid")}</td></tr></tbody></table>`)}
         </div>`;
       $("locBtn").addEventListener("click", generateLocalization);
       $("copyLocBtn").addEventListener("click", () => navigator.clipboard?.writeText($("locOutput").textContent));
+      $("locExcelBtn").addEventListener("click", handleLocalizationExcel);
+      $("locPasteBtn").addEventListener("click", handleLocalizationPaste);
     }
 
     function competitorsPage() {
@@ -1327,7 +1400,7 @@
             <div class="panel-head"><h3>${tr("competitors")}</h3><div class="controls"><select id="genreSelect"><option value="strategy">Strategy</option><option value="puzzle">Puzzle</option><option value="casual">Casual</option></select><select id="storeSelect"><option value="all">All Stores</option><option value="Google Play">Google Play</option><option value="App Store">App Store</option></select></div></div>
             <div class="form-grid" style="margin-bottom:12px">
               <div><div class="field-label">Store search</div><input id="gpQuery" value="${esc(state.googlePlayQuery)}" placeholder="silkroad, space strategy, match puzzle"></div>
-              <div><div class="field-label">Language</div><select id="gpLang"><option value="en">English</option><option value="tr">Turkce</option><option value="zh">中文</option><option value="de">Deutsch</option><option value="ja">日本語</option></select></div>
+              <div><div class="field-label">Language</div><select id="gpLang"><option value="en">English</option><option value="tr">Türkçe</option><option value="zh">中文</option><option value="de">Deutsch</option><option value="ja">日本語</option></select></div>
             </div>
             <button class="primary" id="googlePlaySearchBtn" type="button">Search Google Play</button>
             <button class="primary" id="appStoreSearchBtn" type="button" style="margin-left:8px">Search App Store</button>
@@ -3093,6 +3166,13 @@
     function demoLocalizationVariants(source, lang, tone, genre) {
       const profile = localizationProfile(genre);
       const copy = String(source || "").trim() || "Build your fleet, explore unknown galaxies, and outsmart rival commanders in fast mobile strategy battles.";
+      const labels = {
+        tr: { gameType: "Oyun türü", rule: "Dil kuralı", avoid: "Kaçın", tone: "Ton", option1: "Seçenek 1 - Store'a hazır", option2: "Seçenek 2 - Daha duygusal", option3: "Seçenek 3 - Kısa CTA", source: "Korunan kaynak anlamı" },
+        en: { gameType: "Game type", rule: "Language rule", avoid: "Avoid", tone: "Tone", option1: "Option 1 - Store-ready", option2: "Option 2 - More emotional", option3: "Option 3 - Short CTA", source: "Source meaning kept" },
+        zh: { gameType: "游戏类型", rule: "语言规则", avoid: "避免", tone: "语气", option1: "选项 1 - 商店文案", option2: "选项 2 - 更有情绪", option3: "选项 3 - 短 CTA", source: "保留原意" }
+      }[lang] || {
+        gameType: "Game type", rule: "Language rule", avoid: "Avoid", tone: "Tone", option1: "Option 1 - Store-ready", option2: "Option 2 - More emotional", option3: "Option 3 - Short CTA", source: "Source meaning kept"
+      };
       const banks = {
         tr: {
           fps: ["Nişan al, ekibini kur ve her çatışmada üstünlüğünü göster.", "Silahını seç, reflekslerini konuştur ve rakiplerini geride bırak.", "Hızlı maçlara gir, takımınla savaş ve zaferi kap."],
@@ -3123,22 +3203,138 @@
         }
       };
       const variants = (banks[lang] || banks.en)[genre] || (banks[lang] || banks.en).strategy;
-      return `Game type: ${profile.label}
-Language rule: ${profile.rule}
-Avoid: ${profile.avoid}
-Tone: ${tone}
+      return `${labels.gameType}: ${profile.label}
+${labels.rule}: ${profile.rule}
+${labels.avoid}: ${profile.avoid}
+${labels.tone}: ${tone}
 
-Option 1 - Store-ready:
+${labels.option1}:
 ${variants[0]}
 
-Option 2 - More emotional:
+${labels.option2}:
 ${variants[1]}
 
-Option 3 - Short CTA:
+${labels.option3}:
 ${variants[2]}
 
-Source meaning kept:
+${labels.source}:
 ${copy}`;
+    }
+
+    function formatLocalizationOutput(text) {
+      const raw = String(text || "").trim();
+      if (!raw || raw === "Output will appear here.") return esc(raw || "Output will appear here.");
+      const lines = raw.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+      const meta = [];
+      const cards = [];
+      let current = null;
+      for (const line of lines) {
+        if (/^(option\s+\d+|seçenek\s+\d+|secenek\s+\d+|选项\s*\d+)/i.test(line)) {
+          current = { title: line.replace(/:$/, ""), body: [] };
+          cards.push(current);
+        } else if (/^(game type|language rule|avoid|tone|note|source meaning kept|oyun türü|oyun turu|dil kuralı|dil kurali|kaçın|kacin|ton|not|korunan kaynak anlamı|korunan kaynak anlami|游戏类型|语言规则|避免|语气|保留原意):/i.test(line)) {
+          meta.push(line);
+          current = null;
+        } else if (current) {
+          current.body.push(line);
+        } else {
+          meta.push(line);
+        }
+      }
+      if (!cards.length) {
+        return `<div class="loc-output"><div class="option-card">${esc(raw)}</div></div>`;
+      }
+      return `<div class="loc-output">${meta.length ? `<div class="meta">${meta.map((item) => `<span>${esc(item)}</span>`).join("")}</div>` : ""}${cards.map((card) => `<div class="option-card"><strong>${esc(card.title)}</strong>${esc(card.body.join(" "))}</div>`).join("")}</div>`;
+    }
+
+    function renderLocalizationBatch(items = []) {
+      if (!items.length) return `<div class="empty">No localization batch yet.</div>`;
+      return items.map((item, index) => `<div class="loc-batch-item"><h4>${index + 1}. ${esc(item.name || item.genreLabel || "Store copy")}</h4>${formatLocalizationOutput(item.output)}</div>`).join("");
+    }
+
+    function localizationSourceFromRow(row = {}) {
+      const entries = Object.entries(row);
+      const sourceEntry = entries.find(([key]) => /source|text|copy|description|store|desc|metin|aciklama|açıklama/i.test(key));
+      const genreEntry = entries.find(([key]) => /genre|type|category|tur|tür/i.test(key));
+      const nameEntry = entries.find(([key]) => /game|name|title|project|oyun/i.test(key));
+      const langEntry = entries.find(([key]) => /lang|language|target|dil/i.test(key));
+      const fallbackText = entries.map(([, value]) => String(value || "").trim()).find((value) => value.length > 12) || "";
+      return {
+        source: String(sourceEntry?.[1] || fallbackText || "").trim(),
+        genre: inferLocalizationGenre(`${genreEntry?.[1] || ""} ${sourceEntry?.[1] || fallbackText}`, normalizeLocalizationGenre(genreEntry?.[1])),
+        name: String(nameEntry?.[1] || "").trim(),
+        lang: normalizeLocalizationLang(langEntry?.[1])
+      };
+    }
+
+    function normalizeLocalizationGenre(value) {
+      const genre = String(value || "auto").toLowerCase();
+      if (/fps|shooter|shoot|gun|battle royale/.test(genre)) return "fps";
+      if (/mmo|mmorpg|rpg|role|guild|raid/.test(genre)) return "mmo";
+      if (/strategy|4x|strat|war|kingdom|empire/.test(genre)) return "strategy";
+      if (/casual|puzzle|match|merge|tile/.test(genre)) return "casual";
+      if (/horror|survival|zombie/.test(genre)) return "horror";
+      if (/race|racing|drift|car/.test(genre)) return "racing";
+      if (/sim|simulation|tycoon|farm|city/.test(genre)) return "simulation";
+      return "auto";
+    }
+
+    function normalizeLocalizationLang(value) {
+      const lang = String(value || "").toLowerCase();
+      if (/zh|cn|chinese|çince|cince|中文/.test(lang)) return "zh";
+      if (/tr|turkish|turkce|türkçe/.test(lang)) return "tr";
+      if (/en|english|ingilizce/.test(lang)) return "en";
+      return $("locLang")?.value || "en";
+    }
+
+    async function localizationRowsFromFile(file) {
+      if (!file) return [];
+      if (/\.csv$|\.tsv$|\.txt$/i.test(file.name)) return rowsToObjects(parseDelimitedRows(await file.text()));
+      if (!window.XLSX) throw new Error("Excel parser could not load. Save as CSV or use copy-paste.");
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
+      const firstSheet = workbook.SheetNames[0];
+      const sheetRows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { header: 1, defval: "" });
+      return rowsToObjects(sheetRows);
+    }
+
+    async function localizeBatchRows(rows) {
+      const tone = $("locTone").value;
+      const selectedGenre = $("locGenre").value;
+      const items = rows.map(localizationSourceFromRow).filter((item) => item.source);
+      const outputs = [];
+      for (const item of items.slice(0, 30)) {
+        const genre = selectedGenre === "auto" ? item.genre : inferLocalizationGenre(item.source, selectedGenre);
+        const lang = item.lang || $("locLang").value;
+        outputs.push({
+          name: item.name || shortText(item.source, 42),
+          genreLabel: localizationProfile(genre).label,
+          output: demoLocalizationVariants(item.source, lang, tone, genre)
+        });
+      }
+      state.localizationBatch = outputs;
+      saveState();
+      $("locBatchOutput").innerHTML = renderLocalizationBatch(outputs);
+      $("locBatchStatus").textContent = outputs.length ? `${outputs.length} row(s) localized.` : "No usable source text found.";
+    }
+
+    async function handleLocalizationExcel() {
+      const status = $("locBatchStatus");
+      try {
+        const file = $("locExcelFile").files?.[0];
+        if (!file) {
+          status.textContent = "Choose an Excel/CSV file first.";
+          return;
+        }
+        status.textContent = "Reading file...";
+        await localizeBatchRows(await localizationRowsFromFile(file));
+      } catch (error) {
+        status.textContent = "File could not be read: " + error.message;
+      }
+    }
+
+    async function handleLocalizationPaste() {
+      const rows = rowsToObjects(parseDelimitedRows($("locPasteRows").value));
+      await localizeBatchRows(rows);
     }
 
     async function generateLocalization() {
@@ -3154,7 +3350,7 @@ ${copy}`;
         if (result && result.text) {
           state.localizationOutput = result.text;
           saveState();
-          $("locOutput").textContent = state.localizationOutput;
+          $("locOutput").innerHTML = formatLocalizationOutput(state.localizationOutput);
           if (status) status.textContent = result.source === "openai" ? "Generated with OpenAI." : "Backend answered in demo mode.";
           return;
         }
@@ -3163,7 +3359,7 @@ ${copy}`;
       }
       state.localizationOutput = source ? demoLocalizationVariants(source, lang, tone, genre) : "";
       saveState();
-      $("locOutput").textContent = state.localizationOutput || "Output will appear here.";
+      $("locOutput").innerHTML = formatLocalizationOutput(state.localizationOutput || "Output will appear here.");
     }
     function saveSettings() {
       state.project = { name: $("setName").value, genre: $("setGenre").value, markets: $("setMarkets").value, audience: $("setAudience").value, goal: $("setGoal").value, keywords: $("setKeywords").value };
