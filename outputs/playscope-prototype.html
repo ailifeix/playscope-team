@@ -964,9 +964,10 @@
     function youtubeVideoKind(video) {
       const seconds = parseYouTubeDuration(video.contentDetails?.duration);
       const text = [video.snippet?.title, video.snippet?.description, ...(video.snippet?.tags || [])].join(" ").toLowerCase();
-      const vodSignal = /\b(vod|canli|canlı|live|livestream|stream|yayın|yayin|full yayın|full yayin|twitch)\b/i.test(text);
+      const hasLiveMeta = Boolean(video.liveStreamingDetails?.actualStartTime || video.liveStreamingDetails?.scheduledStartTime || video.liveStreamingDetails?.actualEndTime);
+      const vodSignal = /\b(vod|canli|canlı|live|livestream|stream|yayın|yayin|yayını|yayini|canlı yayın|canli yayin|full yayın|full yayin|twitch|broadcast|replay|tekrar|tekrarı|tekrari)\b/i.test(text);
       if (seconds > 0 && seconds < 60) return "Short video";
-      if (vodSignal || seconds >= 2700) return "VOD / Live replay";
+      if (hasLiveMeta || vodSignal || seconds >= 2700) return "VOD / Live replay";
       if (seconds >= 180 && seconds <= 2400) return "Edited long video";
       if (seconds >= 60 && seconds < 180) return "Short edited video";
       if (seconds > 2400) return "Long video";
@@ -1019,7 +1020,8 @@
       });
       if (normalVideos.length >= 5) return normalVideos.slice(0, 10);
       if (normalVideos.length >= 2) return normalVideos.slice(0, 10);
-      return ordered.slice(0, Math.min(10, Math.max(5, ordered.length)));
+      if (normalVideos.length === 1) return normalVideos;
+      return [];
     }
     function estimateDemographics(item = {}) {
       const text = [item.category, item.subcategory, ...(item.genres || [])].join(" ").toLowerCase();
@@ -1694,7 +1696,7 @@
         let metricVideoCount = 0;
         let metricVideos = [];
         if (videoIds.length) {
-          const videosUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${videoIds.join(",")}&key=${encodeURIComponent(apiKey)}`;
+          const videosUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails,liveStreamingDetails&id=${videoIds.join(",")}&key=${encodeURIComponent(apiKey)}`;
           const videoData = await fetch(videosUrl).then((res) => res.json()).catch(() => ({ items: [] }));
           videoItems = videoData.items || [];
           metricVideos = latestMetricVideos(videoItems);
@@ -1721,7 +1723,7 @@
         const keywords = (classification.keywords?.length ? classification.keywords : extractKeywords(contentText)).join(", ");
         const genres = classification.genres.length ? classification.genres : extractKeywords(contentText).slice(0, 5);
         const evidenceText = classification.evidence?.length ? ` Evidence: ${classification.evidence.slice(0, 3).join(" | ")}.` : "";
-        const videoFormat = dominantVideoFormat(metricVideos.length ? metricVideos : videoItems);
+        const videoFormat = metricVideos.length ? dominantVideoFormat(metricVideos) : "No regular videos found";
         return {
           source: "youtube-live",
           name: channel.snippet?.title || input.name,
