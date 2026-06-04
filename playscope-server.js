@@ -1,6 +1,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const zlib = require("zlib");
 let googlePlayScraper = null;
 try {
   googlePlayScraper = require("google-play-scraper");
@@ -429,6 +430,29 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
   }
 }
 
+async function responseTextSafe(response) {
+  const encoding = String(response.headers.get("content-encoding") || "").toLowerCase();
+  const buffer = Buffer.from(await response.arrayBuffer());
+  try {
+    if (encoding.includes("br")) return zlib.brotliDecompressSync(buffer).toString("utf8");
+    if (encoding.includes("gzip") || (buffer[0] === 0x1f && buffer[1] === 0x8b)) return zlib.gunzipSync(buffer).toString("utf8");
+    if (encoding.includes("deflate")) return zlib.inflateSync(buffer).toString("utf8");
+  } catch (error) {
+    return buffer.toString("utf8");
+  }
+  return buffer.toString("utf8");
+}
+
+async function responseJsonSafe(response, label = "API") {
+  const text = await responseTextSafe(response);
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    const preview = text.replace(/\s+/g, " ").slice(0, 160);
+    throw new Error(`${label} returned non-JSON response: ${preview || error.message}`);
+  }
+}
+
 async function googlePlayDetails(appId, hl = "en", gl = "US") {
   const url = `https://play.google.com/store/apps/details?id=${encodeURIComponent(appId)}&hl=${encodeURIComponent(hl)}&gl=${encodeURIComponent(gl)}`;
   const response = await fetchWithTimeout(url, {
@@ -535,11 +559,12 @@ async function serpApiGooglePlaySearch(input = {}) {
   const response = await fetchWithTimeout(`https://serpapi.com/search.json?${params.toString()}`, {
     headers: {
       "User-Agent": "PlayScope/1.0",
-      "Accept": "application/json"
+      "Accept": "application/json",
+      "Accept-Encoding": "identity"
     }
   }, 20000);
   if (!response.ok) throw new Error(`SerpAPI HTTP ${response.status}`);
-  const data = await response.json();
+  const data = await responseJsonSafe(response, "SerpAPI");
   if (data.error) throw new Error(`SerpAPI: ${data.error}`);
   const limit = Number(input.limit || 5);
   const results = flattenSerpApiResults(data).slice(0, limit).map(mapSerpApiGooglePlay);
