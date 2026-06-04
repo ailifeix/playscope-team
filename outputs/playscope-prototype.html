@@ -967,7 +967,7 @@
       const hasLiveMeta = Boolean(video.liveStreamingDetails?.actualStartTime || video.liveStreamingDetails?.scheduledStartTime || video.liveStreamingDetails?.actualEndTime);
       const vodSignal = /\b(vod|canli|canlı|live|livestream|stream|yayın|yayin|yayını|yayini|canlı yayın|canli yayin|full yayın|full yayin|broadcast|replay|tekrar|tekrarı|tekrari)\b/i.test(titleText);
       if (seconds > 0 && seconds < 60) return "Short video";
-      if (hasLiveMeta || vodSignal || seconds >= 2700) return "VOD / Live replay";
+      if (hasLiveMeta || vodSignal || seconds >= 2700) return "Stream replay video";
       if (seconds >= 180 && seconds <= 2400) return "Edited long video";
       if (seconds >= 60 && seconds < 180) return "Short edited video";
       if (seconds > 2400) return "Long video";
@@ -990,12 +990,12 @@
         .filter((item) => Number.isFinite(item.seconds) && item.seconds > 0);
       if (!rows.length) return 0;
       const normalVideos = rows
-        .filter((item) => item.seconds >= 180 && item.seconds <= 2400 && item.kind !== "VOD / Live replay")
+        .filter((item) => item.seconds >= 180 && item.seconds <= 2400 && item.kind !== "Stream replay video")
         .map((item) => item.seconds);
       const editedLong = rows.filter((item) => item.kind === "Edited long video").map((item) => item.seconds);
       const shortEdited = rows.filter((item) => item.kind === "Short edited video").map((item) => item.seconds);
       const shorts = rows.filter((item) => item.kind === "Short video").map((item) => item.seconds);
-      const vods = rows.filter((item) => item.kind === "VOD / Live replay").map((item) => item.seconds);
+      const vods = rows.filter((item) => item.kind === "Stream replay video").map((item) => item.seconds);
       const otherLong = rows.filter((item) => item.kind === "Long video").map((item) => item.seconds);
       let source = normalVideos.length >= 2 ? normalVideos : editedLong.length >= 2 ? editedLong : shortEdited.length >= 3 ? shortEdited : shorts.length >= 3 ? shorts : otherLong.length >= 2 ? otherLong : rows.map((item) => item.seconds);
       if (source !== vods && source.length < 2 && vods.length && rows.length === vods.length) source = vods;
@@ -1013,20 +1013,18 @@
         const bt = Date.parse(b.snippet?.publishedAt || "") || 0;
         return bt - at;
       });
-      const regularVideos = ordered.filter((video) => {
+      const nonLiveVideos = ordered.filter((video) => {
         const seconds = parseYouTubeDuration(video.contentDetails?.duration);
         const kind = youtubeVideoKind(video);
-        return kind === "Edited long video" && seconds >= 180 && seconds <= 2400;
+        return kind !== "Stream replay video" && seconds > 0;
       });
-      const nonLiveLongVideos = ordered.filter((video) => {
+      if (nonLiveVideos.length) return nonLiveVideos.slice(0, 10);
+      const uploadedVods = ordered.filter((video) => {
         const seconds = parseYouTubeDuration(video.contentDetails?.duration);
         const kind = youtubeVideoKind(video);
-        return kind !== "VOD / Live replay" && seconds >= 180 && seconds <= 2400;
+        return kind === "Stream replay video" && seconds > 0;
       });
-      if (regularVideos.length >= 5) return regularVideos.slice(0, 10);
-      if (regularVideos.length >= 2) return regularVideos.slice(0, 10);
-      if (nonLiveLongVideos.length) return nonLiveLongVideos.slice(0, 10);
-      return [];
+      return uploadedVods.slice(0, 10);
     }
     function averageVideoViews(videoItems = []) {
       const counts = videoItems
@@ -1070,6 +1068,20 @@
       if (score >= 82) return [tr("recommended"), "good"];
       if (score >= 65) return [tr("review"), "warn"];
       return [tr("no"), "no"];
+    }
+    function detailNotes(item = {}) {
+      const raw = [item.notes, item.comments]
+        .filter(Boolean)
+        .join("; ")
+        .replace(/\s+/g, " ");
+      if (!raw) return [];
+      const blocked = /(failed to fetch|gpt image read failed|image read issue|classifier failed|evidence videos|imported visual\/list data|screen read issue|demographics source|matched channel|live youtube data loaded|videos checked|total channel views|avg comments|age\/gender approx|audience location)/i;
+      return raw
+        .split(/;\s+|\.\s+/)
+        .map((part) => part.trim())
+        .filter((part) => part.length > 12 && part.length < 150)
+        .filter((part) => !blocked.test(part))
+        .slice(0, 3);
     }
     function initials(name) { return name.split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase(); }
     function esc(value) { return String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
@@ -1165,10 +1177,25 @@
       if (!item) return panel(tr("selected"), `<div class="empty">No influencer selected.</div>`, "detail");
       const score = fitScore(item);
       const rec = recommendation(score);
+      const demographics = splitAgeGender(item.age, item.gender);
+      const cleanNotes = detailNotes(item);
+      const gameList = detectPlayedGames(`${item.keywords || ""} ${(item.notes || "")}`).slice(0, 5);
+      const keywordText = cleanKeywordList(String(item.keywords || "").split(",").map((word) => word.trim()), { snippet: { title: item.name, customUrl: item.handle } }).slice(0, 8).join(", ");
       return `<aside class="panel detail">
-        <div class="detail-top"><div class="person">${initials(item.name)}</div><div><h3>${tr("selected")}: ${esc(item.name)}</h3><div class="meta"><span>${esc(item.channel)} 路 ${views(item.views)} ${tr("avgViews").toLowerCase()}</span><span>${esc(item.country)} 路 ${esc(item.audience)}</span><span>${item.genres.map((g) => "#" + esc(g)).join(" ")}</span></div></div></div>
+        <div class="detail-top"><div class="person">${initials(item.name)}</div><div><h3>${tr("selected")}: ${esc(item.name)}</h3><div class="meta"><span>${esc(item.channel)} · ${views(item.views)} ${tr("avgViews").toLowerCase()}</span><span>${esc(item.geo || item.country || "-")} · ${esc(item.subscribers || "-")} subscribers</span><span>${esc(item.category || "-")} / ${esc(cleanSubcategory(item.subcategory || "-", item.category))}</span></div></div></div>
         <strong>${tr("summary")}</strong>
-        <ul class="analysis-list"><li>${esc(item.notes)}</li><li>${tr("match")}: ${item.match}%</li><li>Avg comments: ${views(item.avgComments)}</li><li>Avg duration: ${esc(item.duration || "-")}</li><li>Keywords: ${esc(item.keywords || item.genres?.join(", ") || "-")}</li><li>${tr("fit")}: ${score}/100 路 ${rec[0]}</li><li>${state.project.markets.includes(item.flag) ? "Target market overlap found." : "Needs market validation."}</li></ul>
+        <ul class="analysis-list">
+          <li>${tr("match")}: ${item.match}%</li>
+          <li>Format: ${esc(item.format || "-")}</li>
+          <li>Avg duration: ${esc(item.duration || "-")}</li>
+          <li>Age: ${esc(demoValue(demographics.age))}</li>
+          <li>Gender: ${esc(demoValue(demographics.gender))}</li>
+          ${gameList.length ? `<li>Games: ${esc(gameList.join(", "))}</li>` : ""}
+          ${keywordText ? `<li>Keywords: ${esc(keywordText)}</li>` : ""}
+          ${cleanNotes.map((note) => `<li>${esc(note)}</li>`).join("")}
+          <li>${tr("fit")}: ${score}/100 · ${rec[0]}</li>
+          <li>${state.project.markets.includes(item.flag) ? "Target market overlap found." : "Needs market validation."}</li>
+        </ul>
         <strong>${tr("fit")}</strong>
         <div class="fit-grid"><div><div class="big-score">${score}<span>/100</span></div><span class="tag ${rec[1]}">${rec[0]}</span></div><div class="metrics">${metric("Audience", Math.min(98, score + 2))}${metric("Content", item.match)}${metric("Engagement", Math.min(96, Math.round(item.views / 2500)))}${metric("Market", state.project.markets.includes(item.flag) ? 91 : 62)}</div></div>
         <strong>${tr("outreach")}</strong>
@@ -1260,9 +1287,26 @@
         <div class="grid half">
           ${panel("Localization workspace", `<div class="form-grid">
             <div><div class="field-label">${tr("source")}</div><textarea id="sourceCopy">Build your fleet, explore unknown galaxies, and outsmart rival commanders in fast mobile strategy battles.</textarea></div>
-            <div><div class="field-label">${tr("target")}</div><select id="locLang"><option value="tr">Turkce</option><option value="en">English</option><option value="zh">中文</option></select><div class="field-label" style="margin-top:12px">${tr("tone")}</div><select id="locTone"><option>Energetic</option><option>Premium</option><option>Friendly</option><option>Competitive</option></select><button class="primary" id="locBtn" type="button" style="margin-top:12px">${tr("generate")}</button></div>
+            <div>
+              <div class="field-label">Game type</div>
+              <select id="locGenre">
+                <option value="auto">Auto analyze</option>
+                <option value="fps">FPS / Shooter</option>
+                <option value="mmo">MMO / RPG</option>
+                <option value="strategy">Strategy / 4X</option>
+                <option value="casual">Casual / Puzzle</option>
+                <option value="horror">Horror</option>
+                <option value="racing">Racing</option>
+                <option value="simulation">Simulation</option>
+              </select>
+              <div class="field-label" style="margin-top:12px">${tr("target")}</div>
+              <select id="locLang"><option value="tr">Turkce</option><option value="en">English</option><option value="zh">中文</option></select>
+              <div class="field-label" style="margin-top:12px">${tr("tone")}</div>
+              <select id="locTone"><option>Store-ready</option><option>Competitive</option><option>Cinematic</option><option>Friendly</option><option>Premium</option></select>
+              <button class="primary" id="locBtn" type="button" style="margin-top:12px">${tr("generate")}</button>
+            </div>
           </div><p class="note" id="locStatus">${tr("apiSafe")}</p><div class="field-label">${tr("output")}</div><div class="result-box" id="locOutput">${state.localizationOutput || "Output will appear here."}</div><button id="copyLocBtn" type="button" style="margin-top:12px">${tr("copy")}</button>`)}
-          ${panel("TR / EN / ZH status", `<table><thead><tr><th>${tr("target")}</th><th>${tr("status")}</th><th>${tr("cultural")}</th></tr></thead><tbody><tr><td>Turkce</td><td><span class="tag good">${tr("ready")}</span></td><td>Action and strategy terms stay strong.</td></tr><tr><td>English</td><td><span class="tag warn">${tr("review")}</span></td><td>Check CTA length.</td></tr><tr><td>中文</td><td><span class="tag warn">${tr("waiting")}</span></td><td>Direct sales wording should be softer.</td></tr></tbody></table>`)}
+          ${panel("Genre language guide", `<table><thead><tr><th>Type</th><th>Localization style</th><th>Avoid</th></tr></thead><tbody><tr><td>FPS</td><td>Short, punchy, skill/combat words.</td><td>Slow fantasy wording.</td></tr><tr><td>MMO / RPG</td><td>World, class, guild, raid, progression.</td><td>Only action words.</td></tr><tr><td>Strategy</td><td>Command, build, alliance, tactics, conquest.</td><td>Too casual/simple copy.</td></tr><tr><td>Casual</td><td>Clear, soft, easy reward language.</td><td>Hardcore jargon.</td></tr><tr><td>Horror</td><td>Mystery, survival, tension, atmosphere.</td><td>Over-promising gore.</td></tr></tbody></table>`)}
         </div>`;
       $("locBtn").addEventListener("click", generateLocalization);
       $("copyLocBtn").addEventListener("click", () => navigator.clipboard?.writeText($("locOutput").textContent));
@@ -1735,11 +1779,14 @@
           classifyCreatorContent(contentText),
           classifyYouTubeVideoSet(videoItems, videoContentText)
         );
-        const classification = await classifyCreatorContentWithGPT(channel, videoItems, ruleClassification);
-        const detectedGames = detectPlayedGames(contentText);
-        const keywordList = [...detectedGames, ...(classification.keywords?.length ? classification.keywords : extractKeywords(contentText))]
+        let classification = await classifyCreatorContentWithGPT(channel, videoItems, ruleClassification);
+        const creatorProfile = knownCreatorProfile(`${channel.snippet?.title || ""} ${channel.snippet?.customUrl || ""} ${input.name || ""}`);
+        if (creatorProfile) classification = creatorProfile;
+        const keywordText = videoKeywordText(metricVideos.length ? metricVideos : videoItems);
+        const detectedGames = detectPlayedGames(`${keywordText} ${contentText}`);
+        const rawKeywordList = [...detectedGames, ...extractKeywords(keywordText || contentText), ...(classification.keywords || [])]
           .filter(Boolean);
-        const keywords = [...new Set(keywordList)].slice(0, 12).join(", ");
+        const keywords = cleanKeywordList(rawKeywordList, channel).join(", ");
         const genres = classification.genres.length ? classification.genres : extractKeywords(contentText).slice(0, 5);
         const gameText = detectedGames.length ? ` Detected games: ${detectedGames.join(", ")}.` : "";
         const evidenceText = classification.evidence?.length ? ` Evidence: ${classification.evidence.slice(0, 3).join(" | ")}.` : "";
@@ -1840,17 +1887,67 @@
     }
 
     function extractKeywords(textValue) {
-      const stop = new Set(["youtube", "official", "channel", "video", "videos", "gaming", "game", "games", "the", "and", "for", "with", "from", "this", "that", "bir", "ile", "icin", "i莽in", "ve", "veya"]);
+      const stop = new Set(["youtube", "official", "channel", "video", "videos", "gaming", "game", "games", "shorts", "watch", "subscribe", "abone", "takip", "twitch", "instagram", "discord", "twitter", "link", "linkten", "playlist", "trackingparams", "commandmetadata", "webcommandmetadata", "url", "apurl", "simpletext", "canli", "canlı", "yayın", "yayin", "vod", "live", "replay", "http", "https", "www", "com", "net", "org", "html", "the", "and", "for", "with", "from", "this", "that", "bir", "ile", "icin", "i莽in", "için", "ve", "veya"]);
       const words = String(textValue || "")
         .toLowerCase()
         .replace(/https?:\/\/\S+/g, " ")
         .replace(/[^\p{L}\p{N}\s#@-]/gu, " ")
         .split(/\s+/)
         .map((word) => word.replace(/^#/, ""))
-        .filter((word) => word.length > 2 && !stop.has(word));
+        .filter((word) => word.length > 2 && !stop.has(word))
+        .filter((word) => !/^uc[a-z0-9_-]{12,}$/i.test(word))
+        .filter((word) => !/^[a-z0-9_-]{18,}$/i.test(word));
       const counts = new Map();
       words.forEach((word) => counts.set(word, (counts.get(word) || 0) + 1));
       return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([word]) => word);
+    }
+    function videoKeywordText(videoItems = []) {
+      return videoItems.map((video) => [
+        video.snippet?.title || "",
+        ...(video.snippet?.tags || [])
+      ].join(" ")).join(" ");
+    }
+    function cleanKeywordList(list, channel = {}) {
+      const channelWords = [channel.snippet?.title, channel.snippet?.customUrl]
+        .join(" ")
+        .toLowerCase()
+        .split(/[^a-z0-9ğüşöçıİ]+/i)
+        .filter((word) => word.length > 2);
+      const blocked = new Set(["youtube", "channel", "official", "video", "videos", "twitch", "instagram", "discord", "link", "playlist", ...channelWords]);
+      const canonicalGames = detectPlayedGames((list || []).join(" "));
+      const gameAliases = new Set();
+      knownGameCatalog().forEach(([name, aliases]) => {
+        if (canonicalGames.includes(name)) {
+          aliases.forEach((alias) => gameAliases.add(alias.toLowerCase()));
+          gameAliases.add(name.toLowerCase());
+        }
+      });
+      return [...new Set((list || []).map(String).map((item) => item.trim()).filter(Boolean))]
+        .filter((item) => {
+          const lower = item.toLowerCase();
+          if (gameAliases.has(lower) && !canonicalGames.includes(item)) return false;
+          if (blocked.has(lower)) return false;
+          if (/^https?:/i.test(lower)) return false;
+          if (/^@/.test(lower)) return false;
+          if (/^[a-z0-9_-]{18,}$/i.test(lower)) return false;
+          return true;
+        })
+        .slice(0, 12);
+    }
+    function knownCreatorProfile(textValue) {
+      const text = String(textValue || "").toLowerCase();
+      if (/(^|[^a-z0-9])elraenn([^a-z0-9]|$)/i.test(text)) {
+        return {
+          category: "Gaming",
+          subcategory: "Variety Gaming / Just Chatting",
+          confidence: 90,
+          genres: ["gaming", "variety", "just chatting", "streamer"],
+          keywords: ["variety gaming", "just chatting", "streamer"],
+          reason: "Known creator profile: Elraenn is a variety gaming / just chatting streamer. Generic words such as episode or reaction should not override the creator profile.",
+          source: "known creator profile"
+        };
+      }
+      return null;
     }
     function knownGameCatalog() {
       return [
@@ -1922,8 +2019,10 @@
 
     function classifyCreatorContent(textValue) {
       const text = String(textValue || "").toLowerCase();
+      const knownProfile = knownCreatorProfile(text);
+      if (knownProfile) return knownProfile;
       const groups = [
-        { category: "Entertainment", subcategory: "TV Series / Drama / Clips", tags: ["dizi", "series", "episode", "bölüm", "bolum", "fragman", "trailer", "season", "netflix", "drama", "show", "official clip", "clip", "sahne", "scene", "teaser"] },
+        { category: "Entertainment", subcategory: "TV Series / Drama / Clips", tags: ["dizi", "series", "episode", "fragman", "trailer", "season", "netflix", "drama", "show", "official clip", "clip", "sahne", "scene", "teaser"] },
         { category: "Entertainment", subcategory: "Film / Movie Clips", tags: ["movie", "film", "cinema", "sinema", "official trailer", "full movie", "short film"] },
         { category: "Entertainment", subcategory: "Anime / Animation", tags: ["anime", "animation", "animated", "cartoon", "manga", "animasyon"] },
         { category: "Entertainment", subcategory: "Comedy / Sketch", tags: ["comedy", "komedi", "sketch", "stand up", "standup", "parody", "şaka", "saka"] },
@@ -2568,8 +2667,16 @@
       const baseUrl = String(config.openaiBaseUrl || "https://api.openai.com/v1").replace(/\/+$/, "");
       const preferredModel = config.openaiModel && config.openaiModel !== "auto" ? config.openaiModel : "";
       const dataUrl = await fileToDataUrl(file);
-      const backendTargets = location.protocol === "file:" ? ["http://127.0.0.1:5177", "http://127.0.0.1:5178"] : ["", "http://127.0.0.1:5178"];
-      for (const target of backendTargets) {
+      const imageBackendTargets = [...new Set([
+        ...backendTargets(),
+        "http://127.0.0.1:5184",
+        "http://127.0.0.1:5183",
+        "http://127.0.0.1:5182",
+        "http://127.0.0.1:5180",
+        "http://127.0.0.1:5177",
+        "https://playscope-team.onrender.com"
+      ])];
+      for (const target of imageBackendTargets) {
         try {
           if (status) status.textContent = "Reading image with local backend...";
           const response = await fetch(`${target}/api/read-image-data`, {
@@ -2601,7 +2708,7 @@
               {
                 role: "user",
                 content: [
-                  { type: "text", text: `Read this image. It belongs to this creator/channel when provided: ${JSON.stringify(context)}. Extract every visible influencer/creator row as JSON. Return exactly: {\"rows\":[{\"Channel Name\":\"\",\"Link\":\"\",\"GEO\":\"\",\"Category\":\"\",\"Subcategory\":\"\",\"Subscribers\":\"\",\"avg Views\":\"\",\"Format\":\"\",\"Duration\":\"\",\"Keywords\":\"\",\"Comments\":\"\"}]}. If a cell is not visible, leave it empty. Preserve YouTube links and names exactly. For Scrumball screenshots, include followers, avg engagement, avg view rate, monthly post, audience location countries, and visible age/gender analysis in Comments.` },
+                  { type: "text", text: `Read this image. It belongs to this creator/channel when provided: ${JSON.stringify(context)}. Extract every visible influencer/creator row as JSON. Return exactly: {\"rows\":[{\"Channel Name\":\"\",\"Link\":\"\",\"GEO\":\"\",\"Gender\":\"\",\"Age\":\"\",\"Category\":\"\",\"Subcategory\":\"\",\"Subscribers\":\"\",\"avg Views\":\"\",\"Format\":\"\",\"Duration\":\"\",\"Keywords\":\"\",\"Comments\":\"\"}]}. If a cell is not visible, leave it empty. Preserve YouTube links and names exactly. For Scrumball screenshots, include followers, avg engagement, avg view rate, monthly post, audience location countries, and visible age/gender analysis. If an age/gender bar chart is visible, calculate Age as total Female+Male per age group, formatted like "13-17: 14%; 18-24: 44%; 25-34: 25%". Calculate Gender separately as total Female vs Male, formatted like "F52% / M48%". Do not put gender percentages inside Age.` },
                   { type: "image_url", image_url: { url: dataUrl } }
                 ]
               }
@@ -2770,17 +2877,14 @@
         const value = values[age] || {};
         return sum + (Number(value.F || 0) + Number(value.M || 0)) * ageMidpoints[age];
       }, 0);
-      const avgAge = total ? Math.round(weightedAgeSum / total) : 0;
-      const dominantAge = ageGroups
-        .map((age) => ({ age, total: Number(values[age]?.F || 0) + Number(values[age]?.M || 0) }))
-        .sort((a, b) => b.total - a.total)[0]?.age || "";
       const parts = ageGroups.map((age) => {
         const value = values[age] || {};
-        if (!value.F && !value.M) return "";
-        return `${age}: F${value.F || 0}% / M${value.M || 0}%`;
+        const ageTotal = Math.round(Number(value.F || 0) + Number(value.M || 0));
+        if (!ageTotal) return "";
+        return `${age}: ${ageTotal}%`;
       }).filter(Boolean);
       return parts.length ? {
-        ageGenderApprox: [`Avg age ~${avgAge}`, dominantAge ? `Dominant ${dominantAge}` : "", ...parts].filter(Boolean).join("; "),
+        ageGenderApprox: parts.join("; "),
         genderApprox: total ? `F${Math.round(totalF / total * 100)}% / M${Math.round(totalM / total * 100)}%` : "",
         demographicsSource: "Scrumball screenshot visual estimate"
       } : {};
@@ -2960,14 +3064,92 @@
       }
       if (status) status.textContent = "Paste a screenshot image or text rows.";
     }
+    function inferLocalizationGenre(source, selectedGenre) {
+      if (selectedGenre && selectedGenre !== "auto") return selectedGenre;
+      const text = `${source || ""} ${state.project.genre || ""} ${state.project.keywords || ""}`.toLowerCase();
+      if (/fps|shooter|gun|weapon|sniper|battle royale|aim|combat|pvp/.test(text)) return "fps";
+      if (/mmo|mmorpg|rpg|guild|raid|class|hero|quest|dungeon|open world|fantasy/.test(text)) return "mmo";
+      if (/strategy|4x|empire|base|fleet|alliance|commander|conquer|tactic|kingdom/.test(text)) return "strategy";
+      if (/match|puzzle|casual|merge|tile|relax|easy|decorate/.test(text)) return "casual";
+      if (/horror|survival|zombie|ghost|fear|mystery/.test(text)) return "horror";
+      if (/race|racing|drift|car|speed|track/.test(text)) return "racing";
+      if (/sim|simulation|farm|city|manager|tycoon|life/.test(text)) return "simulation";
+      return "strategy";
+    }
+
+    function localizationProfile(genre) {
+      const profiles = {
+        fps: { label: "FPS / Shooter", rule: "Short sentences, impact verbs, skill, weapons, squad, PvP, ranked pressure.", avoid: "Long lore sentences and soft casual wording." },
+        mmo: { label: "MMO / RPG", rule: "World fantasy, classes, guilds, raids, loot, growth, long-term progression.", avoid: "Only saying fast action; missing community/progression." },
+        strategy: { label: "Strategy / 4X", rule: "Command, build, expand, alliance, tactics, conquest, resource decisions.", avoid: "Generic battle copy without strategic payoff." },
+        casual: { label: "Casual / Puzzle", rule: "Easy to understand, satisfying rewards, low pressure, friendly verbs.", avoid: "Hardcore jargon and aggressive CTA." },
+        horror: { label: "Horror", rule: "Suspense, survival, secrets, atmosphere, danger, mystery.", avoid: "Comedy tone or too much direct explanation." },
+        racing: { label: "Racing", rule: "Speed, control, drift, upgrade, track, competition.", avoid: "Slow exploration words." },
+        simulation: { label: "Simulation", rule: "Create, manage, upgrade, customize, daily progress, ownership.", avoid: "Combat-heavy words unless the game has combat." }
+      };
+      return profiles[genre] || profiles.strategy;
+    }
+
+    function demoLocalizationVariants(source, lang, tone, genre) {
+      const profile = localizationProfile(genre);
+      const copy = String(source || "").trim() || "Build your fleet, explore unknown galaxies, and outsmart rival commanders in fast mobile strategy battles.";
+      const banks = {
+        tr: {
+          fps: ["Nişan al, ekibini kur ve her çatışmada üstünlüğünü göster.", "Silahını seç, reflekslerini konuştur ve rakiplerini geride bırak.", "Hızlı maçlara gir, takımınla savaş ve zaferi kap."],
+          mmo: ["Kahramanını geliştir, loncana katıl ve devasa bir dünyada iz bırak.", "Sınıfını seç, zindanlara gir ve efsanevi ganimetlerin peşine düş.", "Dostlarınla güçlen, raid'lere katıl ve kendi hikayeni yaz."],
+          strategy: ["İmparatorluğunu kur, ittifaklarını yönet ve akıllı hamlelerle haritayı fethet.", "Kaynaklarını planla, ordunu büyüt ve rakip komutanları taktikle alt et.", "Filonu geliştir, sınırlarını genişlet ve stratejinle galibiyete yürü."],
+          casual: ["Kolayca başla, keyifli bölümleri geç ve ödülleri topla.", "Rahatlatıcı görevleri tamamla, ilerlemeni gör ve her gün yeni bir hedef aç.", "Basit kontrollerle eğlen, seviyeleri çöz ve koleksiyonunu büyüt."],
+          horror: ["Karanlığın içindeki ipuçlarını bul, hayatta kal ve gerçeğe yaklaş.", "Sessizliği dinle, tehlikeden kaç ve gizemi çöz.", "Korkunun sınırında ilerle, sırları keşfet ve hayatta kalmaya çalış."],
+          racing: ["Gazı kökle, virajları al ve pistte rakiplerini geride bırak.", "Aracını geliştir, drift yap ve finiş çizgisine ilk ulaş.", "Hızını kontrol et, yarışa hükmet ve kupayı kazan."],
+          simulation: ["Kendi dünyanı kur, yönet ve her gün daha da geliştir.", "Kaynaklarını düzenle, kararlarını ver ve büyüyen sistemini izle.", "Tasarla, yükselt ve kontrolü tamamen eline al."]
+        },
+        en: {
+          fps: ["Lock in, squad up, and prove your skill in every firefight.", "Pick your weapon, sharpen your aim, and outplay the enemy team.", "Jump into fast matches, fight with your squad, and take the win."],
+          mmo: ["Grow your hero, join a guild, and leave your mark on a vast world.", "Choose your class, enter dungeons, and chase legendary loot.", "Team up, raid stronger bosses, and write your own adventure."],
+          strategy: ["Build your empire, manage alliances, and conquer the map with smarter tactics.", "Plan your resources, grow your army, and outthink rival commanders.", "Upgrade your fleet, expand your borders, and win through strategy."],
+          casual: ["Jump in easily, clear satisfying levels, and collect rewards at your pace.", "Relax with simple challenges, steady progress, and fresh goals every day.", "Play in minutes, solve fun stages, and grow your collection."],
+          horror: ["Follow the clues in the dark, survive the danger, and uncover the truth.", "Listen to the silence, escape what hunts you, and solve the mystery.", "Step into fear, discover hidden secrets, and fight to survive."],
+          racing: ["Hit the gas, master each turn, and leave rivals behind on the track.", "Upgrade your ride, drift through corners, and cross the line first.", "Control your speed, dominate the race, and claim the trophy."],
+          simulation: ["Build your world, manage every choice, and improve it day by day.", "Organize resources, make smart decisions, and watch your system grow.", "Design, upgrade, customize, and take full control."]
+        },
+        zh: {
+          fps: ["锁定目标，集结小队，在每场交火中证明实力。", "选择武器，磨炼枪法，用操作击败对手。", "加入快节奏战斗，与队友并肩拿下胜利。"],
+          mmo: ["培养英雄，加入公会，在广阔世界中写下你的传说。", "选择职业，挑战地下城，追寻传奇装备。", "与伙伴并肩成长，挑战团本，开启你的冒险篇章。"],
+          strategy: ["建立帝国，经营联盟，用更聪明的策略征服地图。", "规划资源，壮大军队，以战术击败敌方指挥官。", "升级舰队，扩张疆域，用策略赢得胜利。"],
+          casual: ["轻松上手，完成爽快关卡，按自己的节奏领取奖励。", "享受简单挑战、稳定成长和每天的新目标。", "几分钟即可开玩，解锁有趣关卡，扩充你的收藏。"],
+          horror: ["循着黑暗中的线索，躲避危险，揭开真相。", "倾听寂静，逃离追逐你的存在，解开谜团。", "踏入恐惧，发现隐藏秘密，努力活下去。"],
+          racing: ["踩下油门，掌控每个弯道，把对手甩在身后。", "升级座驾，漂移过弯，率先冲线。", "控制速度，主宰赛道，赢得冠军。"],
+          simulation: ["打造你的世界，管理每个选择，让它一天比一天更好。", "整理资源，做出决策，看着你的系统不断成长。", "设计、升级、定制，把控制权掌握在自己手中。"]
+        }
+      };
+      const variants = (banks[lang] || banks.en)[genre] || (banks[lang] || banks.en).strategy;
+      return `Game type: ${profile.label}
+Language rule: ${profile.rule}
+Avoid: ${profile.avoid}
+Tone: ${tone}
+
+Option 1 - Store-ready:
+${variants[0]}
+
+Option 2 - More emotional:
+${variants[1]}
+
+Option 3 - Short CTA:
+${variants[2]}
+
+Source meaning kept:
+${copy}`;
+    }
+
     async function generateLocalization() {
       const source = $("sourceCopy").value.trim();
       const lang = $("locLang").value;
       const tone = $("locTone").value;
+      const genre = inferLocalizationGenre(source, $("locGenre").value);
       const status = $("locStatus");
       if (status) status.textContent = "Generating with backend...";
       try {
-        const response = await fetch("/api/localize", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source, lang, tone, project: state.project }) });
+        const response = await fetch("/api/localize", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source, lang, tone, genre, project: state.project }) });
         const result = await response.json();
         if (result && result.text) {
           state.localizationOutput = result.text;
@@ -2979,12 +3161,7 @@
       } catch (error) {
         if (status) status.textContent = "Backend unavailable; using demo mode.";
       }
-      const outputs = {
-        tr: `Filonu kur, bilinmeyen galaksileri kesfet ve hizli mobil strateji savaslarinda rakip komutanlari alt et. Ton: ${tone}.`,
-        en: `Build your fleet, explore unknown galaxies, and outplay rival commanders in fast mobile strategy battles. Tone: ${tone}.`,
-        zh: `\u7ec4\u5efa\u4f60\u7684\u8230\u961f\uff0c\u63a2\u7d22\u672a\u77e5\u661f\u7cfb\uff0c\u5728\u5feb\u8282\u594f\u79fb\u52a8\u7b56\u7565\u6218\u6597\u4e2d\u51fb\u8d25\u5bf9\u624b\u3002\u8bed\u6c14\uff1a${tone}\u3002`
-      };
-      state.localizationOutput = source ? outputs[lang] : "";
+      state.localizationOutput = source ? demoLocalizationVariants(source, lang, tone, genre) : "";
       saveState();
       $("locOutput").textContent = state.localizationOutput || "Output will appear here.";
     }

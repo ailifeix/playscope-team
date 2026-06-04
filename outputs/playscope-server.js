@@ -255,15 +255,17 @@ async function ocrScreenshot(input) {
 
   const prompt = `Extract influencer analytics from this screenshot. It may show a Scrumball-like panel on YouTube.
 Return JSON only with these keys:
-name, subscribers, geo, gender, age, avgViews, avgComments, category, subcategory, format, duration, keywords, comments.
+name, subscribers, geo, gender, age, avgViews, category, subcategory, format, duration, keywords, comments.
 Rules:
 - Use only text visible in the image.
 - If a field is not visible, use an empty string.
-- avgViews and avgComments must be numbers when visible. Convert K/M suffixes.
+- avgViews must be a number when visible. Convert K/M suffixes.
 - age must contain only age average or age ranges. Do not include Female/Male/M/F percentages in age.
 - gender must contain only gender split, for example "F65% / M35%".
+- If an age/gender bar chart is visible, calculate age as Female+Male total for each age group, for example "13-17: 14%; 18-24: 44%; 25-34: 25%".
+- For the same chart, calculate gender separately as total Female vs Male, for example "F52% / M48%".
 - Do not write "Dominant age", "Avg age", or explanatory text inside age. Use only the value.
-- keywords can be an array or comma-separated string.
+- keywords can be an array or comma-separated string. Use only visible game names, tags, or meaningful content keywords. Do not include UI labels, URLs, tracking text, social links, or random OCR fragments.
 - Do not guess gender, age, or geo.`;
 
   const response = await fetch(`${getAiBaseUrl()}/chat/completions`, {
@@ -357,15 +359,68 @@ async function readImageData(input) {
 
 async function localize(input) {
   const languageName = input.lang === "zh" ? "Chinese" : input.lang === "tr" ? "Turkish" : "English";
-  const prompt = `Localize this mobile game store copy into ${languageName}. Tone: ${input.tone || "energetic"}.
+  const genre = input.genre || input.project?.genre || "auto";
+  const prompt = `You are a senior mobile game localization marketer.
+Analyze the game genre first, then localize the store copy into ${languageName}.
+
+Rules:
+- Do not translate word by word.
+- Adapt the wording to the game type.
+- FPS/Shooter: short, punchy, combat, squad, skill, ranked pressure.
+- MMO/RPG: world, class, guild, raid, loot, progression, adventure.
+- Strategy/4X: command, alliance, resources, tactics, conquest, expansion.
+- Casual/Puzzle: clear, friendly, easy reward language, low pressure.
+- Horror: suspense, survival, secrets, atmosphere.
+- Racing: speed, drift, upgrade, competition.
+- Simulation: build, manage, customize, daily growth.
+- Return exactly: game type, language rule, 3 translation options, and one short note.
+
+Requested game type: ${genre}.
+Tone: ${input.tone || "Store-ready"}.
 Project: ${input.project?.name || "Game"}.
 Source: ${input.source || ""}`;
   const ai = await openAiText(prompt);
   if (ai) return { source: "openai", text: ai };
   const fallback = {
-    tr: `Filonu kur, bilinmeyen galaksileri kesfet ve hizli mobil strateji savaslarinda rakip komutanlari alt et. Ton: ${input.tone || "Energetic"}.`,
-    en: `Build your fleet, explore unknown galaxies, and outplay rival commanders in fast mobile strategy battles. Tone: ${input.tone || "Energetic"}.`,
-    zh: `组建你的舰队，探索未知星系，在快节奏移动策略战斗中击败对手。语气：${input.tone || "Energetic"}。`
+    tr: `Game type: ${genre}
+Language rule: Ture uygun pazarlama dili kullanildi.
+
+Option 1 - Store-ready:
+Filonu kur, ittifaklarini yonet ve akilli hamlelerle haritayi fethet.
+
+Option 2 - More emotional:
+Komutanligini kanitla, gucunu buyut ve rakiplerini stratejinle alt et.
+
+Option 3 - Short CTA:
+Imparatorlugunu kur. Savas. Fethet.
+
+Note: Demo mode.`,
+    en: `Game type: ${genre}
+Language rule: Genre-aware store wording was used.
+
+Option 1 - Store-ready:
+Build your empire, manage alliances, and conquer the map with smarter tactics.
+
+Option 2 - More emotional:
+Prove your command, grow your power, and outthink every rival.
+
+Option 3 - Short CTA:
+Build. Battle. Conquer.
+
+Note: Demo mode.`,
+    zh: `Game type: ${genre}
+Language rule: 已使用符合游戏类型的商店文案表达。
+
+Option 1 - Store-ready:
+建立帝国，经营联盟，用更聪明的策略征服地图。
+
+Option 2 - More emotional:
+证明你的指挥能力，壮大实力，用策略击败对手。
+
+Option 3 - Short CTA:
+建造。战斗。征服。
+
+Note: Demo mode.`
   };
   return { source: "demo", text: fallback[input.lang] || fallback.en };
 }
