@@ -747,7 +747,7 @@
       tr: {
         dashboard: "Dashboard", search: "Influencer Ara", list: "Influencer Listesi", localization: "Lokalizasyon", competitors: "Rakip Analizi", settings: "Ayarlar", help: "Yardim",
         brief: "Proje Briefi", projectName: "Proje Adi", genre: "Tur", markets: "Hedef Pazarlar", audience: "Hedef Kitle", goal: "Kampanya Hedefi", editBrief: "Briefi Duzenle", export: "Disa Aktar",
-        pageDashSub: "Kampanya, influencer, lokalizasyon ve rakip işlerini tek yerden takip et.", pageSearchSub: "YouTube/Twitch adından aday ekle veya Excel listesini yapıştır.", pageListSub: "Adayları puanla, filtrele, not al ve CSV olarak indir.", pageLocSub: "Store metnini Türkçe, İngilizce ve Çince için oyun türüne göre uyarla.", pageCompSub: "Oyun türü seç, rakip store açıklamalarını karşılaştır.",
+        pageDashSub: "Kampanya, influencer, lokalizasyon ve rakip işlerini tek yerden takip et.", pageSearchSub: "YouTube/Twitch adından aday ekle veya Excel listesini yapıştır.", pageListSub: "Adayları puanla, filtrele, not al ve CSV olarak indir.", pageLocSub: "Oyun içi kelime ve cümleleri türe göre Türkçe, İngilizce ve Çinceye uyarla.", pageCompSub: "Oyun türü seç, rakip store açıklamalarını karşılaştır.",
         found: "sonuc", avgViews: "Ort. Izlenme", match: "Tur Eslesmesi", rec: "Oneri", country: "Ulke", channel: "Kanal", fit: "Uygunluk", recommended: "Onerilir", review: "Degerlendir", no: "Uygun Degil",
         selected: "Secili Influencer", summary: "Analiz Ozeti", outreach: "Onerilen Outreach", shortlist: "Kisa Listeye Ekle", note: "Not Ekle", save: "Kaydet", analyze: "Analiz Et", reset: "Ornek Veriye Don",
         source: "Kaynak Metin", target: "Hedef Dil", tone: "Ton", generate: "Olustur", output: "Cikti", copy: "Kopyala", status: "Durum", cultural: "Kulturel Not", ready: "Hazir", waiting: "Bekliyor",
@@ -1301,19 +1301,19 @@
           horror: "Korku",
           racing: "Yarış",
           simulation: "Simülasyon",
-          storeReady: "Store'a hazır",
+          storeReady: "Oyun içi metne hazır",
           competitive: "Rekabetçi",
           cinematic: "Sinematik",
           friendly: "Dostça",
           premium: "Premium",
-          excelTitle: "Excel / copy-paste lokalizasyon",
+          excelTitle: "Excel / copy-paste oyun içi metin lokalizasyonu",
           excelFile: "Excel / CSV dosyası",
           uploadLocalize: "Yükle ve lokalize et",
-          excelHint: "Source, Text, Description, Copy, Game, Genre, Language gibi kolonları kullanabilirsin.",
+          excelHint: "Source, Text, String, UI, Dialogue, Game, Genre, Language gibi kolonları kullanabilirsin.",
           pasteRows: "Satır yapıştır",
-          pastePlaceholder: "Oyun, Tür, Metin\nGalaxy Raiders, Strategy, Build your fleet and conquer space.",
+          pastePlaceholder: "Oyun, Tür, Metin\nGalaxy Raiders, Strategy, Build your fleet\nRPG Quest, MMO, Join a guild",
           localizeRows: "Yapıştırılan satırları lokalize et",
-          batchStatus: "Excel/CSV yükle veya çoklu store metni için satır yapıştır.",
+          batchStatus: "Excel/CSV yükle veya çoklu oyun içi metin için satır yapıştır.",
           guideTitle: "Tür bazlı dil rehberi",
           type: "Tür",
           style: "Lokalizasyon dili",
@@ -1330,10 +1330,10 @@
           horrorAvoid: "Aşırı gore vaadi."
         },
         en: {
-          workspace: "Localization workspace", gameType: "Game type", auto: "Auto analyze", fps: "FPS / Shooter", mmo: "MMO / RPG", strategy: "Strategy / 4X", casual: "Casual / Puzzle", horror: "Horror", racing: "Racing", simulation: "Simulation", storeReady: "Store-ready", competitive: "Competitive", cinematic: "Cinematic", friendly: "Friendly", premium: "Premium", excelTitle: "Excel / copy-paste localization", excelFile: "Excel / CSV file", uploadLocalize: "Upload and localize", excelHint: "Use columns like Source, Text, Description, Copy, Game, Genre, Language.", pasteRows: "Copy-paste rows", pastePlaceholder: "Game, Genre, Source\nGalaxy Raiders, Strategy, Build your fleet and conquer space.", localizeRows: "Localize pasted rows", batchStatus: "Upload Excel/CSV or paste rows to localize multiple store-copy lines.", guideTitle: "Genre language guide", type: "Type", style: "Localization style", avoid: "Avoid", fpsStyle: "Short, punchy, skill/combat words.", fpsAvoid: "Slow fantasy wording.", mmoStyle: "World, class, guild, raid, progression.", mmoAvoid: "Only action words.", strategyStyle: "Command, build, alliance, tactics, conquest.", strategyAvoid: "Too casual/simple copy.", casualStyle: "Clear, soft, easy reward language.", casualAvoid: "Hardcore jargon.", horrorStyle: "Mystery, survival, tension, atmosphere.", horrorAvoid: "Over-promising gore."
+          workspace: "In-game localization workspace", gameType: "Game type", auto: "Auto analyze", fps: "FPS / Shooter", mmo: "MMO / RPG", strategy: "Strategy / 4X", casual: "Casual / Puzzle", horror: "Horror", racing: "Racing", simulation: "Simulation", storeReady: "In-game ready", competitive: "Competitive", cinematic: "Cinematic", friendly: "Friendly", premium: "Premium", excelTitle: "Excel / copy-paste in-game text localization", excelFile: "Excel / CSV file", uploadLocalize: "Upload and localize", excelHint: "Use columns like Source, Text, String, UI, Dialogue, Game, Genre, Language.", pasteRows: "Copy-paste rows", pastePlaceholder: "Game, Genre, Source\nGalaxy Raiders, Strategy, Build your fleet\nRPG Quest, MMO, Join a guild", localizeRows: "Localize pasted rows", batchStatus: "Upload Excel/CSV or paste rows to localize multiple in-game strings.", guideTitle: "Genre language guide", type: "Type", style: "Localization style", avoid: "Avoid", fpsStyle: "Short, punchy, skill/combat words.", fpsAvoid: "Slow fantasy wording.", mmoStyle: "World, class, guild, raid, progression.", mmoAvoid: "Only action words.", strategyStyle: "Command, build, alliance, tactics, conquest.", strategyAvoid: "Too casual/simple copy.", casualStyle: "Clear, soft, easy reward language.", casualAvoid: "Hardcore jargon.", horrorStyle: "Mystery, survival, tension, atmosphere.", horrorAvoid: "Over-promising gore."
         },
         zh: {
-          workspace: "本地化工作台", gameType: "游戏类型", auto: "自动分析", fps: "FPS / 射击", mmo: "MMO / RPG", strategy: "策略 / 4X", casual: "休闲 / 解谜", horror: "恐怖", racing: "竞速", simulation: "模拟", storeReady: "商店文案", competitive: "竞技感", cinematic: "电影感", friendly: "亲和", premium: "高级感", excelTitle: "Excel / 粘贴本地化", excelFile: "Excel / CSV 文件", uploadLocalize: "上传并本地化", excelHint: "可使用 Source, Text, Description, Copy, Game, Genre, Language 等列。", pasteRows: "粘贴行", pastePlaceholder: "Game, Genre, Source\nGalaxy Raiders, Strategy, Build your fleet and conquer space.", localizeRows: "本地化粘贴行", batchStatus: "上传 Excel/CSV 或粘贴多行商店文案。", guideTitle: "类型语言指南", type: "类型", style: "本地化风格", avoid: "避免", fpsStyle: "短促、有冲击力，强调操作和战斗。", fpsAvoid: "缓慢的幻想叙事。", mmoStyle: "世界、职业、公会、团本、成长。", mmoAvoid: "只写动作词。", strategyStyle: "指挥、建造、联盟、战术、征服。", strategyAvoid: "过于休闲简单。", casualStyle: "清晰、轻松、奖励感。", casualAvoid: "硬核术语。", horrorStyle: "谜团、生存、紧张、氛围。", horrorAvoid: "过度血腥承诺。"
+          workspace: "游戏内文本本地化工作台", gameType: "游戏类型", auto: "自动分析", fps: "FPS / 射击", mmo: "MMO / RPG", strategy: "策略 / 4X", casual: "休闲 / 解谜", horror: "恐怖", racing: "竞速", simulation: "模拟", storeReady: "游戏内文案", competitive: "竞技感", cinematic: "电影感", friendly: "亲和", premium: "高级感", excelTitle: "Excel / 粘贴游戏内文本本地化", excelFile: "Excel / CSV 文件", uploadLocalize: "上传并本地化", excelHint: "可使用 Source, Text, String, UI, Dialogue, Game, Genre, Language 等列。", pasteRows: "粘贴行", pastePlaceholder: "Game, Genre, Source\nGalaxy Raiders, Strategy, Build your fleet\nRPG Quest, MMO, Join a guild", localizeRows: "本地化粘贴行", batchStatus: "上传 Excel/CSV 或粘贴多行游戏内文本。", guideTitle: "类型语言指南", type: "类型", style: "本地化风格", avoid: "避免", fpsStyle: "短促、有冲击力，强调操作和战斗。", fpsAvoid: "缓慢的幻想叙事。", mmoStyle: "世界、职业、公会、团本、成长。", mmoAvoid: "只写动作词。", strategyStyle: "指挥、建造、联盟、战术、征服。", strategyAvoid: "过于休闲简单。", casualStyle: "清晰、轻松、奖励感。", casualAvoid: "硬核术语。", horrorStyle: "谜团、生存、紧张、氛围。", horrorAvoid: "过度血腥承诺。"
         }
       };
       return (dict[state.lang] || dict.en)[key] || dict.en[key] || key;
@@ -1389,6 +1389,7 @@
       state.competitorStore = state.competitorStore || "all";
       state.googlePlayQuery = state.googlePlayQuery || state.project.genre || "strategy game";
       state.googlePlayLang = state.googlePlayLang || "en";
+      state.googlePlayCountry = state.googlePlayCountry || storeCountryFromLang(state.googlePlayLang);
       const hasGoogleResults = Array.isArray(state.googlePlayResults) && state.googlePlayResults.length;
       const sourceList = hasGoogleResults ? state.googlePlayResults : (competitors[state.competitorGenre] || competitors.strategy);
       const list = state.competitorStore === "all" ? sourceList : sourceList.filter((item) => item.store === state.competitorStore);
@@ -1401,6 +1402,7 @@
             <div class="form-grid" style="margin-bottom:12px">
               <div><div class="field-label">Store search</div><input id="gpQuery" value="${esc(state.googlePlayQuery)}" placeholder="silkroad, space strategy, match puzzle"></div>
               <div><div class="field-label">Language</div><select id="gpLang"><option value="en">English</option><option value="tr">Türkçe</option><option value="zh">中文</option><option value="de">Deutsch</option><option value="ja">日本語</option></select></div>
+              <div><div class="field-label">Store country</div><select id="gpCountry"><option value="US">US</option><option value="TR">TR</option><option value="DE">DE</option><option value="FR">FR</option><option value="BR">BR</option><option value="JP">JP</option><option value="KR">KR</option><option value="CN">CN</option><option value="GB">GB</option><option value="CA">CA</option></select></div>
             </div>
             <button class="primary" id="googlePlaySearchBtn" type="button">Search Google Play</button>
             <button class="primary" id="appStoreSearchBtn" type="button" style="margin-left:8px">Search App Store</button>
@@ -1408,13 +1410,16 @@
             <p class="note" id="googlePlayStatus">${hasGoogleResults ? `${state.googlePlayResults.length} store result(s) loaded.` : "Search a game or genre to load live store descriptions."}</p>
             <div class="table-wrap"><table><thead><tr><th>Game</th><th>Store</th><th>Length</th><th>Main message</th><th>Keywords</th></tr></thead><tbody>${list.map((item, index) => `<tr data-comp="${index}" class="${index === state.selectedCompetitor ? "selected" : ""}"><td>${esc(item.name)}${item.meta ? `<div class="cell-muted">${esc(item.meta)}</div>` : ""}</td><td><span class="tag ${item.store === "Google Play" ? "good" : "warn"}">${esc(item.store)}</span></td><td>${esc(item.length)}</td><td>${esc(item.message)}</td><td>${esc(item.keywords || item.strength || "")}</td></tr>`).join("") || `<tr><td colspan="5">No results for this store.</td></tr>`}</tbody></table></div>
           </section>
-          ${selected ? panel(esc(selected.name), `<div class="field-label">Store description</div><div class="result-box">${esc(selected.desc)}</div><div class="field-label" style="margin-top:14px">Store review</div><ul class="analysis-list"><li><strong>Opening:</strong> ${esc(selected.message)}</li><li><strong>Feature angle:</strong> ${esc(selected.strength)}</li><li><strong>CTA:</strong> use one clear action after the feature list.</li><li><strong>Keywords:</strong> ${esc(selected.keywords || [state.project.genre, state.project.keywords, selected.message].filter(Boolean).join(", "))}</li>${selected.url ? `<li><a href="${esc(selected.url)}" target="_blank" rel="noreferrer">Open store page</a></li>` : ""}</ul><button class="primary" id="compareBtn">${tr("analyze")}</button>`, "detail") : panel("No competitor selected", `<p class="note">Choose another store or genre.</p>`, "detail")}
+          ${selected ? panel(esc(selected.name), `<div class="field-label">General overview</div><div class="result-box">${esc(competitorOverview(selected))}</div><div class="field-label" style="margin-top:14px">Store description</div><div class="result-box">${esc(selected.desc)}</div><div class="field-label" style="margin-top:14px">Store review</div><ul class="analysis-list"><li><strong>Opening:</strong> ${esc(selected.message)}</li><li><strong>Feature angle:</strong> ${esc(selected.strength)}</li><li><strong>Market:</strong> ${esc(state.googlePlayCountry || "-")} / ${esc(state.googlePlayLang || "-")}</li><li><strong>Keywords:</strong> ${esc(selected.keywords || [state.project.genre, state.project.keywords, selected.message].filter(Boolean).join(", "))}</li>${selected.url ? `<li><a href="${esc(selected.url)}" target="_blank" rel="noreferrer">Open store page</a></li>` : ""}</ul><button class="primary" id="compareBtn">${tr("analyze")}</button>`, "detail") : panel("No competitor selected", `<p class="note">Choose another store or genre.</p>`, "detail")}
         </div>`;
       $("genreSelect").value = state.competitorGenre;
       $("storeSelect").value = state.competitorStore;
       $("gpLang").value = state.googlePlayLang;
+      $("gpCountry").value = state.googlePlayCountry;
       $("genreSelect").addEventListener("change", (event) => { state.competitorGenre = event.target.value; state.selectedCompetitor = 0; saveState(); render(); });
       $("storeSelect").addEventListener("change", (event) => { state.competitorStore = event.target.value; state.selectedCompetitor = 0; saveState(); render(); });
+      $("gpCountry").addEventListener("change", (event) => { state.googlePlayCountry = event.target.value; saveState(); });
+      $("gpLang").addEventListener("change", (event) => { state.googlePlayLang = event.target.value; state.googlePlayCountry = storeCountryFromLang(event.target.value); saveState(); render(); });
       $("googlePlaySearchBtn").addEventListener("click", () => searchStoreCompetitors("google-play"));
       $("appStoreSearchBtn").addEventListener("click", () => searchStoreCompetitors("app-store"));
       $("clearGooglePlayBtn").addEventListener("click", () => { state.googlePlayResults = []; state.selectedCompetitor = 0; saveState(); render(); });
@@ -1470,6 +1475,7 @@
       const label = store === "app-store" ? "App Store" : "Google Play";
       state.googlePlayQuery = $("gpQuery").value.trim();
       state.googlePlayLang = $("gpLang").value;
+      state.googlePlayCountry = $("gpCountry")?.value || storeCountryFromLang(state.googlePlayLang);
       if (!state.googlePlayQuery) {
         if (status) status.textContent = "Write a game name or genre first.";
         return;
@@ -1485,7 +1491,7 @@
       try {
         if (store === "google-play") {
           try {
-            const serpResults = await directSerpApiGooglePlaySearch(state.googlePlayQuery, state.googlePlayLang);
+            const serpResults = await directSerpApiGooglePlaySearch(state.googlePlayQuery, state.googlePlayLang, state.googlePlayCountry);
             if (serpResults.length) {
               state.googlePlayResults = serpResults;
               state.competitorStore = "Google Play";
@@ -1500,7 +1506,7 @@
         }
         if (store === "app-store") {
           try {
-            const directResults = await directAppStoreSearch(state.googlePlayQuery, state.googlePlayLang);
+            const directResults = await directAppStoreSearch(state.googlePlayQuery, state.googlePlayLang, state.googlePlayCountry);
             if (directResults.length) {
               state.googlePlayResults = directResults;
               state.competitorStore = "App Store";
@@ -1513,7 +1519,7 @@
             if (status) status.textContent = "Trying App Store backend search...";
           }
         }
-        const result = await fetchStoreApi(store === "app-store" ? "/api/app-store-search" : "/api/google-play-search", { query: state.googlePlayQuery, lang: state.googlePlayLang, limit: 5 });
+        const result = await fetchStoreApi(store === "app-store" ? "/api/app-store-search" : "/api/google-play-search", { query: state.googlePlayQuery, lang: state.googlePlayLang, country: state.googlePlayCountry, limit: 5 });
         state.googlePlayResults = result.results;
         state.competitorStore = store === "app-store" ? "App Store" : "Google Play";
         state.selectedCompetitor = 0;
@@ -1549,6 +1555,19 @@
       if (lang === "ja") return "JP";
       if (lang === "zh") return "CN";
       return "US";
+    }
+
+    function competitorOverview(item = {}) {
+      const text = `${item.name || ""} ${item.desc || ""} ${item.keywords || ""}`.toLowerCase();
+      let type = "Mobile game";
+      if (/strategy|empire|alliance|kingdom|war|conquer|base|fleet/.test(text)) type = "Strategy / 4X";
+      else if (/rpg|hero|guild|raid|quest|dungeon|loot/.test(text)) type = "MMO / RPG";
+      else if (/fps|shooter|gun|weapon|battle royale|squad/.test(text)) type = "FPS / Shooter";
+      else if (/match|puzzle|merge|tile|casual/.test(text)) type = "Casual / Puzzle";
+      else if (/race|racing|car|drift|speed/.test(text)) type = "Racing";
+      const first = clientFirstSentence(item.desc || item.message || "");
+      const market = [state.googlePlayCountry, state.googlePlayLang].filter(Boolean).join(" / ");
+      return `Type: ${type}\nMarket: ${market || "-"}\nCore message: ${first || item.message || "No description loaded."}\nKeyword angle: ${item.keywords || "No keywords loaded."}`;
     }
 
     async function loadSerpApiKey() {
@@ -1622,10 +1641,10 @@
       });
     }
 
-    async function directSerpApiGooglePlaySearch(query, lang) {
+    async function directSerpApiGooglePlaySearch(query, lang, country) {
       const key = await loadSerpApiKey();
       if (!key) throw new Error("SerpAPI key is missing.");
-      const url = `https://serpapi.com/search.json?engine=google_play&store=apps&q=${encodeURIComponent(query)}&hl=${encodeURIComponent(lang || "en")}&gl=us&api_key=${encodeURIComponent(key)}`;
+      const url = `https://serpapi.com/search.json?engine=google_play&store=apps&q=${encodeURIComponent(query)}&hl=${encodeURIComponent(lang || "en")}&gl=${encodeURIComponent(String(country || storeCountryFromLang(lang)).toLowerCase())}&api_key=${encodeURIComponent(key)}`;
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 20000);
       const response = await fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timeout));
@@ -1655,8 +1674,8 @@
       return sentence.length > 130 ? `${sentence.slice(0, 127)}...` : sentence;
     }
 
-    async function directAppStoreSearch(query, lang) {
-      const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=software&country=${storeCountryFromLang(lang)}&limit=5`;
+    async function directAppStoreSearch(query, lang, country) {
+      const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=software&country=${encodeURIComponent(country || storeCountryFromLang(lang))}&limit=5`;
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 20000);
       const response = await fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timeout));
@@ -3163,62 +3182,220 @@
       return profiles[genre] || profiles.strategy;
     }
 
+    function localizationProfileForLang(genre, lang) {
+      if (lang !== "tr" && lang !== "zh") return localizationProfile(genre);
+      const trProfiles = {
+        fps: { label: "FPS / Shooter", rule: "Kısa cümle, güçlü fiil, silah, ekip, PvP ve rekabet hissi.", avoid: "Uzun lore cümleleri ve fazla yumuşak casual dil." },
+        mmo: { label: "MMO / RPG", rule: "Dünya, sınıf, lonca, baskın, ganimet ve uzun vadeli gelişim dili.", avoid: "Sadece hızlı aksiyon demek; topluluk ve gelişimi kaçırmak." },
+        strategy: { label: "Strateji / 4X", rule: "Komuta, kurma, genişleme, ittifak, taktik, fetih ve kaynak kararları.", avoid: "Stratejik sonucu olmayan generic savaş dili." },
+        casual: { label: "Casual / Puzzle", rule: "Kolay anlaşılır, yumuşak, ödül odaklı ve düşük baskılı dil.", avoid: "Hardcore jargon ve agresif CTA." },
+        horror: { label: "Korku", rule: "Gerilim, hayatta kalma, sırlar, atmosfer ve tehlike hissi.", avoid: "Komik ton veya fazla açıklayıcı anlatım." },
+        racing: { label: "Yarış", rule: "Hız, kontrol, drift, yükseltme, pist ve rekabet dili.", avoid: "Yavaş keşif kelimeleri." },
+        simulation: { label: "Simülasyon", rule: "Kurma, yönetme, özelleştirme, günlük gelişim ve sahiplenme dili.", avoid: "Oyunda yoksa savaş ağırlıklı kelimeler." }
+      };
+      const zhProfiles = {
+        fps: { label: "FPS / 射击", rule: "短句、强动词、武器、小队、PvP 和竞技压力。", avoid: "过长世界观句子和过软的休闲表达。" },
+        mmo: { label: "MMO / RPG", rule: "世界、职业、公会、团本、掉落和长期成长。", avoid: "只强调动作，忽略社区和成长。" },
+        strategy: { label: "策略 / 4X", rule: "指挥、建造、扩张、联盟、战术、征服和资源决策。", avoid: "没有策略结果的泛战斗文案。" },
+        casual: { label: "休闲 / 解谜", rule: "清晰、轻松、奖励感强、低压力。", avoid: "硬核术语和强压 CTA。" },
+        horror: { label: "恐怖", rule: "悬疑、生存、秘密、氛围和危险感。", avoid: "喜剧语气或过度解释。" },
+        racing: { label: "竞速", rule: "速度、操控、漂移、升级、赛道和竞争。", avoid: "缓慢探索类词汇。" },
+        simulation: { label: "模拟", rule: "建造、管理、自定义、每日成长和拥有感。", avoid: "除非游戏有战斗，否则避免战斗化表达。" }
+      };
+      return (lang === "tr" ? trProfiles : zhProfiles)[genre] || (lang === "tr" ? trProfiles.strategy : zhProfiles.strategy);
+    }
+
     function demoLocalizationVariants(source, lang, tone, genre) {
-      const profile = localizationProfile(genre);
-      const copy = String(source || "").trim() || "Build your fleet, explore unknown galaxies, and outsmart rival commanders in fast mobile strategy battles.";
+      const profile = localizationProfileForLang(genre, lang);
+      const copy = String(source || "").trim() || "Build your fleet";
       const labels = {
-        tr: { gameType: "Oyun türü", rule: "Dil kuralı", avoid: "Kaçın", tone: "Ton", option1: "Seçenek 1 - Store'a hazır", option2: "Seçenek 2 - Daha duygusal", option3: "Seçenek 3 - Kısa CTA", source: "Korunan kaynak anlamı" },
-        en: { gameType: "Game type", rule: "Language rule", avoid: "Avoid", tone: "Tone", option1: "Option 1 - Store-ready", option2: "Option 2 - More emotional", option3: "Option 3 - Short CTA", source: "Source meaning kept" },
-        zh: { gameType: "游戏类型", rule: "语言规则", avoid: "避免", tone: "语气", option1: "选项 1 - 商店文案", option2: "选项 2 - 更有情绪", option3: "选项 3 - 短 CTA", source: "保留原意" }
+        tr: { gameType: "Oyun türü", style: "Tarz analizi", rule: "Dil kuralı", avoid: "Kaçın", tone: "Ton", option1: "Seçenek 1 - Oyun içi çeviri", option2: "Seçenek 2 - Daha doğal", option3: "Seçenek 3 - Kısa UI", words: "Kelime kelime öneriler", source: "Kaynak metin" },
+        en: { gameType: "Game type", style: "Style analysis", rule: "Language rule", avoid: "Avoid", tone: "Tone", option1: "Option 1 - In-game translation", option2: "Option 2 - More natural", option3: "Option 3 - Short UI", words: "Word-by-word suggestions", source: "Source text" },
+        zh: { gameType: "游戏类型", style: "风格分析", rule: "语言规则", avoid: "避免", tone: "语气", option1: "选项 1 - 游戏内翻译", option2: "选项 2 - 更自然", option3: "选项 3 - 短 UI", words: "逐词建议", source: "源文本" }
       }[lang] || {
-        gameType: "Game type", rule: "Language rule", avoid: "Avoid", tone: "Tone", option1: "Option 1 - Store-ready", option2: "Option 2 - More emotional", option3: "Option 3 - Short CTA", source: "Source meaning kept"
+        gameType: "Game type", style: "Style analysis", rule: "Language rule", avoid: "Avoid", tone: "Tone", option1: "Option 1 - In-game translation", option2: "Option 2 - More natural", option3: "Option 3 - Short UI", words: "Word-by-word suggestions", source: "Source text"
       };
-      const banks = {
-        tr: {
-          fps: ["Nişan al, ekibini kur ve her çatışmada üstünlüğünü göster.", "Silahını seç, reflekslerini konuştur ve rakiplerini geride bırak.", "Hızlı maçlara gir, takımınla savaş ve zaferi kap."],
-          mmo: ["Kahramanını geliştir, loncana katıl ve devasa bir dünyada iz bırak.", "Sınıfını seç, zindanlara gir ve efsanevi ganimetlerin peşine düş.", "Dostlarınla güçlen, raid'lere katıl ve kendi hikayeni yaz."],
-          strategy: ["İmparatorluğunu kur, ittifaklarını yönet ve akıllı hamlelerle haritayı fethet.", "Kaynaklarını planla, ordunu büyüt ve rakip komutanları taktikle alt et.", "Filonu geliştir, sınırlarını genişlet ve stratejinle galibiyete yürü."],
-          casual: ["Kolayca başla, keyifli bölümleri geç ve ödülleri topla.", "Rahatlatıcı görevleri tamamla, ilerlemeni gör ve her gün yeni bir hedef aç.", "Basit kontrollerle eğlen, seviyeleri çöz ve koleksiyonunu büyüt."],
-          horror: ["Karanlığın içindeki ipuçlarını bul, hayatta kal ve gerçeğe yaklaş.", "Sessizliği dinle, tehlikeden kaç ve gizemi çöz.", "Korkunun sınırında ilerle, sırları keşfet ve hayatta kalmaya çalış."],
-          racing: ["Gazı kökle, virajları al ve pistte rakiplerini geride bırak.", "Aracını geliştir, drift yap ve finiş çizgisine ilk ulaş.", "Hızını kontrol et, yarışa hükmet ve kupayı kazan."],
-          simulation: ["Kendi dünyanı kur, yönet ve her gün daha da geliştir.", "Kaynaklarını düzenle, kararlarını ver ve büyüyen sistemini izle.", "Tasarla, yükselt ve kontrolü tamamen eline al."]
-        },
-        en: {
-          fps: ["Lock in, squad up, and prove your skill in every firefight.", "Pick your weapon, sharpen your aim, and outplay the enemy team.", "Jump into fast matches, fight with your squad, and take the win."],
-          mmo: ["Grow your hero, join a guild, and leave your mark on a vast world.", "Choose your class, enter dungeons, and chase legendary loot.", "Team up, raid stronger bosses, and write your own adventure."],
-          strategy: ["Build your empire, manage alliances, and conquer the map with smarter tactics.", "Plan your resources, grow your army, and outthink rival commanders.", "Upgrade your fleet, expand your borders, and win through strategy."],
-          casual: ["Jump in easily, clear satisfying levels, and collect rewards at your pace.", "Relax with simple challenges, steady progress, and fresh goals every day.", "Play in minutes, solve fun stages, and grow your collection."],
-          horror: ["Follow the clues in the dark, survive the danger, and uncover the truth.", "Listen to the silence, escape what hunts you, and solve the mystery.", "Step into fear, discover hidden secrets, and fight to survive."],
-          racing: ["Hit the gas, master each turn, and leave rivals behind on the track.", "Upgrade your ride, drift through corners, and cross the line first.", "Control your speed, dominate the race, and claim the trophy."],
-          simulation: ["Build your world, manage every choice, and improve it day by day.", "Organize resources, make smart decisions, and watch your system grow.", "Design, upgrade, customize, and take full control."]
-        },
-        zh: {
-          fps: ["锁定目标，集结小队，在每场交火中证明实力。", "选择武器，磨炼枪法，用操作击败对手。", "加入快节奏战斗，与队友并肩拿下胜利。"],
-          mmo: ["培养英雄，加入公会，在广阔世界中写下你的传说。", "选择职业，挑战地下城，追寻传奇装备。", "与伙伴并肩成长，挑战团本，开启你的冒险篇章。"],
-          strategy: ["建立帝国，经营联盟，用更聪明的策略征服地图。", "规划资源，壮大军队，以战术击败敌方指挥官。", "升级舰队，扩张疆域，用策略赢得胜利。"],
-          casual: ["轻松上手，完成爽快关卡，按自己的节奏领取奖励。", "享受简单挑战、稳定成长和每天的新目标。", "几分钟即可开玩，解锁有趣关卡，扩充你的收藏。"],
-          horror: ["循着黑暗中的线索，躲避危险，揭开真相。", "倾听寂静，逃离追逐你的存在，解开谜团。", "踏入恐惧，发现隐藏秘密，努力活下去。"],
-          racing: ["踩下油门，掌控每个弯道，把对手甩在身后。", "升级座驾，漂移过弯，率先冲线。", "控制速度，主宰赛道，赢得冠军。"],
-          simulation: ["打造你的世界，管理每个选择，让它一天比一天更好。", "整理资源，做出决策，看着你的系统不断成长。", "设计、升级、定制，把控制权掌握在自己手中。"]
-        }
-      };
-      const variants = (banks[lang] || banks.en)[genre] || (banks[lang] || banks.en).strategy;
+      const translated = translateGameString(copy, lang, genre);
+      const natural = naturalizeGameString(translated, lang, genre);
+      const shortUi = shortenGameString(natural, lang);
+      const words = wordSuggestions(copy, lang, genre);
       return `${labels.gameType}: ${profile.label}
+${labels.style}: ${gameStyleAnalysis(copy, lang, genre)}
 ${labels.rule}: ${profile.rule}
 ${labels.avoid}: ${profile.avoid}
 ${labels.tone}: ${tone}
 
 ${labels.option1}:
-${variants[0]}
+${translated}
 
 ${labels.option2}:
-${variants[1]}
+${natural}
 
 ${labels.option3}:
-${variants[2]}
+${shortUi}
+
+${labels.words}:
+${words}
 
 ${labels.source}:
 ${copy}`;
+    }
+
+    function translateGameString(source, lang, genre) {
+      const text = String(source || "").trim();
+      if (!text) return "";
+      const dictionaries = {
+        tr: {
+          "build your fleet, explore unknown galaxies, and outsmart rival commanders in fast mobile strategy battles.": "Filonu kur, bilinmeyen galaksileri keşfet ve hızlı mobil strateji savaşlarında rakip komutanları zekânla alt et.",
+          "explore unknown galaxies": "bilinmeyen galaksileri keşfet",
+          "outsmart rival commanders": "rakip komutanları zekânla alt et",
+          "fast mobile strategy battles": "hızlı mobil strateji savaşları",
+          "strategy battles": "strateji savaşları",
+          "rival commanders": "rakip komutanlar",
+          "unknown galaxies": "bilinmeyen galaksiler",
+          "commanders": "komutanlar",
+          "commander": "komutan",
+          "rival": "rakip",
+          "rivals": "rakipler",
+          "outsmart": "zekânla alt et",
+          "unknown": "bilinmeyen",
+          "explore": "keşfet",
+          "galaxies": "galaksiler",
+          "mobile": "mobil",
+          "strategy": "strateji",
+          "battles": "savaşlar",
+          "build your fleet": "Filonu kur",
+          "join a guild": "Bir loncaya katıl",
+          "upgrade your hero": "Kahramanını geliştir",
+          "claim rewards": "Ödülleri topla",
+          "start battle": "Savaşı başlat",
+          "victory": "Zafer",
+          "defeat": "Yenilgi",
+          "level up": "Seviye atla",
+          "daily quest": "Günlük görev",
+          "join": "katıl",
+          "tap to continue": "Devam etmek için dokun",
+          "new mission": "Yeni görev",
+          "collect": "Topla",
+          "upgrade": "Geliştir",
+          "battle": "Savaş",
+          "guild": "Lonca",
+          "raid": "Raid",
+          "hero": "Kahraman",
+          "weapon": "Silah",
+          "squad": "Ekip",
+          "fleet": "Filo",
+          "build": "Kur",
+          "conquer": "Fethet",
+          "reward": "Ödül",
+          "quest": "Görev"
+        },
+        en: {
+          "filonu kur": "Build your fleet",
+          "loncaya katıl": "Join a guild",
+          "kahramanını geliştir": "Upgrade your hero",
+          "ödülleri topla": "Claim rewards",
+          "savaşı başlat": "Start battle",
+          "zafer": "Victory",
+          "yenilgi": "Defeat",
+          "seviye atla": "Level up",
+          "günlük görev": "Daily quest",
+          "devam etmek için dokun": "Tap to continue",
+          "ödülleri": "rewards",
+          "topla": "claim",
+          "ödül": "reward",
+          "görev": "quest",
+          "lonca": "guild",
+          "filo": "fleet",
+          "kur": "build"
+        },
+        zh: {
+          "build your fleet, explore unknown galaxies, and outsmart rival commanders in fast mobile strategy battles.": "组建舰队，探索未知星系，在快节奏移动策略战斗中智胜敌方指挥官。",
+          "explore unknown galaxies": "探索未知星系",
+          "outsmart rival commanders": "智胜敌方指挥官",
+          "fast mobile strategy battles": "快节奏移动策略战斗",
+          "strategy battles": "策略战斗",
+          "rival commanders": "敌方指挥官",
+          "unknown galaxies": "未知星系",
+          "outsmart": "智胜",
+          "unknown": "未知",
+          "build your fleet": "组建舰队",
+          "join a guild": "加入公会",
+          "upgrade your hero": "升级英雄",
+          "claim rewards": "领取奖励",
+          "start battle": "开始战斗",
+          "victory": "胜利",
+          "defeat": "失败",
+          "level up": "升级",
+          "daily quest": "每日任务",
+          "tap to continue": "点击继续",
+          "new mission": "新任务",
+          "claim": "领取",
+          "rewards": "奖励",
+          "collect": "收集",
+          "upgrade": "升级",
+          "battle": "战斗",
+          "guild": "公会",
+          "raid": "团本",
+          "hero": "英雄",
+          "weapon": "武器",
+          "squad": "小队",
+          "fleet": "舰队",
+          "build": "建造",
+          "conquer": "征服",
+          "reward": "奖励",
+          "quest": "任务"
+        }
+      };
+      let output = text;
+      const dict = dictionaries[lang] || dictionaries.en;
+      Object.entries(dict).sort((a, b) => b[0].length - a[0].length).forEach(([from, to]) => {
+        output = output.replace(new RegExp(from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), to);
+      });
+      if (output === text && lang === "tr") output = `${text} için oyun içi Türkçe karşılık önerisi`;
+      if (output === text && lang === "zh") output = `${text} 的游戏内文本建议`;
+      return output;
+    }
+
+    function naturalizeGameString(text, lang, genre) {
+      if (lang === "tr") {
+        if (genre === "mmo") return text.replace(/^Bir loncaya katıl$/i, "Loncana katıl").replace(/^Kahramanını geliştir$/i, "Kahramanını güçlendir");
+        if (genre === "fps") return text.replace(/Savaşı başlat/i, "Çatışmaya gir").replace(/Ekip/i, "Takım");
+        if (genre === "casual") return text.replace(/Topla/i, "Al").replace(/Geliştir/i, "Yükselt");
+        return text;
+      }
+      if (lang === "en") return text.replace(/^Join a guild$/i, genre === "mmo" ? "Join your guild" : "Join a team");
+      if (lang === "zh") return text.replace(/^加入公会$/i, "加入你的公会");
+      return text;
+    }
+
+    function shortenGameString(text, lang) {
+      const clean = String(text || "").trim();
+      if (lang === "tr" && clean.includes(",")) return clean.split(",")[0].trim();
+      if (lang === "en" && clean.includes(",")) return clean.split(",")[0].trim();
+      if (lang === "zh" && clean.includes("，")) return clean.split("，")[0].trim();
+      if (clean.length <= 18) return clean;
+      const words = clean.split(/\s+/);
+      if (lang === "zh") return clean.slice(0, 8);
+      return words.slice(0, 3).join(" ");
+    }
+
+    function wordSuggestions(source, lang, genre) {
+      const terms = String(source || "").toLowerCase().match(/[\p{L}\p{N}'-]+/gu) || [];
+      const stop = new Set("a an the and or your you our we in on at to of for with into by from this that fast mobile".split(" "));
+      const unique = [...new Set(terms.filter((term) => !stop.has(term) && term.length > 2))].slice(0, 8);
+      const suggestions = unique.map((term) => `${term} → ${translateGameString(term, lang, genre)}`);
+      return suggestions.length ? suggestions.join("; ") : "-";
+    }
+
+    function gameStyleAnalysis(source, lang, genre) {
+      const count = String(source || "").trim().split(/\s+/).filter(Boolean).length;
+      const typeTr = count <= 3 ? "kısa UI string" : count <= 9 ? "kısa oyun içi cümle" : "uzun açıklama/cümle";
+      const typeEn = count <= 3 ? "short UI string" : count <= 9 ? "short in-game sentence" : "long description/sentence";
+      const typeZh = count <= 3 ? "短 UI 文本" : count <= 9 ? "短游戏内句子" : "较长说明/句子";
+      if (lang === "tr") return `${typeTr}; ${localizationProfileForLang(genre, lang).label} için doğal, kısa ve Türkçe karakterli kullanım önerildi.`;
+      if (lang === "zh") return `${typeZh}; 按 ${localizationProfileForLang(genre, lang).label} 语气处理，优先游戏内短句。`;
+      return `${typeEn}; adapted for ${localizationProfileForLang(genre, lang).label} in-game wording.`;
     }
 
     function formatLocalizationOutput(text) {
@@ -3232,7 +3409,10 @@ ${copy}`;
         if (/^(option\s+\d+|seçenek\s+\d+|secenek\s+\d+|选项\s*\d+)/i.test(line)) {
           current = { title: line.replace(/:$/, ""), body: [] };
           cards.push(current);
-        } else if (/^(game type|language rule|avoid|tone|note|source meaning kept|oyun türü|oyun turu|dil kuralı|dil kurali|kaçın|kacin|ton|not|korunan kaynak anlamı|korunan kaynak anlami|游戏类型|语言规则|避免|语气|保留原意):/i.test(line)) {
+        } else if (/^(word-by-word suggestions|kelime kelime öneriler|kelime kelime oneriler|逐词建议):/i.test(line)) {
+          current = { title: line.replace(/:$/, ""), body: [] };
+          cards.push(current);
+        } else if (/^(game type|style analysis|language rule|avoid|tone|note|source text|source meaning kept|oyun türü|oyun turu|tarz analizi|dil kuralı|dil kurali|kaçın|kacin|ton|not|kaynak metin|korunan kaynak anlamı|korunan kaynak anlami|游戏类型|风格分析|语言规则|避免|语气|源文本|保留原意):/i.test(line)) {
           meta.push(line);
           current = null;
         } else if (current) {
@@ -3254,7 +3434,7 @@ ${copy}`;
 
     function localizationSourceFromRow(row = {}) {
       const entries = Object.entries(row);
-      const sourceEntry = entries.find(([key]) => /source|text|copy|description|store|desc|metin|aciklama|açıklama/i.test(key));
+      const sourceEntry = entries.find(([key]) => /source|string|ui|dialogue|dialog|text|copy|description|store|desc|metin|cümle|cumle|kelime|aciklama|açıklama/i.test(key));
       const genreEntry = entries.find(([key]) => /genre|type|category|tur|tür/i.test(key));
       const nameEntry = entries.find(([key]) => /game|name|title|project|oyun/i.test(key));
       const langEntry = entries.find(([key]) => /lang|language|target|dil/i.test(key));

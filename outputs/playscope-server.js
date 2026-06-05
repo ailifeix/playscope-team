@@ -357,15 +357,88 @@ async function readImageData(input) {
   return { ok: false, error: `GPT image read failed: ${lastError}` };
 }
 
+function demoLocalizeGameText(source = "", lang = "en") {
+  let text = String(source || "").trim();
+  if (!text) return lang === "tr" ? "Filonu kur" : lang === "zh" ? "组建舰队" : "Build your fleet";
+  const dictionaries = {
+    tr: {
+      "build your fleet, explore unknown galaxies, and outsmart rival commanders in fast mobile strategy battles.": "Filonu kur, bilinmeyen galaksileri keşfet ve hızlı mobil strateji savaşlarında rakip komutanları zekânla alt et.",
+      "explore unknown galaxies": "bilinmeyen galaksileri keşfet",
+      "outsmart rival commanders": "rakip komutanları zekânla alt et",
+      "fast mobile strategy battles": "hızlı mobil strateji savaşları",
+      "rival commanders": "rakip komutanlar",
+      "unknown galaxies": "bilinmeyen galaksiler",
+      "build your fleet": "Filonu kur",
+      "join a guild": "Bir loncaya katıl",
+      "upgrade your hero": "Kahramanını geliştir",
+      "claim rewards": "Ödülleri topla",
+      "start battle": "Savaşı başlat",
+      "tap to continue": "Devam etmek için dokun",
+      "daily quest": "Günlük görev",
+      "victory": "Zafer",
+      "defeat": "Yenilgi",
+      "fleet": "Filo",
+      "explore": "keşfet",
+      "unknown": "bilinmeyen",
+      "galaxies": "galaksiler",
+      "outsmart": "zekânla alt et",
+      "rival": "rakip",
+      "commanders": "komutanlar",
+      "strategy": "strateji",
+      "guild": "Lonca",
+      "quest": "Görev",
+      "reward": "Ödül",
+      "battle": "Savaş",
+      "build": "Kur",
+      "upgrade": "Geliştir",
+      "collect": "Topla"
+    },
+    zh: {
+      "build your fleet, explore unknown galaxies, and outsmart rival commanders in fast mobile strategy battles.": "组建舰队，探索未知星系，在快节奏移动策略战斗中智胜敌方指挥官。",
+      "explore unknown galaxies": "探索未知星系",
+      "outsmart rival commanders": "智胜敌方指挥官",
+      "fast mobile strategy battles": "快节奏移动策略战斗",
+      "rival commanders": "敌方指挥官",
+      "unknown galaxies": "未知星系",
+      "build your fleet": "组建舰队",
+      "join a guild": "加入公会",
+      "upgrade your hero": "升级英雄",
+      "claim rewards": "领取奖励",
+      "start battle": "开始战斗",
+      "tap to continue": "点击继续",
+      "daily quest": "每日任务",
+      "victory": "胜利",
+      "defeat": "失败",
+      "fleet": "舰队",
+      "guild": "公会",
+      "quest": "任务",
+      "reward": "奖励",
+      "battle": "战斗",
+      "build": "建造",
+      "upgrade": "升级",
+      "collect": "收集"
+    }
+  };
+  const dict = dictionaries[lang] || {};
+  Object.entries(dict).sort((a, b) => b[0].length - a[0].length).forEach(([from, to]) => {
+    text = text.replace(new RegExp(from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), to);
+  });
+  return text;
+}
+
 async function localize(input) {
   const languageName = input.lang === "zh" ? "Chinese" : input.lang === "tr" ? "Turkish" : "English";
   const genre = input.genre || input.project?.genre || "auto";
-  const prompt = `You are a senior mobile game localization marketer.
-Analyze the game genre first, then localize the store copy into ${languageName}.
+  const prompt = `You are a senior mobile game in-game localization specialist.
+Analyze the game genre and text function first, then localize the in-game word/sentence into ${languageName}.
 
 Rules:
 - Do not translate word by word.
-- Adapt the wording to the game type.
+- Preserve the source meaning.
+- Adapt the wording to the game type and in-game context.
+- This is for UI strings, skill names, dialogue, tutorial text, buttons, item names, quests, rewards, and system messages.
+- Keep UI strings short when the source is short.
+- Give word-by-word term suggestions when useful.
 - FPS/Shooter: short, punchy, combat, squad, skill, ranked pressure.
 - MMO/RPG: world, class, guild, raid, loot, progression, adventure.
 - Strategy/4X: command, alliance, resources, tactics, conquest, expansion.
@@ -373,7 +446,7 @@ Rules:
 - Horror: suspense, survival, secrets, atmosphere.
 - Racing: speed, drift, upgrade, competition.
 - Simulation: build, manage, customize, daily growth.
-- Return exactly: game type, language rule, 3 translation options, and one short note.
+- Return exactly: game type, style analysis, language rule, 3 translation options, word-by-word suggestions, source text, and one short note.
 - Use heading labels in the target language.
 
 Requested game type: ${genre}.
@@ -382,44 +455,70 @@ Project: ${input.project?.name || "Game"}.
 Source: ${input.source || ""}`;
   const ai = await openAiText(prompt);
   if (ai) return { source: "openai", text: ai };
+  const source = String(input.source || "").trim();
+  const demoText = demoLocalizeGameText(source, input.lang || "en");
+  const shortDemo = input.lang === "zh"
+    ? demoText.split("，")[0].slice(0, 8)
+    : (demoText.includes(",") ? demoText.split(",")[0].trim() : demoText.split(/\s+/).slice(0, 3).join(" "));
   const fallback = {
     tr: `Oyun türü: ${genre}
-Dil kuralı: Türe uygun pazarlama dili kullanıldı.
+Tarz analizi: Kısa oyun içi metin olarak ele alındı.
+Dil kuralı: Anlam korunarak kısa ve doğal Türkçe kullanıldı.
 
-Seçenek 1 - Store'a hazır:
-Filonu kur, ittifaklarını yönet ve akıllı hamlelerle haritayı fethet.
+Seçenek 1 - Oyun içi çeviri:
+${demoText}
 
-Seçenek 2 - Daha duygusal:
-Komutanlığını kanıtla, gücünü büyüt ve rakiplerini stratejinle alt et.
+Seçenek 2 - Daha doğal:
+${demoText}
 
-Seçenek 3 - Kısa CTA:
-İmparatorluğunu kur. Savaş. Fethet.
+Seçenek 3 - Kısa UI:
+${shortDemo}
+
+Kelime kelime öneriler:
+build → kur; fleet → filo; guild → lonca; quest → görev; reward → ödül
+
+Kaynak metin:
+${source}
 
 Not: Demo modu.`,
     en: `Game type: ${genre}
-Language rule: Genre-aware store wording was used.
+Style analysis: Treated as an in-game string.
+Language rule: Source meaning kept with short game UI wording.
 
-Option 1 - Store-ready:
-Build your empire, manage alliances, and conquer the map with smarter tactics.
+Option 1 - In-game translation:
+${demoText}
 
-Option 2 - More emotional:
-Prove your command, grow your power, and outthink every rival.
+Option 2 - More natural:
+${demoText}
 
-Option 3 - Short CTA:
-Build. Battle. Conquer.
+Option 3 - Short UI:
+${shortDemo}
+
+Word-by-word suggestions:
+build → build; fleet → fleet; guild → guild; quest → quest; reward → reward
+
+Source text:
+${source}
 
 Note: Demo mode.`,
     zh: `Game type: ${genre}
-Language rule: 已使用符合游戏类型的商店文案表达。
+Style analysis: 按游戏内短文本处理。
+Language rule: 保留原意，并使用适合游戏 UI 的短句。
 
-Option 1 - Store-ready:
-建立帝国，经营联盟，用更聪明的策略征服地图。
+Option 1 - In-game translation:
+${demoText}
 
-Option 2 - More emotional:
-证明你的指挥能力，壮大实力，用策略击败对手。
+Option 2 - More natural:
+${demoText}
 
-Option 3 - Short CTA:
-建造。战斗。征服。
+Option 3 - Short UI:
+${shortDemo}
+
+Word-by-word suggestions:
+build → 建造; fleet → 舰队; guild → 公会; quest → 任务; reward → 奖励
+
+Source text:
+${source}
 
 Note: Demo mode.`
   };
@@ -607,12 +706,13 @@ async function serpApiGooglePlaySearch(input = {}) {
   if (!apiKey) return null;
   const query = String(input.query || "").trim();
   const lang = input.lang || "en";
+  const country = String(input.country || "US").toLowerCase();
   const params = new URLSearchParams({
     engine: "google_play",
     q: query,
     store: "apps",
     hl: lang,
-    gl: "us",
+    gl: country,
     api_key: apiKey
   });
   const response = await fetchWithTimeout(`https://serpapi.com/search.json?${params.toString()}`, {
