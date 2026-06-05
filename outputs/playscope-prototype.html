@@ -1248,6 +1248,10 @@
       });
     }
 
+    function selectedAttr(value, current) {
+      return String(value) === String(current) ? "selected" : "";
+    }
+
     function locUi(key) {
       const dict = {
         tr: {
@@ -1340,27 +1344,32 @@
     }
 
     function localizationPage() {
+      const locForm = state.localizationForm || {};
+      const locSource = locForm.source || "Build your fleet, explore unknown galaxies, and outsmart rival commanders in fast mobile strategy battles.";
+      const locGenreValue = locForm.genre || "auto";
+      const locLangValue = locForm.lang || "tr";
+      const locModeValue = locForm.mode || "game";
       $("page").innerHTML = `
         ${pageHead(tr("localization"), tr("pageLocSub"))}
         <div class="grid half">
           ${panel(locUi("workspace"), `<div class="form-grid">
-            <div><div class="field-label">${tr("source")}</div><textarea id="sourceCopy">Build your fleet, explore unknown galaxies, and outsmart rival commanders in fast mobile strategy battles.</textarea></div>
+            <div><div class="field-label">${tr("source")}</div><textarea id="sourceCopy">${esc(locSource)}</textarea></div>
             <div>
               <div class="field-label">${locUi("gameType")}</div>
               <select id="locGenre">
-                <option value="auto">${locUi("auto")}</option>
-                <option value="fps">${locUi("fps")}</option>
-                <option value="mmo">${locUi("mmo")}</option>
-                <option value="strategy">${locUi("strategy")}</option>
-                <option value="casual">${locUi("casual")}</option>
-                <option value="horror">${locUi("horror")}</option>
-                <option value="racing">${locUi("racing")}</option>
-                <option value="simulation">${locUi("simulation")}</option>
+                <option value="auto" ${selectedAttr("auto", locGenreValue)}>${locUi("auto")}</option>
+                <option value="fps" ${selectedAttr("fps", locGenreValue)}>${locUi("fps")}</option>
+                <option value="mmo" ${selectedAttr("mmo", locGenreValue)}>${locUi("mmo")}</option>
+                <option value="strategy" ${selectedAttr("strategy", locGenreValue)}>${locUi("strategy")}</option>
+                <option value="casual" ${selectedAttr("casual", locGenreValue)}>${locUi("casual")}</option>
+                <option value="horror" ${selectedAttr("horror", locGenreValue)}>${locUi("horror")}</option>
+                <option value="racing" ${selectedAttr("racing", locGenreValue)}>${locUi("racing")}</option>
+                <option value="simulation" ${selectedAttr("simulation", locGenreValue)}>${locUi("simulation")}</option>
               </select>
               <div class="field-label" style="margin-top:12px">${tr("target")}</div>
-              <select id="locLang"><option value="tr">Türkçe</option><option value="en">English</option><option value="zh">中文</option></select>
+              <select id="locLang"><option value="tr" ${selectedAttr("tr", locLangValue)}>Türkçe</option><option value="en" ${selectedAttr("en", locLangValue)}>English</option><option value="zh" ${selectedAttr("zh", locLangValue)}>中文</option></select>
               <div class="field-label" style="margin-top:12px">${locUi("mode")}</div>
-              <select id="locMode"><option value="game">${locUi("modeGame")}</option><option value="normal">${locUi("modeNormal")}</option><option value="both">${locUi("modeBoth")}</option></select>
+              <select id="locMode"><option value="game" ${selectedAttr("game", locModeValue)}>${locUi("modeGame")}</option><option value="normal" ${selectedAttr("normal", locModeValue)}>${locUi("modeNormal")}</option><option value="both" ${selectedAttr("both", locModeValue)}>${locUi("modeBoth")}</option></select>
               <div class="field-label" style="margin-top:12px">${tr("tone")}</div>
               <select id="locTone"><option>${locUi("storeReady")}</option><option>${locUi("competitive")}</option><option>${locUi("cinematic")}</option><option>${locUi("friendly")}</option><option>${locUi("premium")}</option></select>
               <button class="primary" id="locBtn" type="button" style="margin-top:12px">${tr("generate")}</button>
@@ -4008,17 +4017,32 @@ ${copy}`;
       const selectedGenre = $("locGenre").value;
       const mode = $("locMode")?.value || "game";
       const items = rows.map(localizationSourceFromRow).filter((item) => item.source);
+      state.localizationForm = {
+        ...(state.localizationForm || {}),
+        genre: selectedGenre,
+        lang: $("locLang").value,
+        mode,
+        tone
+      };
       const outputs = [];
       for (const item of items.slice(0, 30)) {
         const genre = selectedGenre === "auto" ? item.genre : inferLocalizationGenre(item.source, selectedGenre);
         const lang = item.lang || $("locLang").value;
         let output = "";
         try {
-          $("locBatchStatus").textContent = `Localizing ${outputs.length + 1}/${items.length} with GPT...`;
-          const direct = await localizeWithClientGpt({ source: item.source, lang, tone, genre, mode });
-          output = direct?.text || "";
+          $("locBatchStatus").textContent = `Localizing ${outputs.length + 1}/${items.length} with backend GPT...`;
+          output = await localizeWithBackend({ source: item.source, lang, tone, genre, mode });
         } catch (error) {
           output = "";
+        }
+        if (!output) {
+          try {
+            $("locBatchStatus").textContent = `Localizing ${outputs.length + 1}/${items.length} with GPT key...`;
+            const direct = await localizeWithClientGpt({ source: item.source, lang, tone, genre, mode });
+            output = direct?.text || "";
+          } catch (error) {
+            output = "";
+          }
         }
         outputs.push({
           name: item.name || shortText(item.source, 42),
@@ -4122,6 +4146,16 @@ ${source}`;
       throw new Error(lastError || "GPT localization failed.");
     }
 
+    async function localizeWithBackend({ source, lang, tone, genre, mode }) {
+      const response = await fetchTeamApi("/api/localize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...sharedHeaders() },
+        body: JSON.stringify({ source, lang, tone, genre, mode, project: state.project })
+      });
+      const result = await response.json();
+      return result && result.text && result.source === "openai" ? result.text : "";
+    }
+
     async function generateLocalization() {
       const source = $("sourceCopy").value.trim();
       const lang = $("locLang").value;
@@ -4129,18 +4163,25 @@ ${source}`;
       const mode = $("locMode")?.value || "game";
       const genre = inferLocalizationGenre(source, $("locGenre").value);
       const status = $("locStatus");
+      state.localizationForm = {
+        source,
+        genre: $("locGenre").value,
+        resolvedGenre: genre,
+        lang,
+        mode,
+        tone
+      };
       if (status) status.textContent = "Generating with backend...";
       try {
-        const response = await fetch("/api/localize", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source, lang, tone, genre, mode, project: state.project }) });
-        const result = await response.json();
-        if (result && result.text && result.source === "openai") {
-          state.localizationOutput = result.text;
+        const backendText = await localizeWithBackend({ source, lang, tone, genre, mode });
+        if (backendText) {
+          state.localizationOutput = backendText;
           saveState();
           $("locOutput").innerHTML = formatLocalizationOutput(state.localizationOutput);
           if (status) status.textContent = "Generated with OpenAI.";
           return;
         }
-        if (status) status.textContent = "Backend demo skipped; using local game-text mode.";
+        if (status) status.textContent = "Backend did not return GPT text; trying GPT key from Settings...";
       } catch (error) {
         if (status) status.textContent = "Backend unavailable; trying GPT key from Settings...";
       }
