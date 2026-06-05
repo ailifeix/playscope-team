@@ -3555,9 +3555,48 @@
       return (lang === "tr" ? trProfiles : zhProfiles)[genre] || (lang === "tr" ? trProfiles.strategy : zhProfiles.strategy);
     }
 
+    function localizeLocalizationTone(tone, lang) {
+      const key = String(tone || "").toLowerCase();
+      const isStore = /store|hazır|ready|商店|游戏内/.test(key);
+      const isCompetitive = /rekabet|competitive|竞技/.test(key);
+      const isCinematic = /sinematik|cinematic|电影/.test(key);
+      const isFriendly = /dost|friendly|友好/.test(key);
+      const isPremium = /premium|高级/.test(key);
+      const table = {
+        tr: {
+          store: "Oyun içi metne hazır",
+          competitive: "Rekabetçi",
+          cinematic: "Sinematik",
+          friendly: "Dostça",
+          premium: "Premium"
+        },
+        en: {
+          store: "Ready for in-game text",
+          competitive: "Competitive",
+          cinematic: "Cinematic",
+          friendly: "Friendly",
+          premium: "Premium"
+        },
+        zh: {
+          store: "适合游戏内文本",
+          competitive: "竞技感",
+          cinematic: "电影感",
+          friendly: "友好",
+          premium: "高级感"
+        }
+      }[lang] || {};
+      if (isCompetitive) return table.competitive;
+      if (isCinematic) return table.cinematic;
+      if (isFriendly) return table.friendly;
+      if (isPremium) return table.premium;
+      if (isStore) return table.store;
+      return tone || table.store || "";
+    }
+
     function demoLocalizationVariants(source, lang, tone, genre, mode = "game") {
       const profile = localizationProfileForLang(genre, lang);
       const copy = String(source || "").trim() || "Build your fleet";
+      const displayTone = localizeLocalizationTone(tone, lang);
       const labels = {
         tr: { gameType: "Oyun türü", style: "Tarz analizi", rule: "Dil kuralı", avoid: "Kaçın", tone: "Ton", normal: "Normal çeviri", option1: "Seçenek 1 - Oyun içi çeviri", option2: "Seçenek 2 - Daha doğal", option3: "Seçenek 3 - Kısa UI", words: "Kelime kelime öneriler", source: "Kaynak metin" },
         en: { gameType: "Game type", style: "Style analysis", rule: "Language rule", avoid: "Avoid", tone: "Tone", normal: "Normal translation", option1: "Option 1 - In-game translation", option2: "Option 2 - More natural", option3: "Option 3 - Short UI", words: "Word-by-word suggestions", source: "Source text" },
@@ -3586,7 +3625,7 @@ ${copy}`;
 ${labels.style}: ${gameStyleAnalysis(copy, lang, genre)}
 ${labels.rule}: ${profile.rule}
 ${labels.avoid}: ${profile.avoid}
-${labels.tone}: ${tone}
+${labels.tone}: ${displayTone}
 
 ${normalBlock}${labels.option1}:
 ${translated}
@@ -3919,10 +3958,18 @@ ${copy}`;
       for (const item of items.slice(0, 30)) {
         const genre = selectedGenre === "auto" ? item.genre : inferLocalizationGenre(item.source, selectedGenre);
         const lang = item.lang || $("locLang").value;
+        let output = "";
+        try {
+          $("locBatchStatus").textContent = `Localizing ${outputs.length + 1}/${items.length} with GPT...`;
+          const direct = await localizeWithClientGpt({ source: item.source, lang, tone, genre, mode });
+          output = direct?.text || "";
+        } catch (error) {
+          output = "";
+        }
         outputs.push({
           name: item.name || shortText(item.source, 42),
           genreLabel: localizationProfile(genre).label,
-          output: demoLocalizationVariants(item.source, lang, tone, genre, mode)
+          output: output || demoLocalizationVariants(item.source, lang, tone, genre, mode)
         });
       }
       state.localizationBatch = outputs;
@@ -3951,6 +3998,76 @@ ${copy}`;
       await localizeBatchRows(rows);
     }
 
+    function localizationLanguageName(lang) {
+      return lang === "zh" ? "Chinese" : lang === "tr" ? "Turkish" : "English";
+    }
+
+    async function localizeWithClientGpt({ source, lang, tone, genre, mode }) {
+      const config = getSavedGptConfig();
+      if (!config.openaiApiKey) return null;
+      const baseUrl = String(config.openaiBaseUrl || "https://api.openai.com/v1").replace(/\/+$/, "");
+      const preferredModel = config.openaiModel && config.openaiModel !== "auto" ? config.openaiModel : "";
+      const modelCandidates = [...new Set([preferredModel, "gpt-4o-mini", "gpt-4o", "gpt-4.1", "gpt-5-mini"].filter(Boolean))];
+      const languageName = localizationLanguageName(lang);
+      const prompt = `You are a senior mobile game in-game localization specialist.
+Translate and adapt the source text into ${languageName}.
+
+Important:
+- This is for game UI, in-game words, skill/item names, quest text, tutorial text, buttons, dialogue, rewards, and system messages.
+- If mode is normal, give a faithful normal translation.
+- If mode is game, adapt the wording to the game genre and in-game context.
+- If mode is both, show both normal translation and game adaptation.
+- Do not leave source-language fragments untranslated.
+- Do not do broken word-by-word replacement.
+- Use natural target-language grammar and correct characters.
+- Keep short UI text short.
+- For Turkish, use Turkish characters.
+- For Chinese, use Simplified Chinese.
+- Genre: ${genre}.
+- Tone: ${tone}.
+- Mode: ${mode}.
+
+Return with clear headings in the target language:
+Game type/style analysis
+Normal translation when requested
+Option 1 - In-game translation
+Option 2 - More natural
+Option 3 - Short UI
+Word-by-word suggestions
+Source text
+
+Source text:
+${source}`;
+      let lastError = "";
+      for (const model of modelCandidates) {
+        const response = await fetch(`${baseUrl}/chat/completions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${config.openaiApiKey}`
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: "system", content: "You produce high-quality mobile game localization. Return only the requested localized output." },
+              { role: "user", content: prompt }
+            ],
+            temperature: 0.25,
+            max_tokens: 1200,
+            stream: false
+          })
+        }).catch((error) => ({ ok: false, status: "network", error }));
+        if (!response.ok) {
+          lastError = response.error?.message || `HTTP ${response.status}`;
+          continue;
+        }
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content?.trim();
+        if (text) return { text, model };
+      }
+      throw new Error(lastError || "GPT localization failed.");
+    }
+
     async function generateLocalization() {
       const source = $("sourceCopy").value.trim();
       const lang = $("locLang").value;
@@ -3971,7 +4088,19 @@ ${copy}`;
         }
         if (status) status.textContent = "Backend demo skipped; using local game-text mode.";
       } catch (error) {
-        if (status) status.textContent = "Backend unavailable; using demo mode.";
+        if (status) status.textContent = "Backend unavailable; trying GPT key from Settings...";
+      }
+      try {
+        const direct = await localizeWithClientGpt({ source, lang, tone, genre, mode });
+        if (direct?.text) {
+          state.localizationOutput = direct.text;
+          saveState();
+          $("locOutput").innerHTML = formatLocalizationOutput(state.localizationOutput);
+          if (status) status.textContent = `Generated with GPT (${direct.model}).`;
+          return;
+        }
+      } catch (directError) {
+        if (status) status.textContent = `GPT direct failed; using local fallback: ${directError.message}`;
       }
       state.localizationOutput = source ? demoLocalizationVariants(source, lang, tone, genre, mode) : "";
       saveState();
