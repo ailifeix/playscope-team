@@ -3666,6 +3666,30 @@
       return `${labels.title}\n${labels.body}\n${labels.fix}\n\n${labels.gameType}: ${profile.label}\n${labels.source}:\n${source}`;
     }
 
+    function localizationUnavailableMessage(source, lang) {
+      const labels = {
+        tr: {
+          title: "Çeviri bağlantısı yok",
+          body: "Bu bölüm artık sahte/yarım çeviri üretmez. Düzgün çeviri için backend, GPT veya Google Translate fallback bağlantısı gerekir.",
+          action: "Local serverı açıp http://localhost:5178/ üzerinden dene ya da Render linkini kullan.",
+          source: "Kaynak metin"
+        },
+        en: {
+          title: "Translation connection unavailable",
+          body: "This tool no longer produces fake partial translations. A backend, GPT, or Google Translate fallback connection is required for a proper translation.",
+          action: "Start the local server and use http://localhost:5178/, or use the Render link.",
+          source: "Source text"
+        },
+        zh: {
+          title: "翻译连接不可用",
+          body: "此工具不再输出错误的半翻译。需要后端、GPT 或 Google Translate fallback 连接才能正确翻译。",
+          action: "请启动本地服务器并使用 http://localhost:5178/，或使用 Render 链接。",
+          source: "源文本"
+        }
+      }[lang] || {};
+      return `${labels.title}\n${labels.body}\n${labels.action}\n\n${labels.source}:\n${source}`;
+    }
+
     function demoLocalizationVariants(source, lang, tone, genre, mode = "game") {
       const profile = localizationProfileForLang(genre, lang);
       const copy = String(source || "").trim() || "Build your fleet";
@@ -4109,7 +4133,7 @@ ${copy}`;
         outputs.push({
           name: item.name || shortText(item.source, 42),
           genreLabel: localizationProfile(genre).label,
-          output: output || demoLocalizationVariants(item.source, lang, tone, genre, mode)
+          output: output || localizationUnavailableMessage(item.source, lang)
         });
       }
       state.localizationBatch = outputs;
@@ -4257,9 +4281,9 @@ ${source}`;
           return;
         }
       } catch (directError) {
-        if (status) status.textContent = `GPT direct failed; using local fallback: ${directError.message}`;
+        if (status) status.textContent = `Translation failed: ${directError.message}`;
       }
-      state.localizationOutput = source ? demoLocalizationVariants(source, lang, tone, genre, mode) : "";
+      state.localizationOutput = localizationUnavailableMessage(source, lang);
       saveState();
       $("locOutput").innerHTML = formatLocalizationOutput(state.localizationOutput || "Output will appear here.");
     }

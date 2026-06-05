@@ -562,73 +562,11 @@ Source: ${input.source || ""}`;
       })
     };
   }
-  const demoText = demoLocalizeGameText(source, input.lang || "en");
-  const shortDemo = input.lang === "zh"
-    ? demoText.split("，")[0].slice(0, 8)
-    : (demoText.includes(",") ? demoText.split(",")[0].trim() : demoText.split(/\s+/).slice(0, 3).join(" "));
-  const fallback = {
-    tr: `Oyun türü: ${genre}
-Tarz analizi: Kısa oyun içi metin olarak ele alındı.
-Dil kuralı: Anlam korunarak kısa ve doğal Türkçe kullanıldı.
-
-Seçenek 1 - Oyun içi çeviri:
-${demoText}
-
-Seçenek 2 - Daha doğal:
-${demoText}
-
-Seçenek 3 - Kısa UI:
-${shortDemo}
-
-Kelime kelime öneriler:
-build → kur; fleet → filo; guild → lonca; quest → görev; reward → ödül
-
-Kaynak metin:
-${source}
-
-Not: Demo modu.`,
-    en: `Game type: ${genre}
-Style analysis: Treated as an in-game string.
-Language rule: Source meaning kept with short game UI wording.
-
-Option 1 - In-game translation:
-${demoText}
-
-Option 2 - More natural:
-${demoText}
-
-Option 3 - Short UI:
-${shortDemo}
-
-Word-by-word suggestions:
-build → build; fleet → fleet; guild → guild; quest → quest; reward → reward
-
-Source text:
-${source}
-
-Note: Demo mode.`,
-    zh: `Game type: ${genre}
-Style analysis: 按游戏内短文本处理。
-Language rule: 保留原意，并使用适合游戏 UI 的短句。
-
-Option 1 - In-game translation:
-${demoText}
-
-Option 2 - More natural:
-${demoText}
-
-Option 3 - Short UI:
-${shortDemo}
-
-Word-by-word suggestions:
-build → 建造; fleet → 舰队; guild → 公会; quest → 任务; reward → 奖励
-
-Source text:
-${source}
-
-Note: Demo mode.`
+  return {
+    source: "unavailable",
+    text: "",
+    error: "No translation provider available. Configure GPT or allow Google Translate fallback from the backend."
   };
-  return { source: "demo", text: fallback[input.lang] || fallback.en };
 }
 
 function decodeHtml(value = "") {
