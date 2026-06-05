@@ -188,7 +188,7 @@
     .tag.good { color: var(--teal); border-color: #78cbc6; background: #f0fbfa; }
     .tag.warn { color: var(--amber); border-color: #f0ba72; background: #fff8ed; }
     .tag.no { color: var(--red); border-color: #f2a6a0; background: #fff3f1; }
-    .detail { padding: 18px; position: sticky; top: 18px; }
+    .detail { padding: 18px; position: sticky; top: 18px; max-height: calc(100vh - 36px); overflow: auto; }
     .detail-top { display: flex; gap: 14px; align-items: center; margin-bottom: 17px; }
     .detail .person { width: 66px; height: 66px; font-size: 20px; }
     .detail h3 { margin: 0 0 6px; font-size: 18px; }
@@ -203,6 +203,10 @@
     .outreach { background: linear-gradient(135deg, #e2f7f5, #fff); border: 1px solid #bae3df; border-radius: var(--radius); padding: 14px; font-size: 13px; line-height: 1.45; color: #344054; }
     .detail-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 14px; }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .edit-drawer { margin-top: 14px; border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: rgba(255,255,255,.72); }
+    .edit-drawer summary { cursor: pointer; font-weight: 800; margin-bottom: 10px; }
+    .edit-grid { grid-template-columns: 1fr; gap: 8px; }
+    .edit-grid input { padding: 8px 9px; font-size: 12px; }
     .note { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 9px 0 0; }
     .result-box { background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; min-height: 116px; line-height: 1.55; font-size: 14px; }
     .loc-output { display: grid; gap: 10px; white-space: normal; }
@@ -575,92 +579,30 @@
       }
     }
 
-    /* Compact data-table pass for dense influencer lists. */
-    .app {
-      grid-template-columns: 218px minmax(0, 1fr);
-    }
-    .sidebar {
-      padding: 16px 10px;
-      gap: 14px;
-    }
-    .brand span {
-      font-size: 20px;
-    }
-    main {
-      padding: 12px;
-      gap: 10px;
-    }
-    .brief {
-      padding: 12px 14px;
-    }
-    .brief-grid {
-      grid-template-columns: repeat(5, minmax(92px, 1fr));
-    }
-    .brief-grid > div {
-      padding: 8px;
-    }
-    .section-title {
-      font-size: 19px;
-      margin-bottom: 10px;
-    }
-    .page-head h2 {
-      font-size: 20px;
-    }
-    .page-head p {
-      font-size: 12px;
-    }
-    .panel-head {
-      padding: 10px 12px;
-    }
-    .panel-head h3 {
-      font-size: 15px;
-    }
-    .panel-body {
-      padding: 10px;
-    }
+    /* Keep dense influencer lists scrollable without shrinking the whole app. */
     .table-wrap {
-      max-height: calc(100vh - 250px);
+      max-height: calc(100vh - 300px);
+      overflow: auto;
     }
     table {
-      font-size: 11.5px;
-      min-width: 1260px;
+      min-width: 1540px;
     }
     th {
-      font-size: 10.5px;
-      padding: 8px 9px;
       line-height: 1.2;
     }
     td {
-      padding: 8px 9px;
       line-height: 1.25;
     }
     .name-cell {
-      min-width: 132px;
+      min-width: 165px;
       gap: 8px;
     }
-    .person {
-      width: 31px;
-      height: 31px;
-      font-size: 11px;
-    }
     td.compact-cell {
-      max-width: 142px;
+      max-width: 190px;
     }
     .cell-muted {
-      font-size: 11px;
       line-height: 1.25;
       -webkit-line-clamp: 2;
-    }
-    .score {
-      font-size: 18px;
-    }
-    .tag,
-    .pill {
-      font-size: 10.5px;
-      padding: 3px 6px;
-    }
-    .detail {
-      padding: 12px;
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -1209,6 +1151,24 @@
         <div class="outreach">Invite ${esc(item.name)} to test ${esc(state.project.name)} with an early access video and audience challenge.</div>
         <label class="field-label" style="display:block;margin-top:14px">${tr("note")}</label>
         <textarea id="influencerNote">${esc(item.note || "")}</textarea>
+        <details class="edit-drawer" open>
+          <summary>Edit influencer data</summary>
+          <div class="form-grid edit-grid">
+            <div><div class="field-label">Channel Name</div><input id="editName" value="${esc(item.name || "")}"></div>
+            <div><div class="field-label">Link / @handle</div><input id="editLink" value="${esc(item.link || item.handle || "")}"></div>
+            <div><div class="field-label">GEO</div><input id="editGeo" value="${esc(item.geo || item.country || "")}"></div>
+            <div><div class="field-label">Subscribers</div><input id="editSubscribers" value="${esc(item.subscribers || "")}"></div>
+            <div><div class="field-label">Gender</div><input id="editGender" placeholder="F52% / M48%" value="${esc(demographics.gender || "")}"></div>
+            <div><div class="field-label">Age</div><input id="editAge" placeholder="18-24: 44%; 25-34: 25%" value="${esc(demographics.age || "")}"></div>
+            <div><div class="field-label">Category</div><input id="editCategory" value="${esc(item.category || "")}"></div>
+            <div><div class="field-label">Subcategory</div><input id="editSubcategory" value="${esc(cleanSubcategory(item.subcategory || "", item.category))}"></div>
+            <div><div class="field-label">Avg views</div><input id="editViews" value="${esc(item.views || "")}"></div>
+            <div><div class="field-label">Format</div><input id="editFormat" value="${esc(item.format || "")}"></div>
+            <div><div class="field-label">Duration</div><input id="editDuration" value="${esc(item.duration || "")}"></div>
+            <div><div class="field-label">Keywords</div><input id="editKeywords" value="${esc(item.keywords || "")}"></div>
+          </div>
+          <button class="primary" id="saveInfluencerEditBtn" type="button">Save edited data</button>
+        </details>
         <div class="detail-actions"><button class="coral" id="shortlistBtn" type="button">${item.shortlisted ? "Shortlisted" : tr("shortlist")}</button><button id="saveNoteBtn" type="button">${tr("save")}</button></div>
       </aside>`;
     }
@@ -1766,6 +1726,44 @@
     function bindDetail() {
       $("shortlistBtn")?.addEventListener("click", () => { const item = state.influencers[state.selected]; item.shortlisted = !item.shortlisted; saveState(); render(); });
       $("saveNoteBtn")?.addEventListener("click", () => { const item = state.influencers[state.selected]; item.note = $("influencerNote").value; saveState(); render(); });
+      $("saveInfluencerEditBtn")?.addEventListener("click", saveInfluencerEdit);
+    }
+    function valueOf(id) {
+      return $(id)?.value?.trim() || "";
+    }
+    function parseViewsInput(value) {
+      const text = String(value || "").trim().toUpperCase().replace(",", ".");
+      const match = text.match(/^(\d+(?:\.\d+)?)(K|M)?$/);
+      if (!match) return Number(text.replace(/[^\d.]/g, "")) || 0;
+      const base = Number(match[1] || 0);
+      return Math.round(base * (match[2] === "M" ? 1000000 : match[2] === "K" ? 1000 : 1));
+    }
+    function saveInfluencerEdit() {
+      const item = state.influencers[state.selected];
+      if (!item) return;
+      const updated = normalizeInfluencer({
+        ...item,
+        name: valueOf("editName") || item.name,
+        link: cleanYouTubeSeedLink(valueOf("editLink")) || valueOf("editLink") || item.link,
+        handle: valueOf("editLink").startsWith("@") ? valueOf("editLink") : item.handle,
+        geo: valueOf("editGeo") || item.geo,
+        country: valueOf("editGeo") || item.country,
+        subscribers: valueOf("editSubscribers") || item.subscribers,
+        gender: valueOf("editGender") || item.gender,
+        age: valueOf("editAge") || item.age,
+        category: valueOf("editCategory") || item.category,
+        subcategory: valueOf("editSubcategory") || item.subcategory,
+        views: parseViewsInput(valueOf("editViews")) || item.views,
+        format: valueOf("editFormat") || item.format,
+        duration: valueOf("editDuration") || item.duration,
+        keywords: valueOf("editKeywords") || item.keywords,
+        note: valueOf("influencerNote") || item.note,
+        source: item.source || "manual-edit"
+      });
+      updated.match = updated.match || item.match || 70;
+      state.influencers[state.selected] = updated;
+      saveState();
+      render();
     }
     async function addResearchInfluencer() {
       const name = $("researchName").value.trim() || "NewCreator";
@@ -1839,16 +1837,29 @@
           }
         }
         if (!channelId) {
-          const query = encodeURIComponent(lookup.query);
-          const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&maxResults=1&q=${query}&key=${encodeURIComponent(apiKey)}`;
-          const searchResponse = await fetch(searchUrl);
-          const search = await searchResponse.json();
-          if (!searchResponse.ok) {
-            const reason = search.error?.errors?.[0]?.reason || search.error?.message || `HTTP ${searchResponse.status}`;
-            return { ...localResearchResult(input), notes: `YouTube API error from browser: ${reason}` };
+          const queries = [...new Set([
+            lookup.query,
+            input.fallbackName,
+            String(input.fallbackName || "").replace(/^@/, ""),
+            String(input.name || "").replace(/^@/, "")
+          ].map((value) => String(value || "").trim()).filter(Boolean).filter((value) => !isMetricOnlyText(value)))];
+          let lastReason = "";
+          for (const rawQuery of queries) {
+            const query = encodeURIComponent(rawQuery);
+            const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&maxResults=3&q=${query}&key=${encodeURIComponent(apiKey)}`;
+            const searchResponse = await fetch(searchUrl);
+            const search = await searchResponse.json();
+            if (!searchResponse.ok) {
+              lastReason = search.error?.errors?.[0]?.reason || search.error?.message || `HTTP ${searchResponse.status}`;
+              continue;
+            }
+            const items = search.items || [];
+            const preferred = chooseBestChannelSearchResult(items, rawQuery, input.fallbackName || input.name || "");
+            channelId = preferred?.snippet?.channelId;
+            searchTitle = preferred?.snippet?.title || "";
+            if (channelId) break;
           }
-          channelId = search.items?.[0]?.snippet?.channelId;
-          searchTitle = search.items?.[0]?.snippet?.title || "";
+          if (!channelId && lastReason) return { ...localResearchResult(input), notes: `YouTube API error from browser: ${lastReason}` };
         }
         if (!channelId) return { ...localResearchResult(input), notes: "No YouTube channel found. Try exact channel name, channel URL, channel ID, or @handle." };
 
@@ -1945,6 +1956,33 @@
       const videoMatch = value.match(/[?&]v=([A-Za-z0-9_-]{6,})/i) || value.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/i);
       if (videoMatch) return { videoId: videoMatch[1], query: value };
       return { query: value };
+    }
+
+    function chooseBestChannelSearchResult(items = [], query = "", fallbackName = "") {
+      if (!items.length) return null;
+      const wanted = normalizeSearchText(fallbackName || query);
+      if (!wanted) return items[0];
+      return [...items].sort((a, b) => {
+        const at = normalizeSearchText(a.snippet?.title || "");
+        const bt = normalizeSearchText(b.snippet?.title || "");
+        return channelMatchScore(bt, wanted) - channelMatchScore(at, wanted);
+      })[0];
+    }
+
+    function normalizeSearchText(value) {
+      return String(value || "")
+        .toLowerCase()
+        .replace(/^@/, "")
+        .replace(/[^\p{L}\p{N}]+/gu, " ")
+        .trim();
+    }
+
+    function channelMatchScore(title, wanted) {
+      if (!title || !wanted) return 0;
+      if (title === wanted) return 100;
+      if (title.includes(wanted) || wanted.includes(title)) return 80;
+      const titleWords = new Set(title.split(/\s+/).filter(Boolean));
+      return wanted.split(/\s+/).filter((word) => titleWords.has(word)).length * 10;
     }
 
     async function channelIdFromVideo(videoId, apiKey) {
@@ -2580,11 +2618,15 @@
       const first = rows[0].map((cell) => String(cell || "").toLowerCase());
       const hasUrlInFirstRow = first.some((cell) => /youtube\.com|youtu\.be|^@[\w.-]+$/i.test(cell.trim()));
       const hasHeader = rows.length > 1 && !hasUrlInFirstRow && first.some((cell) => /channel|name|link|url|youtube|geo|country/.test(cell));
+      const withRowIndex = (row, rowIndex) => {
+        Object.defineProperty(row, "__excelRow", { value: rowIndex, enumerable: false, configurable: true });
+        return row;
+      };
       if (!hasHeader) {
-        return rows.map((row) => Object.fromEntries(row.map((cell, index) => [`cell${index}`, cell])));
+        return rows.map((row, index) => withRowIndex(Object.fromEntries(row.map((cell, cellIndex) => [`cell${cellIndex}`, cell])), index + 1));
       }
       const headers = rows[0].map((cell, index) => String(cell || `Column ${index + 1}`).trim() || `Column ${index + 1}`);
-      return rows.slice(1).map((row) => Object.fromEntries(headers.map((header, index) => [header, row[index] || ""])));
+      return rows.slice(1).map((row, index) => withRowIndex(Object.fromEntries(headers.map((header, cellIndex) => [header, row[cellIndex] || ""])), index + 2));
     }
 
     function compactKey(value) {
@@ -2600,14 +2642,55 @@
       return loose ? String(loose[1] || "").trim() : "";
     }
 
+    function extractAudienceHintsFromText(value) {
+      const text = String(value || "").replace(/\r/g, "\n");
+      const compact = text.replace(/\s+/g, " ").trim();
+      const result = {};
+      const ageGroups = ["13-17", "18-24", "25-34", "35-44", "45-54", "55-64", "65+"];
+      const ageValues = {};
+      let femaleTotal = 0;
+      let maleTotal = 0;
+      for (const age of ageGroups) {
+        const escaped = age.replace("+", "\\+");
+        const splitMatch = compact.match(new RegExp(`${escaped}[^;\\n,|]*?F(?:emale)?\\s*[:=]?\\s*(\\d+(?:[.,]\\d+)?)\\s*%[^;\\n,|]*?M(?:ale)?\\s*[:=]?\\s*(\\d+(?:[.,]\\d+)?)\\s*%`, "i"))
+          || compact.match(new RegExp(`${escaped}[^;\\n,|]*?M(?:ale)?\\s*[:=]?\\s*(\\d+(?:[.,]\\d+)?)\\s*%[^;\\n,|]*?F(?:emale)?\\s*[:=]?\\s*(\\d+(?:[.,]\\d+)?)\\s*%`, "i"));
+        if (splitMatch) {
+          const first = Number(normalizeNumberText(splitMatch[1]));
+          const second = Number(normalizeNumberText(splitMatch[2]));
+          const female = /F(?:emale)?\s*[:=]?\s*\d/i.test(splitMatch[0]) && splitMatch[0].search(/F(?:emale)?/i) < splitMatch[0].search(/M(?:ale)?/i) ? first : second;
+          const male = female === first ? second : first;
+          ageValues[age] = Math.round(female + male);
+          femaleTotal += female;
+          maleTotal += male;
+          continue;
+        }
+        const totalMatch = compact.match(new RegExp(`${escaped}\\s*[:=]?\\s*(\\d+(?:[.,]\\d+)?)\\s*%`, "i"));
+        if (totalMatch) ageValues[age] = Math.round(Number(normalizeNumberText(totalMatch[1])));
+      }
+      const ageParts = ageGroups.map((age) => ageValues[age] ? `${age}: ${ageValues[age]}%` : "").filter(Boolean);
+      if (ageParts.length) result.age = ageParts.join("; ");
+      if (femaleTotal + maleTotal > 0) {
+        const total = femaleTotal + maleTotal;
+        result.gender = `F${Math.round(femaleTotal / total * 100)}% / M${Math.round(maleTotal / total * 100)}%`;
+      } else {
+        const fmMatch = compact.match(/F(?:emale)?\s*[:=]?\s*(\d+(?:[.,]\d+)?)\s*%[^0-9]+M(?:ale)?\s*[:=]?\s*(\d+(?:[.,]\d+)?)\s*%/i);
+        const mfMatch = compact.match(/M(?:ale)?\s*[:=]?\s*(\d+(?:[.,]\d+)?)\s*%[^0-9]+F(?:emale)?\s*[:=]?\s*(\d+(?:[.,]\d+)?)\s*%/i);
+        if (fmMatch) result.gender = `F${Math.round(Number(normalizeNumberText(fmMatch[1])))}% / M${Math.round(Number(normalizeNumberText(fmMatch[2])))}%`;
+        else if (mfMatch) result.gender = `F${Math.round(Number(normalizeNumberText(mfMatch[2])))}% / M${Math.round(Number(normalizeNumberText(mfMatch[1])))}%`;
+      }
+      return result;
+    }
+
     function getImportedRowHints(row) {
+      const combinedAudienceText = Object.entries(row || {}).map(([key, value]) => `${key}: ${value}`).join("\n");
+      const audienceHints = extractAudienceHintsFromText(combinedAudienceText);
       return {
         geo: fieldFromRow(row, ["geo", "country", "market", "ülke", "ulke"]),
-        gender: fieldFromRow(row, ["gender", "cinsiyet"]),
-        age: fieldFromRow(row, ["age", "yas", "yaş", "age gender", "age/gender"]),
+        gender: fieldFromRow(row, ["gender", "cinsiyet", "audience gender", "gender split", "female male", "female/male", "demographics"]) || audienceHints.gender,
+        age: fieldFromRow(row, ["age", "yas", "yaş", "audience age", "age gender", "age/gender", "age distribution", "audience age gender", "audience age&gender analysis", "age gender analysis"]) || audienceHints.age,
         subscribers: fieldFromRow(row, ["subscribers", "followers", "takipci", "takipçi", "subs"]),
         views: fieldFromRow(row, ["avg views", "views", "average views", "avg view", "izlenme"]),
-        avgComments: fieldFromRow(row, ["avg comments", "comments", "yorum"]),
+        avgComments: fieldFromRow(row, ["avg comments", "average comments", "yorum ortalama"]),
         category: fieldFromRow(row, ["category", "kategori"]),
         subcategory: fieldFromRow(row, ["subcategory", "sub category", "alt kategori"]),
         keywords: fieldFromRow(row, ["keywords", "tags", "keyword"]),
@@ -2617,20 +2700,98 @@
       };
     }
 
+    function hasUsefulImportedMetrics(hints) {
+      return Boolean(hints && (
+        hints.subscribers || hints.views || hints.gender || hints.age || hints.geo ||
+        hints.category || hints.subcategory || hints.format || hints.duration || hints.keywords
+      ));
+    }
+
+    function closestExcelRow(rows, excelRow) {
+      const rowNo = Number(excelRow || 0);
+      if (!rowNo || !rows.length) return null;
+      return rows
+        .map((row) => ({ row, distance: Math.abs(Number(row.__excelRow || 0) - rowNo) }))
+        .filter((item) => Number.isFinite(item.distance))
+        .sort((a, b) => a.distance - b.distance)[0]?.row || null;
+    }
+
+    function imageContextFromExcelRow(row, fallback = {}) {
+      if (!row) return fallback;
+      const seed = findYouTubeSeedFromRow(row, 0);
+      return {
+        ...fallback,
+        channelName: seed.name || fallback.channelName || "",
+        channelLink: seed.link || fallback.channelLink || "",
+        excelRow: row.__excelRow || fallback.excelRow || ""
+      };
+    }
+
+    function influencerMatchKey(item = {}) {
+      const link = cleanYouTubeSeedLink(item.link || item.handle || "");
+      if (link) return link.toLowerCase().replace(/^https?:\/\/(www\.)?youtube\.com\//i, "");
+      const name = String(item.name || item["Channel Name"] || "").trim().toLowerCase();
+      return name.replace(/\s+/g, " ");
+    }
+
+    function mergeInfluencerIntoList(item) {
+      const normalized = normalizeInfluencer(item);
+      const key = influencerMatchKey(normalized);
+      const existingIndex = key ? state.influencers.findIndex((current) => influencerMatchKey(current) === key) : -1;
+      if (existingIndex < 0) {
+        state.influencers.unshift(normalized);
+        return { action: "added", index: 0 };
+      }
+      const current = state.influencers[existingIndex];
+      const merged = normalizeInfluencer({
+        ...current,
+        ...Object.fromEntries(Object.entries(normalized).filter(([, value]) => value !== "" && value !== "-" && value !== 0 && value !== "Free data yok")),
+        note: current.note || normalized.note,
+        comments: [current.comments, normalized.comments].filter(Boolean).join("; "),
+        notes: [current.notes, normalized.notes].filter(Boolean).join("; ")
+      });
+      state.influencers[existingIndex] = merged;
+      return { action: "updated", index: existingIndex };
+    }
+
     function findYouTubeSeedFromRow(row, index) {
       const values = Object.values(row).map((value) => String(value || "").trim()).filter(Boolean);
-      const directLink = fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url"]);
-      const scannedLink = values.find((value) => /youtube\.com|youtu\.be/i.test(value)) || values.find((value) => /^@[\w.-]+$/i.test(value));
+      const directLink = cleanYouTubeSeedLink(fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url"]));
+      const scannedLink = values.map(cleanYouTubeSeedLink).find(Boolean);
       const link = directLink || scannedLink || "";
       const explicitName = fieldFromRow(row, ["channel name", "name", "creator", "influencer", "kanal", "influencer name"]);
-      const firstText = values.find((value) => value !== link && !/youtube\.com|youtu\.be/i.test(value) && !/^https?:/i.test(value));
+      const firstText = values.find((value) => value !== link && !cleanYouTubeSeedLink(value) && !/^[@＠]\s*$/u.test(value) && !/^https?:/i.test(value) && !isMetricOnlyText(value));
       const name = explicitName || firstText || (link ? `Creator ${index + 1}` : "");
+      if (isInvalidYouTubeSeedLink(link) && !name) return { name: "", link: "", country: "", raw: row };
+      if (isMetricOnlyText(name) && !link) return { name: "", link: "", country: "", raw: row };
       return {
         name,
         link,
         country: fieldFromRow(row, ["geo", "country", "market", "ülke", "ulke"]) || "Turkey",
         raw: row
       };
+    }
+
+    function isInvalidYouTubeSeedLink(value) {
+      const text = String(value || "").trim().replace(/^＠/, "@");
+      if (!text || text === "@" || /^@[\W_]*$/u.test(text)) return true;
+      if (/^@/.test(text)) return !/^@[\p{L}\p{N}._-]{2,}$/u.test(text);
+      return !/youtube\.com|youtu\.be/i.test(text);
+    }
+
+    function cleanYouTubeSeedLink(value) {
+      const text = String(value || "").trim().replace(/^＠/, "@");
+      if (isInvalidYouTubeSeedLink(text)) return "";
+      if (/^www\.youtube\.com/i.test(text)) return `https://${text}`;
+      return text;
+    }
+
+    function isMetricOnlyText(value) {
+      const text = String(value || "").trim();
+      if (!text) return true;
+      return /^(\d+(?:[.,]\d+)?\s*[KMB]?\s*)?(followers?|subscribers?|avg\s*view|avg\s*eng|monthly\s*post|mthly\s*post|likes?|comments?)$/i.test(text)
+        || /^\d+(?:[.,]\d+)?\s*[KMB]?\s*(followers?|subscribers?)$/i.test(text)
+        || /^\d+(?:[.,]\d+)?%$/.test(text);
     }
 
     async function analyzeInfluencerRows(rows, statusId) {
@@ -2646,11 +2807,13 @@
         return;
       }
       const imported = [];
+      const skipped = [];
       for (let index = 0; index < seeds.length; index += 1) {
         const seed = seeds[index];
         if (status) status.textContent = `Analyzing ${index + 1}/${seeds.length}: ${seed.name || seed.link}`;
         const live = await youtubeFromBrowser({
           name: seed.link || seed.name,
+          fallbackName: seed.name,
           country: seed.country || "Turkey",
           channel: "YouTube",
           views: 0,
@@ -2658,6 +2821,10 @@
           project: state.project
         }, state.api.youtube);
         const hints = getImportedRowHints(seed.raw || {});
+        if (live.source !== "youtube-live" && !hasUsefulImportedMetrics(hints)) {
+          skipped.push(seed.name || seed.link);
+          continue;
+        }
         const extraNotes = Object.entries(hints).filter(([, value]) => value).map(([key, value]) => `${key}: ${value}`).join("; ");
         const importedComment = fieldFromRow(seed.raw || {}, ["comments", "notes", "comment"]) || "";
         imported.push(normalizeInfluencer({
@@ -2678,12 +2845,23 @@
           notes: `${live.notes || "Imported and checked with YouTube API."}${extraNotes || importedComment ? " Imported visual/list data: " + [extraNotes, importedComment].filter(Boolean).join("; ") : ""}`
         }));
       }
-      state.influencers = imported.concat(state.influencers);
-      state.selected = 0;
+      let addedCount = 0;
+      let updatedCount = 0;
+      let lastIndex = 0;
+      imported.reverse().forEach((item) => {
+        const result = mergeInfluencerIntoList(item);
+        if (result.action === "updated") updatedCount += 1;
+        else addedCount += 1;
+        lastIndex = result.index;
+      });
+      state.selected = lastIndex;
       saveState();
       render();
       const nextStatus = statusId ? $(statusId) : null;
-      if (nextStatus) nextStatus.textContent = `Done. ${imported.length} influencer analyzed with YouTube API.`;
+      if (nextStatus) {
+        const skippedText = skipped.length ? ` ${skipped.length} row could not be matched, so it was not added.` : "";
+        nextStatus.textContent = `Done. ${addedCount} added, ${updatedCount} updated.${skippedText}`;
+      }
     }
 
     async function addBulkInfluencers() {
@@ -2718,17 +2896,35 @@
         if (xlsxBuffer) {
           const imageFiles = await extractImagesFromXlsxBuffer(xlsxBuffer);
           if (imageFiles.length) {
-            if (status) status.textContent = `Excel image found. Reading ${imageFiles.length} embedded image(s)...`;
+            const anchored = imageFiles.filter((imageFile) => imageFile.__excelRow).map((imageFile) => `row ${imageFile.__excelRow}`).join(", ");
+            if (status) status.textContent = `Excel image found. Reading ${imageFiles.length} embedded image(s)${anchored ? ` (${anchored})` : ""}...`;
             const imageRows = [];
             for (const imageFile of imageFiles.slice(0, 3)) {
               try {
-                const rowsFromImage = await readImageRowsWithGPT(imageFile, status, { source: "excel-embedded-image", fileName: file.name });
+                const linkedRow = closestExcelRow(rows, imageFile.__excelRow);
+                const imageContext = imageContextFromExcelRow(linkedRow, {
+                  source: "excel-embedded-image",
+                  fileName: file.name,
+                  excelRow: imageFile.__excelRow || ""
+                });
+                let rowsFromImage = [];
+                try {
+                  rowsFromImage = await readImageRowsWithGPT(imageFile, status, imageContext);
+                } catch (gptError) {
+                  if (status) status.textContent = `Excel image GPT failed, trying OCR: ${gptError.message}`;
+                  rowsFromImage = await readImageRowsWithOcr(imageFile, status, imageContext);
+                }
                 imageRows.push(...rowsFromImage);
               } catch (imageError) {
                 if (status) status.textContent = `Excel image OCR failed: ${imageError.message}`;
               }
             }
             if (imageRows.length) await analyzeInfluencerRows(imageRows, "excelStatus");
+            else if (status) status.textContent = `Excel image found, but OCR could not find usable channel rows.`;
+          } else if (status) {
+            status.textContent = rows.length
+              ? `Excel rows were read, but no embedded image was found in this file.`
+              : `No table rows or embedded images found in this Excel file.`;
           }
         }
       } catch (error) {
@@ -2756,6 +2952,49 @@
       throw lastError || new Error("Excel image decompression failed.");
     }
 
+    function normalizeZipPath(value) {
+      const parts = String(value || "").replace(/\\/g, "/").split("/");
+      const stack = [];
+      for (const part of parts) {
+        if (!part || part === ".") continue;
+        if (part === "..") stack.pop();
+        else stack.push(part);
+      }
+      return stack.join("/");
+    }
+
+    function resolveZipTarget(fromPath, target) {
+      if (!target) return "";
+      if (/^\//.test(target)) return normalizeZipPath(target.replace(/^\/+/, ""));
+      return normalizeZipPath(`${fromPath.split("/").slice(0, -1).join("/")}/${target}`);
+    }
+
+    function extractDrawingImageAnchors(entriesByName) {
+      const anchors = new Map();
+      for (const [drawingPath, drawingXml] of entriesByName) {
+        if (!/^xl\/drawings\/drawing\d+\.xml$/i.test(drawingPath)) continue;
+        const relPath = drawingPath.replace(/^xl\/drawings\//i, "xl/drawings/_rels/") + ".rels";
+        const relXml = entriesByName.get(relPath) || "";
+        const rels = new Map();
+        for (const rel of relXml.matchAll(/<Relationship\b[^>]*Id="([^"]+)"[^>]*Target="([^"]+)"/gi)) {
+          rels.set(rel[1], resolveZipTarget(drawingPath, rel[2]));
+        }
+        const blocks = drawingXml.match(/<xdr:(?:twoCellAnchor|oneCellAnchor|absoluteAnchor)\b[\s\S]*?<\/xdr:(?:twoCellAnchor|oneCellAnchor|absoluteAnchor)>/gi) || [];
+        for (const block of blocks) {
+          const rowMatch = block.match(/<xdr:from>[\s\S]*?<xdr:row>(\d+)<\/xdr:row>/i);
+          const embedMatch = block.match(/(?:r:)?embed="([^"]+)"/i);
+          if (!embedMatch) continue;
+          const mediaPath = rels.get(embedMatch[1]);
+          if (!mediaPath) continue;
+          anchors.set(mediaPath, {
+            excelRow: rowMatch ? Number(rowMatch[1]) + 1 : null,
+            drawingPath
+          });
+        }
+      }
+      return anchors;
+    }
+
     async function extractImagesFromXlsxBuffer(buffer) {
       const view = new DataView(buffer);
       let eocd = -1;
@@ -2768,7 +3007,7 @@
       if (eocd < 0) return [];
       const entries = view.getUint16(eocd + 10, true);
       let cdOffset = view.getUint32(eocd + 16, true);
-      const images = [];
+      const zipEntries = [];
       for (let index = 0; index < entries; index += 1) {
         if (view.getUint32(cdOffset, true) !== 0x02014b50) break;
         const method = view.getUint16(cdOffset + 10, true);
@@ -2779,7 +3018,6 @@
         const localOffset = view.getUint32(cdOffset + 42, true);
         const fileName = zipReadString(view, cdOffset + 46, fileNameLength);
         cdOffset += 46 + fileNameLength + extraLength + commentLength;
-        if (!/^xl\/media\/.+\.(png|jpe?g|webp)$/i.test(fileName)) continue;
         if (view.getUint32(localOffset, true) !== 0x04034b50) continue;
         const localNameLength = view.getUint16(localOffset + 26, true);
         const localExtraLength = view.getUint16(localOffset + 28, true);
@@ -2787,10 +3025,25 @@
         const compressed = new Uint8Array(buffer.slice(dataOffset, dataOffset + compressedSize));
         const raw = method === 0 ? compressed : method === 8 ? await inflateZipBytes(compressed) : null;
         if (!raw) continue;
+        zipEntries.push({ name: normalizeZipPath(fileName), raw });
+      }
+      const textEntries = new Map();
+      zipEntries.forEach((entry) => {
+        if (/\.(xml|rels)$/i.test(entry.name)) textEntries.set(entry.name, new TextDecoder().decode(entry.raw));
+      });
+      const anchors = extractDrawingImageAnchors(textEntries);
+      const images = [];
+      for (const entry of zipEntries) {
+        const fileName = entry.name;
+        if (!/^xl\/media\/.+\.(png|jpe?g|webp|gif|bmp)$/i.test(fileName)) continue;
         const ext = fileName.split(".").pop().toLowerCase();
-        const mime = ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "webp" ? "image/webp" : "image/png";
+        const mime = ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "webp" ? "image/webp" : ext === "gif" ? "image/gif" : ext === "bmp" ? "image/bmp" : "image/png";
         const name = fileName.split("/").pop();
-        images.push(new File([raw], name, { type: mime }));
+        const file = new File([entry.raw], name, { type: mime });
+        const anchor = anchors.get(fileName) || {};
+        Object.defineProperty(file, "__excelRow", { value: anchor.excelRow || null, enumerable: false, configurable: true });
+        Object.defineProperty(file, "__mediaPath", { value: fileName, enumerable: false, configurable: true });
+        images.push(file);
       }
       return images;
     }
@@ -3313,7 +3566,8 @@
         gameType: "Game type", style: "Style analysis", rule: "Language rule", avoid: "Avoid", tone: "Tone", normal: "Normal translation", option1: "Option 1 - In-game translation", option2: "Option 2 - More natural", option3: "Option 3 - Short UI", words: "Word-by-word suggestions", source: "Source text"
       };
       const normalTranslation = translateGameString(copy, lang, genre, { normal: true });
-      const translated = translateGameString(copy, lang, genre);
+      const rawTranslation = translateGameString(copy, lang, genre);
+      const translated = naturalizeGameString(rawTranslation, lang, genre);
       const natural = naturalizeGameString(translated, lang, genre);
       const shortUi = shortenGameString(natural, lang);
       const words = wordSuggestions(copy, lang, genre);
@@ -3355,6 +3609,11 @@ ${copy}`;
       if (!text) return "";
       const dictionaries = {
         tr: {
+          "say hi": "Selam ver",
+          "say hello": "Merhaba de",
+          "hello": "merhaba",
+          "hi": "selam",
+          "say": "de / söyle",
           "selam ver": "Selam gönder",
           "merhaba de": "Merhaba de",
           "arkadaş ekle": "Arkadaş ekle",
@@ -3406,6 +3665,10 @@ ${copy}`;
           "quest": "Görev"
         },
         en: {
+          "say hi": "Say hi",
+          "say hello": "Say hello",
+          "hello": "hello",
+          "hi": "hi",
           "selam ver": "Send greeting",
           "selam gönder": "Send greeting",
           "merhaba de": "Say hello",
@@ -3432,6 +3695,10 @@ ${copy}`;
           "kur": "build"
         },
         zh: {
+          "say hi": "打招呼",
+          "say hello": "打招呼",
+          "hello": "你好",
+          "hi": "你好",
           "selam ver": "发送问候",
           "selam gönder": "发送问候",
           "merhaba de": "打招呼",
@@ -3478,6 +3745,8 @@ ${copy}`;
       };
       let output = text;
       const dict = dictionaries[lang] || dictionaries.en;
+      const exact = dict[text.toLowerCase()];
+      if (exact) return exact;
       Object.entries(dict).sort((a, b) => b[0].length - a[0].length).forEach(([from, to]) => {
         output = output.replace(new RegExp(from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), to);
       });
