@@ -426,6 +426,96 @@ function demoLocalizeGameText(source = "", lang = "en") {
   return text;
 }
 
+async function googleTranslateText(source = "", lang = "en") {
+  const text = String(source || "").trim();
+  if (!text || typeof fetch !== "function") return "";
+  const target = lang === "zh" ? "zh-CN" : lang === "tr" ? "tr" : "en";
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(target)}&dt=t&q=${encodeURIComponent(text)}`;
+  const response = await fetchWithTimeout(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 PlayScope/1.0",
+      "Accept": "application/json,text/plain,*/*"
+    }
+  }, 12000);
+  if (!response.ok) throw new Error(`Google translate HTTP ${response.status}`);
+  const data = await response.json();
+  return Array.isArray(data?.[0]) ? data[0].map((part) => part?.[0] || "").join("").trim() : "";
+}
+
+function shortLocalizationText(text = "", lang = "en") {
+  const clean = String(text || "").trim();
+  if (!clean) return "";
+  if (lang === "zh") return clean.split(/[，。！？]/)[0].slice(0, 8);
+  return clean.includes(",") ? clean.split(",")[0].trim() : clean.split(/\s+/).slice(0, 4).join(" ");
+}
+
+function formatGoogleTranslateLocalization({ source, translated, lang, genre, mode, tone }) {
+  const shortText = shortLocalizationText(translated, lang);
+  const labels = {
+    tr: {
+      gameType: "Oyun türü",
+      style: "Tarz analizi",
+      rule: "Dil kuralı",
+      tone: "Ton",
+      normal: "Normal çeviri",
+      option1: "Seçenek 1 - Oyun içi çeviri",
+      option2: "Seçenek 2 - Daha doğal",
+      option3: "Seçenek 3 - Kısa UI",
+      source: "Kaynak metin",
+      note: "Not",
+      noteText: "Google Translate fallback kullanıldı; oyun tonunu GPT kadar derin uyarlamayabilir."
+    },
+    en: {
+      gameType: "Game type",
+      style: "Style analysis",
+      rule: "Language rule",
+      tone: "Tone",
+      normal: "Normal translation",
+      option1: "Option 1 - In-game translation",
+      option2: "Option 2 - More natural",
+      option3: "Option 3 - Short UI",
+      source: "Source text",
+      note: "Note",
+      noteText: "Google Translate fallback was used; game tone may be less nuanced than GPT."
+    },
+    zh: {
+      gameType: "游戏类型",
+      style: "风格分析",
+      rule: "语言规则",
+      tone: "语气",
+      normal: "普通翻译",
+      option1: "选项 1 - 游戏内翻译",
+      option2: "选项 2 - 更自然",
+      option3: "选项 3 - 短 UI",
+      source: "源文本",
+      note: "备注",
+      noteText: "已使用 Google Translate fallback；游戏语气可能不如 GPT 细致。"
+    }
+  }[lang] || {};
+  const normalBlock = mode === "normal" || mode === "both" ? `${labels.normal}:\n${translated}\n\n` : "";
+  if (mode === "normal") {
+    return `${labels.normal}:\n${translated}\n\n${labels.source}:\n${source}\n\n${labels.note}: ${labels.noteText}`;
+  }
+  return `${labels.gameType}: ${genre}
+${labels.style}: ${lang === "zh" ? "先做基础翻译，再作为游戏内文本使用。" : lang === "tr" ? "Önce temel çeviri yapıldı, sonra oyun içi metin olarak kullanılabilir hale getirildi." : "Base translation first, then prepared as in-game text."}
+${labels.rule}: ${lang === "zh" ? "Anlamı koru, kısa ve doğal tut." : lang === "tr" ? "Anlamı koru, kısa ve doğal tut." : "Keep the meaning clear, short, and natural."}
+${labels.tone}: ${tone}
+
+${normalBlock}${labels.option1}:
+${translated}
+
+${labels.option2}:
+${translated}
+
+${labels.option3}:
+${shortText}
+
+${labels.source}:
+${source}
+
+${labels.note}: ${labels.noteText}`;
+}
+
 async function localize(input) {
   const languageName = input.lang === "zh" ? "Chinese" : input.lang === "tr" ? "Turkish" : "English";
   const genre = input.genre || input.project?.genre || "auto";
@@ -458,6 +548,20 @@ Source: ${input.source || ""}`;
   const ai = await openAiText(prompt);
   if (ai) return { source: "openai", text: ai };
   const source = String(input.source || "").trim();
+  const googleText = await googleTranslateText(source, input.lang || "en").catch(() => "");
+  if (googleText && googleText.toLowerCase() !== source.toLowerCase()) {
+    return {
+      source: "googletrans",
+      text: formatGoogleTranslateLocalization({
+        source,
+        translated: googleText,
+        lang: input.lang || "en",
+        genre,
+        mode,
+        tone: input.tone || "Store-ready"
+      })
+    };
+  }
   const demoText = demoLocalizeGameText(source, input.lang || "en");
   const shortDemo = input.lang === "zh"
     ? demoText.split("，")[0].slice(0, 8)

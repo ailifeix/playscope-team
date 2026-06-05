@@ -762,8 +762,8 @@
     }
     function backendTargets() {
       const published = "https://playscope-team.onrender.com";
-      if (location.protocol === "file:") return ["http://127.0.0.1:5184", "http://127.0.0.1:5183", "http://127.0.0.1:5182", "http://127.0.0.1:5180", "http://127.0.0.1:5177", published];
-      if (location.hostname === "127.0.0.1" || location.hostname === "localhost") return ["", "http://127.0.0.1:5184", "http://127.0.0.1:5183", "http://127.0.0.1:5182", "http://127.0.0.1:5180"];
+      if (location.protocol === "file:") return ["http://127.0.0.1:5178", "http://localhost:5178", "http://127.0.0.1:5184", "http://127.0.0.1:5183", "http://127.0.0.1:5182", "http://127.0.0.1:5180", "http://127.0.0.1:5177", published];
+      if (location.hostname === "127.0.0.1" || location.hostname === "localhost") return ["", "http://127.0.0.1:5178", "http://localhost:5178", "http://127.0.0.1:5184", "http://127.0.0.1:5183", "http://127.0.0.1:5182", "http://127.0.0.1:5180"];
       return ["", published];
     }
     async function fetchTeamApi(path, options = {}) {
@@ -3624,6 +3624,48 @@
       return tone || table.store || "";
     }
 
+    function latinWordSet(value) {
+      return new Set((String(value || "").toLowerCase().match(/[a-zçğıöşü]+/g) || []).filter((word) => word.length > 2));
+    }
+
+    function isUsableFallbackTranslation(source, output, lang) {
+      const sourceWords = latinWordSet(source);
+      const outputText = String(output || "").toLowerCase();
+      if (!sourceWords.size) return true;
+      if (lang === "zh") return /[\u4e00-\u9fff]/.test(outputText);
+      const leftovers = [...sourceWords].filter((word) => outputText.includes(word));
+      const leftoverRatio = leftovers.length / sourceWords.size;
+      return leftoverRatio < 0.45;
+    }
+
+    function localizationNeedsGptMessage(source, lang, genre) {
+      const labels = {
+        tr: {
+          title: "GPT çeviri gerekli",
+          body: "Bu metni güvenilir çevirmek için GPT/backend bağlantısı gerekiyor. Yerel fallback genel çeviri motoru değildir; bozuk yarım çeviri üretmemek için sonuç durduruldu.",
+          fix: "Local server veya Render linkinden açıp Settings'teki GPT key'i kullan.",
+          source: "Kaynak metin",
+          gameType: "Oyun türü"
+        },
+        en: {
+          title: "GPT translation required",
+          body: "This text needs the GPT/backend translator for a reliable result. The local fallback is not a general translation engine, so the app stopped before producing a broken mixed-language output.",
+          fix: "Open the local server or Render link and use the GPT key saved in Settings.",
+          source: "Source text",
+          gameType: "Game type"
+        },
+        zh: {
+          title: "需要 GPT 翻译",
+          body: "此文本需要 GPT/后端翻译才能得到可靠结果。本地 fallback 不是通用翻译引擎，因此已停止输出混合语言的错误翻译。",
+          fix: "请使用本地服务器或 Render 链接，并在 Settings 中保存 GPT key。",
+          source: "源文本",
+          gameType: "游戏类型"
+        }
+      }[lang] || {};
+      const profile = localizationProfileForLang(genre, lang);
+      return `${labels.title}\n${labels.body}\n${labels.fix}\n\n${labels.gameType}: ${profile.label}\n${labels.source}:\n${source}`;
+    }
+
     function demoLocalizationVariants(source, lang, tone, genre, mode = "game") {
       const profile = localizationProfileForLang(genre, lang);
       const copy = String(source || "").trim() || "Build your fleet";
@@ -3641,6 +3683,9 @@
       const natural = naturalizeGameString(translated, lang, genre);
       const shortUi = shortenGameString(natural, lang);
       const words = wordSuggestions(copy, lang, genre);
+      if (!normalTranslation || !translated) return localizationNeedsGptMessage(copy, lang, genre);
+      const fallbackOk = isUsableFallbackTranslation(copy, [normalTranslation, translated, natural, shortUi].join("\n"), lang);
+      if (!fallbackOk) return localizationNeedsGptMessage(copy, lang, genre);
       if (mode === "normal") {
         return `${labels.normal}:
 ${normalTranslation}
@@ -3688,6 +3733,13 @@ ${copy}`;
           "merhaba de": "Merhaba de",
           "arkadaş ekle": "Arkadaş ekle",
           "arkadas ekle": "Arkadaş ekle",
+          "ready your weapon and conquer the world": "Silahını hazırla ve dünyayı fethet",
+          "ready your weapons and conquer the world": "Silahlarını hazırla ve dünyayı fethet",
+          "ready your weapon": "Silahını hazırla",
+          "ready your weapons": "Silahlarını hazırla",
+          "conquer the world": "Dünyayı fethet",
+          "the world": "dünya",
+          "ready": "hazırla",
           "build your fleet, explore unknown galaxies, and outsmart rival commanders in fast mobile strategy battles.": "Filonu kur, bilinmeyen galaksileri keşfet ve hızlı mobil strateji savaşlarında rakip komutanları zekânla alt et.",
           "explore unknown galaxies": "bilinmeyen galaksileri keşfet",
           "outsmart rival commanders": "rakip komutanları zekânla alt et",
@@ -3744,6 +3796,10 @@ ${copy}`;
           "merhaba de": "Say hello",
           "arkadaş ekle": "Add friend",
           "arkadas ekle": "Add friend",
+          "silahını hazırla ve dünyayı fethet": "Ready your weapon and conquer the world",
+          "silahlarini hazirla ve dunyayi fethet": "Ready your weapons and conquer the world",
+          "silahını hazırla": "Ready your weapon",
+          "silahlarini hazirla": "Ready your weapons",
           "tekrar dene ve dünyayı fethet": "Try again and conquer the world",
           "tekrar dene ve dunyayi fethet": "Try again and conquer the world",
           "tekrar dene": "Try again",
@@ -3785,6 +3841,11 @@ ${copy}`;
           "merhaba de": "打招呼",
           "arkadaş ekle": "添加好友",
           "arkadas ekle": "添加好友",
+          "ready your weapon and conquer the world": "准备好武器，征服世界",
+          "ready your weapons and conquer the world": "准备好武器，征服世界",
+          "ready your weapon": "准备好武器",
+          "ready your weapons": "准备好武器",
+          "conquer the world": "征服世界",
           "tekrar dene ve dünyayı fethet": "再次挑战，征服世界",
           "tekrar dene ve dunyayi fethet": "再次挑战，征服世界",
           "tekrar dene": "再次尝试",
@@ -3839,11 +3900,7 @@ ${copy}`;
       const dict = dictionaries[lang] || dictionaries.en;
       const exact = dict[text.toLowerCase()];
       if (exact) return exact;
-      Object.entries(dict).sort((a, b) => b[0].length - a[0].length).forEach(([from, to]) => {
-        output = output.replace(new RegExp(from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), to);
-      });
-      if (output === text && lang === "tr") output = text;
-      if (output === text && lang === "zh") output = `${text} 的游戏内文本建议`;
+      return "";
       if (!options.normal && lang === "en" && /^Send greeting$/i.test(output)) {
         if (genre === "fps") output = "Greet your squad";
         if (genre === "mmo") output = "Greet your guild";
@@ -3864,6 +3921,11 @@ ${copy}`;
         }
         if (/^merhaba de$/.test(lower)) return "Merhaba de";
         if (/^arkadaş ekle$|^arkadas ekle$/.test(lower)) return "Arkadaş ekle";
+        if (/^silahını hazırla ve dünyayı fethet$/.test(lower)) {
+          if (genre === "mmo") return "Silahını kuşan ve dünyayı fethet";
+          if (genre === "fps") return "Silahını hazırla, dünyayı fethet";
+          return "Silahını hazırla ve dünyayı fethet";
+        }
         if (genre === "mmo") return text.replace(/^Bir loncaya katıl$/i, "Loncana katıl").replace(/^Kahramanını geliştir$/i, "Kahramanını güçlendir");
         if (genre === "fps") return text.replace(/Savaşı başlat/i, "Çatışmaya gir").replace(/Ekip/i, "Takım");
         if (genre === "casual") return text.replace(/Topla/i, "Al").replace(/Geliştir/i, "Yükselt");
@@ -3915,9 +3977,9 @@ ${copy}`;
       const stop = new Set("a an the and or your you our we in on at to of for with into by from this that fast mobile".split(" "));
       const unique = [...new Set(terms.filter((term) => !stop.has(term) && term.length > 2))].slice(0, 8);
       const termOverrides = {
-        tr: { selam: "selam", ver: "gönder / ver", merhaba: "merhaba" },
+        tr: { selam: "selam", ver: "gönder / ver", merhaba: "merhaba", ready: "hazırla / kuşan", weapon: "silah", weapons: "silahlar", conquer: "fethet", world: "dünya" },
         en: { selam: "greeting / hello", ver: "send / give", merhaba: "hello" },
-        zh: { selam: "问候 / 你好", ver: "发送 / 给", merhaba: "你好" }
+        zh: { selam: "问候 / 你好", ver: "发送 / 给", merhaba: "你好", ready: "准备好", weapon: "武器", weapons: "武器", conquer: "征服", world: "世界" }
       };
       const suggestions = unique.map((term) => `${term} → ${(termOverrides[lang] || {})[term] || translateGameString(term, lang, genre)}`);
       return suggestions.length ? suggestions.join("; ") : "-";
@@ -4153,7 +4215,7 @@ ${source}`;
         body: JSON.stringify({ source, lang, tone, genre, mode, project: state.project })
       });
       const result = await response.json();
-      return result && result.text && result.source === "openai" ? result.text : "";
+      return result && result.text && ["openai", "googletrans", "google-translate"].includes(result.source) ? result.text : "";
     }
 
     async function generateLocalization() {
