@@ -429,10 +429,12 @@ function demoLocalizeGameText(source = "", lang = "en") {
 async function localize(input) {
   const languageName = input.lang === "zh" ? "Chinese" : input.lang === "tr" ? "Turkish" : "English";
   const genre = input.genre || input.project?.genre || "auto";
+  const mode = input.mode || "game";
   const prompt = `You are a senior mobile game in-game localization specialist.
 Analyze the game genre and text function first, then localize the in-game word/sentence into ${languageName}.
 
 Rules:
+- Translation mode: ${mode}. If mode is "normal", provide a clear normal translation without game-style adaptation. If mode is "game", adapt for in-game usage. If mode is "both", show both normal translation and in-game adaptation.
 - Do not translate word by word.
 - Preserve the source meaning.
 - Adapt the wording to the game type and in-game context.
