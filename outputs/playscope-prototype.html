@@ -3139,6 +3139,40 @@
       };
     }
 
+    function normalizeGptBaseUrl(value) {
+      let base = String(value || "https://api.openai.com/v1").trim();
+      if (!base) base = "https://api.openai.com/v1";
+      base = base.replace(/\/+$/, "");
+      base = base.replace(/\/chat\/completions$/i, "");
+      if (/^https:\/\/api\.openai\.com$/i.test(base)) base += "/v1";
+      return base;
+    }
+
+    function gptModelCandidates(preferred) {
+      return [...new Set([
+        preferred && preferred !== "auto" ? preferred : "",
+        "gpt-4o-mini",
+        "gpt-4o",
+        "gpt-4.1-mini",
+        "gpt-4.1",
+        "gpt-3.5-turbo",
+        "chatgpt-4o-latest"
+      ].filter(Boolean))];
+    }
+
+    async function readGptError(response) {
+      if (response?.error?.message) return response.error.message;
+      if (!response || typeof response.text !== "function") return `HTTP ${response?.status || "network"}`;
+      const raw = await response.text().catch(() => "");
+      if (!raw) return `HTTP ${response.status}`;
+      try {
+        const parsed = JSON.parse(raw);
+        return parsed?.error?.message || parsed?.message || raw.slice(0, 220);
+      } catch (error) {
+        return raw.slice(0, 220);
+      }
+    }
+
     async function readImageRowsWithGPT(file, status, context = {}) {
       let config = getSavedGptConfig();
       try {
@@ -3148,7 +3182,7 @@
       } catch (error) {
         // file:// mode uses browser-saved API settings.
       }
-      const baseUrl = String(config.openaiBaseUrl || "https://api.openai.com/v1").replace(/\/+$/, "");
+      const baseUrl = normalizeGptBaseUrl(config.openaiBaseUrl || "https://api.openai.com/v1");
       const preferredModel = config.openaiModel && config.openaiModel !== "auto" ? config.openaiModel : "";
       const dataUrl = await fileToDataUrl(file);
       const imageBackendTargets = [...new Set([
@@ -3175,7 +3209,7 @@
         }
       }
       if (!config.openaiApiKey) throw new Error("GPT API key gerekli. Settings sayfasina GPT key'i kaydet.");
-      const modelCandidates = [...new Set([preferredModel, "gpt-4o", "gpt-4.1", "gpt-5", "gpt-5-mini", "chatgpt-4o-latest"].filter(Boolean))];
+      const modelCandidates = gptModelCandidates(preferredModel);
       let lastError = "";
       for (const model of modelCandidates) {
         if (status) status.textContent = `Reading image with GPT (${model})...`;
@@ -3203,10 +3237,14 @@
           })
         }).catch((error) => ({ ok: false, status: "network", error }));
         if (!response.ok) {
-          lastError = response.error?.message || `HTTP ${response.status}`;
+          lastError = `${model}: ${await readGptError(response)}`;
           continue;
         }
-        const data = await response.json();
+        const data = await response.json().catch((error) => {
+          lastError = `${model}: GPT JSON parse failed (${error.message})`;
+          return null;
+        });
+        if (!data) continue;
         const parsed = parseJsonObject(data.choices?.[0]?.message?.content || "");
         const rows = Array.isArray(parsed?.rows) ? parsed.rows : [];
         if (!rows.length) throw new Error("Gorselden kullanilabilir satir bulunamadi.");
@@ -3773,8 +3811,19 @@ ${copy}`;
           "ready your weapon": "Silahını hazırla",
           "ready your weapons": "Silahlarını hazırla",
           "conquer the world": "Dünyayı fethet",
+          "build your fleet and join a guild": "Filonu kur ve bir loncaya katıl",
+          "build your fleet": "Filonu kur",
+          "join a guild": "Bir loncaya katıl",
+          "collect your daily reward": "Günlük ödülünü topla",
+          "daily reward": "günlük ödül",
           "the world": "dünya",
           "ready": "hazırla",
+          "build": "kur",
+          "fleet": "filo",
+          "join": "katıl",
+          "guild": "lonca",
+          "collect": "topla",
+          "reward": "ödül",
           "build your fleet, explore unknown galaxies, and outsmart rival commanders in fast mobile strategy battles.": "Filonu kur, bilinmeyen galaksileri keşfet ve hızlı mobil strateji savaşlarında rakip komutanları zekânla alt et.",
           "explore unknown galaxies": "bilinmeyen galaksileri keşfet",
           "outsmart rival commanders": "rakip komutanları zekânla alt et",
@@ -3905,6 +3954,8 @@ ${copy}`;
           "unknown": "未知",
           "build your fleet": "组建舰队",
           "join a guild": "加入公会",
+          "collect your daily reward": "领取每日奖励",
+          "daily reward": "每日奖励",
           "upgrade your hero": "升级英雄",
           "claim rewards": "领取奖励",
           "start battle": "开始战斗",
@@ -4012,9 +4063,9 @@ ${copy}`;
       const stop = new Set("a an the and or your you our we in on at to of for with into by from this that fast mobile".split(" "));
       const unique = [...new Set(terms.filter((term) => !stop.has(term) && term.length > 2))].slice(0, 8);
       const termOverrides = {
-        tr: { selam: "selam", ver: "gönder / ver", merhaba: "merhaba", ready: "hazırla / kuşan", weapon: "silah", weapons: "silahlar", conquer: "fethet", world: "dünya" },
+        tr: { selam: "selam", ver: "gönder / ver", merhaba: "merhaba", ready: "hazırla / kuşan", weapon: "silah", weapons: "silahlar", conquer: "fethet", world: "dünya", build: "kur", fleet: "filo", join: "katıl", guild: "lonca", collect: "topla", daily: "günlük", reward: "ödül" },
         en: { selam: "greeting / hello", ver: "send / give", merhaba: "hello" },
-        zh: { selam: "问候 / 你好", ver: "发送 / 给", merhaba: "你好", ready: "准备好", weapon: "武器", weapons: "武器", conquer: "征服", world: "世界" }
+        zh: { selam: "问候 / 你好", ver: "发送 / 给", merhaba: "你好", ready: "准备好", weapon: "武器", weapons: "武器", conquer: "征服", world: "世界", build: "建造", fleet: "舰队", join: "加入", guild: "公会", collect: "领取 / 收集", daily: "每日", reward: "奖励" }
       };
       const suggestions = unique.map((term) => `${term} → ${(termOverrides[lang] || {})[term] || translateGameString(term, lang, genre)}`);
       return suggestions.length ? suggestions.join("; ") : "-";
@@ -4133,7 +4184,8 @@ ${copy}`;
       const base = String(option1 || "").trim();
       const sourceText = String(source || "").trim();
       const combined = `${base} ${sourceText}`;
-      const hayati = /hayat\s+senin|life is your|life is yours|either create|either conquer|fethet|conquer/i.test(combined);
+      const weaponConquer = /weapon|silah|conquer the world|dünyayı fethet|dunyayi fethet/i.test(combined);
+      const hayati = /hayat\s+senin|life is your|life is yours|either create|either conquer|create.*conquer|yarat.*fethet/i.test(combined);
       const lider = /lider|leader|lead/i.test(combined);
       const uyan = /uyan|awaken|wake|yaratma|time to create/i.test(combined);
       const odul = /ödül|odul|reward|claim/i.test(combined);
@@ -4161,6 +4213,7 @@ ${copy}`;
         if (/email|e-posta|mail/i.test(combined)) return ["E-postanı kontrol etmeyi unutma", "E-postayı kontrol et"];
         if (/yükleme|yukleme|upload/i.test(combined)) return ["Yükleme başarıyla tamamlandı", "Yükleme tamamlandı"];
         if (notification) return ["Bildirimleri aç ve gelişmelerden haberdar ol", "Bildirimleri aç"];
+        if (weaponConquer) return ["Silahını kuşan ve dünyayı ele geçir", "Dünyayı fethet"];
         if (hayati) return ["Hayat senin. İster yarat, ister fethet", "Yarat ya da fethet"];
         if (lider) return ["Hazırsan liderliği ele al", "Kendi liderin ol"];
         if (uyan) return ["Uyan. Yaratma vakti geldi", "Yaratma zamanı"];
@@ -4196,6 +4249,7 @@ ${copy}`;
         if (/email|e-posta|mail/i.test(combined)) return ["别忘了查看邮箱", "查看邮箱"];
         if (/yükleme|yukleme|upload/i.test(combined)) return ["上传已成功完成", "上传完成"];
         if (notification) return ["开启通知，及时获取更新", "开启通知"];
+        if (weaponConquer) return ["拿起武器，征服世界", "征服世界"];
         if (hayati) return ["人生属于你，创造或征服", "创造或征服"];
         if (lider) return ["准备出发，掌控自己的道路", "成为自己的领袖"];
         if (uyan) return ["觉醒吧，创造时刻已到", "开始创造"];
@@ -4225,6 +4279,7 @@ ${copy}`;
       if (/email|e-posta|mail/i.test(combined)) return ["Remember to check your email", "Check email"];
       if (/yükleme|yukleme|upload/i.test(combined)) return ["Upload completed successfully", "Upload complete"];
       if (notification) return ["Turn on notifications to stay updated", "Enable notifications"];
+      if (weaponConquer) return ["Ready your weapon and seize the world", "Conquer the world"];
       if (hayati) return ["Your life, your choice: create or conquer", "Create or conquer"];
       if (lider) return ["Ready up and lead your own way", "Be your own leader"];
       if (uyan) return ["Awaken. It is time to create", "Time to create"];
@@ -4396,9 +4451,9 @@ ${copy}`;
     async function localizeWithClientGpt({ source, lang, tone, genre, mode }) {
       const config = getSavedGptConfig();
       if (!config.openaiApiKey) return null;
-      const baseUrl = String(config.openaiBaseUrl || "https://api.openai.com/v1").replace(/\/+$/, "");
+      const baseUrl = normalizeGptBaseUrl(config.openaiBaseUrl || "https://api.openai.com/v1");
       const preferredModel = config.openaiModel && config.openaiModel !== "auto" ? config.openaiModel : "";
-      const modelCandidates = [...new Set([preferredModel, "gpt-4o-mini", "gpt-4o", "gpt-4.1", "gpt-5-mini"].filter(Boolean))];
+      const modelCandidates = gptModelCandidates(preferredModel);
       const languageName = localizationLanguageName(lang);
       const prompt = `You are a senior mobile game in-game localization specialist.
 Translate and adapt the source text into ${languageName}.
@@ -4453,10 +4508,14 @@ ${source}`;
           })
         }).catch((error) => ({ ok: false, status: "network", error }));
         if (!response.ok) {
-          lastError = response.error?.message || `HTTP ${response.status}`;
+          lastError = `${model}: ${await readGptError(response)}`;
           continue;
         }
-        const data = await response.json();
+        const data = await response.json().catch((error) => {
+          lastError = `${model}: GPT JSON parse failed (${error.message})`;
+          return null;
+        });
+        if (!data) continue;
         const text = data.choices?.[0]?.message?.content?.trim();
         if (text) return { text, model };
       }
@@ -4724,7 +4783,7 @@ ${labels.note}: ${labels.noteText}`;
           return;
         }
       } catch (directError) {
-        if (status) status.textContent = `GPT direct failed; trying Google Translate fallback...`;
+        if (status) status.textContent = `GPT direct failed: ${directError.message}. Trying Google Translate fallback...`;
       }
       try {
         const googleText = await localizeWithBrowserGoogleTranslate({ source, lang, tone, genre, mode });
@@ -4750,7 +4809,7 @@ ${labels.note}: ${labels.noteText}`;
       state.api = state.api || { youtube: "", openai: "", googleSecret: "", serpapi: "", openaiBaseUrl: "https://api.1475258.xyz/v1", openaiModel: "auto" };
       const youtube = $("apiYoutube").value.trim();
       const openai = $("apiOpenai").value.trim();
-      const openaiBaseUrl = $("apiOpenaiBaseUrl").value.trim();
+      const openaiBaseUrl = normalizeGptBaseUrl($("apiOpenaiBaseUrl").value.trim());
       const openaiModel = $("apiOpenaiModel").value.trim();
       const serpapi = $("apiSerpapi")?.value.trim() || "";
       const googleSecret = $("apiGoogleSecret").value.trim();

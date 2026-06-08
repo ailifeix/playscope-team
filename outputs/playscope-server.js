@@ -35,11 +35,27 @@ function writeEnv(updates) {
 }
 
 function getAiBaseUrl() {
-  return (env.GPT_API_BASE_URL || env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/+$/, "");
+  let base = String(env.GPT_API_BASE_URL || env.OPENAI_BASE_URL || "https://api.openai.com/v1").trim();
+  base = base.replace(/\/+$/, "").replace(/\/chat\/completions$/i, "");
+  if (/^https:\/\/api\.openai\.com$/i.test(base)) base += "/v1";
+  return base;
 }
 
 function getAiModel() {
   return env.GPT_MODEL && env.GPT_MODEL !== "auto" ? env.GPT_MODEL : "gpt-4o-mini";
+}
+
+function getAiModelCandidates() {
+  const preferred = env.GPT_MODEL && env.GPT_MODEL !== "auto" ? env.GPT_MODEL : "";
+  return [...new Set([
+    preferred,
+    "gpt-4o-mini",
+    "gpt-4o",
+    "gpt-4.1-mini",
+    "gpt-4.1",
+    "gpt-3.5-turbo",
+    "chatgpt-4o-latest"
+  ].filter(Boolean))];
 }
 
 function getTeamPassword() {
@@ -175,24 +191,28 @@ async function youtubeResearch(input) {
 
 async function openAiText(prompt) {
   if (!env.OPENAI_API_KEY || typeof fetch !== "function") return null;
-  const response = await fetch(`${getAiBaseUrl()}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${env.OPENAI_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: getAiModel(),
-      messages: [
-        { role: "system", content: "You are a concise game marketing localization assistant. Return only the requested copy." },
-        { role: "user", content: prompt }
-      ],
-      temperature: 0.4
-    })
-  });
-  if (!response.ok) return null;
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content?.trim() || null;
+  for (const model of getAiModelCandidates()) {
+    const response = await fetch(`${getAiBaseUrl()}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: "You are a concise game marketing localization assistant. Return only the requested copy." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.4
+      })
+    }).catch(() => null);
+    if (!response || !response.ok) continue;
+    const data = await response.json().catch(() => null);
+    const text = data?.choices?.[0]?.message?.content?.trim();
+    if (text) return text;
+  }
+  return null;
 }
 
 function parseJsonObject(text) {
@@ -268,38 +288,42 @@ Rules:
 - keywords can be an array or comma-separated string. Use only visible game names, tags, or meaningful content keywords. Do not include UI labels, URLs, tracking text, social links, or random OCR fragments.
 - Do not guess gender, age, or geo.`;
 
-  const response = await fetch(`${getAiBaseUrl()}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${env.OPENAI_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: getAiModel(),
-      messages: [
-        { role: "system", content: "You extract structured influencer marketing data from screenshots. Return strict JSON only." },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            { type: "image_url", image_url: { url: input.image } }
-          ]
-        }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0
-    })
-  });
-
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    return { ok: false, error: `OpenAI screen read failed: HTTP ${response.status}. ${detail.slice(0, 180)}` };
+  let lastError = "";
+  for (const model of getAiModelCandidates()) {
+    const response = await fetch(`${getAiBaseUrl()}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: "You extract structured influencer marketing data from screenshots. Return strict JSON only." },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              { type: "image_url", image_url: { url: input.image } }
+            ]
+          }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0
+      })
+    }).catch((error) => ({ ok: false, status: "network", error }));
+    if (!response.ok) {
+      const detail = typeof response.text === "function" ? await response.text().catch(() => "") : "";
+      lastError = response.error?.message || `${model}: HTTP ${response.status}. ${detail}`.slice(0, 220);
+      continue;
+    }
+    const data = await response.json().catch(() => null);
+    const parsed = parseJsonObject(data?.choices?.[0]?.message?.content || "");
+    const item = cleanOcrInfluencer(parsed, input.current || {});
+    if (item) return { ok: true, item };
+    lastError = `${model}: OpenAI did not return parseable JSON.`;
   }
-  const data = await response.json();
-  const parsed = parseJsonObject(data.choices?.[0]?.message?.content || "");
-  const item = cleanOcrInfluencer(parsed, input.current || {});
-  if (!item) return { ok: false, error: "OpenAI did not return parseable JSON." };
-  return { ok: true, item };
+  return { ok: false, error: `OpenAI screen read failed: ${lastError}` };
 }
 
 async function readImageData(input) {
@@ -309,15 +333,7 @@ async function readImageData(input) {
   if (!input.image || !String(input.image).startsWith("data:image/")) {
     return { ok: false, error: "No image received." };
   }
-  const preferred = getAiModel();
-  const modelCandidates = [...new Set([
-    preferred && preferred !== "auto" ? preferred : "",
-    "gpt-4o",
-    "gpt-4.1",
-    "gpt-5",
-    "gpt-5-mini",
-    "chatgpt-4o-latest"
-  ].filter(Boolean))];
+  const modelCandidates = getAiModelCandidates();
   let lastError = "";
   for (const model of modelCandidates) {
     const response = await fetch(`${getAiBaseUrl()}/chat/completions`, {
@@ -1124,7 +1140,7 @@ const server = http.createServer(async (req, res) => {
       const updates = {};
       if (body.youtubeApiKey) updates.YOUTUBE_API_KEY = body.youtubeApiKey;
       if (body.openaiApiKey) updates.OPENAI_API_KEY = body.openaiApiKey;
-      if (body.openaiBaseUrl) updates.GPT_API_BASE_URL = body.openaiBaseUrl;
+      if (body.openaiBaseUrl) updates.GPT_API_BASE_URL = String(body.openaiBaseUrl).trim().replace(/\/+$/, "").replace(/\/chat\/completions$/i, "");
       if (body.openaiModel) updates.GPT_MODEL = body.openaiModel;
       if (body.serpapiKey) updates.SERPAPI_KEY = body.serpapiKey;
       if (body.googleSecret) updates.GOOGLE_CLIENT_SECRET = body.googleSecret;
