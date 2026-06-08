@@ -217,7 +217,7 @@
     .loc-batch-item { border: 1px solid rgba(149, 120, 255, .22); border-radius: 8px; padding: 12px; background: rgba(255,255,255,.7); }
     .loc-batch-item h4 { margin: 0 0 8px; font-size: 13px; }
     .localization-workspace .loc-main-grid { display: grid; grid-template-columns: minmax(320px, 1.1fr) minmax(280px, .9fr); gap: 16px; align-items: start; }
-    .localization-workspace .loc-import-grid { display: grid; grid-template-columns: minmax(280px, .95fr) minmax(320px, 1.05fr); gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+    .localization-workspace .loc-import-grid { display: grid; grid-template-columns: minmax(280px, 520px); gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
     .localization-workspace textarea { min-height: 118px; }
     .localization-workspace .loc-import-grid textarea { min-height: 106px; }
     .localization-output-box { display: grid; gap: 12px; }
@@ -1287,7 +1287,7 @@
           pasteRows: "Satır yapıştır",
           pastePlaceholder: "Oyun, Tür, Metin\nGalaxy Raiders, Strategy, Build your fleet\nRPG Quest, MMO, Join a guild",
           localizeRows: "Yapıştırılan satırları lokalize et",
-          batchStatus: "Excel/CSV yükle veya çoklu oyun içi metin için satır yapıştır.",
+          batchStatus: "Excel/CSV yükleyerek çoklu oyun içi metin lokalize edebilirsin.",
           guideTitle: "Tür bazlı dil rehberi",
           type: "Tür",
           style: "Lokalizasyon dili",
@@ -1322,7 +1322,7 @@
           "ve": "and",
           "selam": "greeting",
           "ver": "send",
-          workspace: "In-game localization workspace", gameType: "Game type", mode: "Translation mode", modeNormal: "Normal translation", modeGame: "In-game adaptation", modeBoth: "Show both", auto: "Auto analyze", fps: "FPS / Shooter", mmo: "MMO / RPG", strategy: "Strategy / 4X", casual: "Casual / Puzzle", horror: "Horror", racing: "Racing", simulation: "Simulation", storeReady: "In-game ready", competitive: "Competitive", cinematic: "Cinematic", friendly: "Friendly", premium: "Premium", excelTitle: "Excel / copy-paste in-game text localization", excelFile: "Excel / CSV file", uploadLocalize: "Upload and localize", excelHint: "Use columns like Source, Text, String, UI, Dialogue, Game, Genre, Language.", pasteRows: "Copy-paste rows", pastePlaceholder: "Game, Genre, Source\nGalaxy Raiders, Strategy, Build your fleet\nRPG Quest, MMO, Join a guild", localizeRows: "Localize pasted rows", batchStatus: "Upload Excel/CSV or paste rows to localize multiple in-game strings.", guideTitle: "Genre language guide", type: "Type", style: "Localization style", avoid: "Avoid", fpsStyle: "Short, punchy, skill/combat words.", fpsAvoid: "Slow fantasy wording.", mmoStyle: "World, class, guild, raid, progression.", mmoAvoid: "Only action words.", strategyStyle: "Command, build, alliance, tactics, conquest.", strategyAvoid: "Too casual/simple copy.", casualStyle: "Clear, soft, easy reward language.", casualAvoid: "Hardcore jargon.", horrorStyle: "Mystery, survival, tension, atmosphere.", horrorAvoid: "Over-promising gore."
+          workspace: "In-game localization workspace", gameType: "Game type", mode: "Translation mode", modeNormal: "Normal translation", modeGame: "In-game adaptation", modeBoth: "Show both", auto: "Auto analyze", fps: "FPS / Shooter", mmo: "MMO / RPG", strategy: "Strategy / 4X", casual: "Casual / Puzzle", horror: "Horror", racing: "Racing", simulation: "Simulation", storeReady: "In-game ready", competitive: "Competitive", cinematic: "Cinematic", friendly: "Friendly", premium: "Premium", excelTitle: "Excel in-game text localization", excelFile: "Excel / CSV file", uploadLocalize: "Upload and localize", excelHint: "Use columns like Source, Text, String, UI, Dialogue, Game, Genre, Language.", pasteRows: "Copy-paste rows", pastePlaceholder: "Game, Genre, Source\nGalaxy Raiders, Strategy, Build your fleet\nRPG Quest, MMO, Join a guild", localizeRows: "Localize pasted rows", batchStatus: "Upload Excel/CSV to localize multiple in-game strings.", guideTitle: "Genre language guide", type: "Type", style: "Localization style", avoid: "Avoid", fpsStyle: "Short, punchy, skill/combat words.", fpsAvoid: "Slow fantasy wording.", mmoStyle: "World, class, guild, raid, progression.", mmoAvoid: "Only action words.", strategyStyle: "Command, build, alliance, tactics, conquest.", strategyAvoid: "Too casual/simple copy.", casualStyle: "Clear, soft, easy reward language.", casualAvoid: "Hardcore jargon.", horrorStyle: "Mystery, survival, tension, atmosphere.", horrorAvoid: "Over-promising gore."
         },
         zh: {
           "selam ver": "发送问候",
@@ -1343,7 +1343,7 @@
           "ve": "并",
           "selam": "问候",
           "ver": "发送",
-          workspace: "游戏内文本本地化工作台", gameType: "游戏类型", mode: "翻译模式", modeNormal: "普通翻译", modeGame: "游戏内改写", modeBoth: "两者都显示", auto: "自动分析", fps: "FPS / 射击", mmo: "MMO / RPG", strategy: "策略 / 4X", casual: "休闲 / 解谜", horror: "恐怖", racing: "竞速", simulation: "模拟", storeReady: "游戏内文案", competitive: "竞技感", cinematic: "电影感", friendly: "亲和", premium: "高级感", excelTitle: "Excel / 粘贴游戏内文本本地化", excelFile: "Excel / CSV 文件", uploadLocalize: "上传并本地化", excelHint: "可使用 Source, Text, String, UI, Dialogue, Game, Genre, Language 等列。", pasteRows: "粘贴行", pastePlaceholder: "Game, Genre, Source\nGalaxy Raiders, Strategy, Build your fleet\nRPG Quest, MMO, Join a guild", localizeRows: "本地化粘贴行", batchStatus: "上传 Excel/CSV 或粘贴多行游戏内文本。", guideTitle: "类型语言指南", type: "类型", style: "本地化风格", avoid: "避免", fpsStyle: "短促、有冲击力，强调操作和战斗。", fpsAvoid: "缓慢的幻想叙事。", mmoStyle: "世界、职业、公会、团本、成长。", mmoAvoid: "只写动作词。", strategyStyle: "指挥、建造、联盟、战术、征服。", strategyAvoid: "过于休闲简单。", casualStyle: "清晰、轻松、奖励感。", casualAvoid: "硬核术语。", horrorStyle: "谜团、生存、紧张、氛围。", horrorAvoid: "过度血腥承诺。"
+          workspace: "游戏内文本本地化工作台", gameType: "游戏类型", mode: "翻译模式", modeNormal: "普通翻译", modeGame: "游戏内改写", modeBoth: "两者都显示", auto: "自动分析", fps: "FPS / 射击", mmo: "MMO / RPG", strategy: "策略 / 4X", casual: "休闲 / 解谜", horror: "恐怖", racing: "竞速", simulation: "模拟", storeReady: "游戏内文案", competitive: "竞技感", cinematic: "电影感", friendly: "亲和", premium: "高级感", excelTitle: "Excel 游戏内文本本地化", excelFile: "Excel / CSV 文件", uploadLocalize: "上传并本地化", excelHint: "可使用 Source, Text, String, UI, Dialogue, Game, Genre, Language 等列。", pasteRows: "粘贴行", pastePlaceholder: "Game, Genre, Source\nGalaxy Raiders, Strategy, Build your fleet\nRPG Quest, MMO, Join a guild", localizeRows: "本地化粘贴行", batchStatus: "上传 Excel/CSV 后可批量本地化游戏内文本。", guideTitle: "类型语言指南", type: "类型", style: "本地化风格", avoid: "避免", fpsStyle: "短促、有冲击力，强调操作和战斗。", fpsAvoid: "缓慢的幻想叙事。", mmoStyle: "世界、职业、公会、团本、成长。", mmoAvoid: "只写动作词。", strategyStyle: "指挥、建造、联盟、战术、征服。", strategyAvoid: "过于休闲简单。", casualStyle: "清晰、轻松、奖励感。", casualAvoid: "硬核术语。", horrorStyle: "谜团、生存、紧张、氛围。", horrorAvoid: "过度血腥承诺。"
         }
       };
       return (dict[state.lang] || dict.en)[key] || dict.en[key] || key;
@@ -1388,7 +1388,7 @@
           <div class="field-label">${tr("output")}</div>
           <div class="result-box localization-output-box">
             <div id="locOutput">${formatLocalizationOutput(state.localizationOutput || "Output will appear here.")}</div>
-            <div class="loc-batch-list" id="locBatchOutput">${renderLocalizationBatch(state.localizationBatch || [])}</div>
+            <div class="loc-batch-list" id="locBatchOutput">${state.localizationBatchSource === "excel" ? renderLocalizationBatch(state.localizationBatch || []) : ""}</div>
           </div>
           <button id="copyLocBtn" type="button" style="margin-top:12px">${tr("copy")}</button>
           <div class="loc-import-grid">
@@ -1398,11 +1398,6 @@
               <button class="primary" id="locExcelBtn" type="button" style="margin-top:12px">${locUi("uploadLocalize")}</button>
               <p class="note">${locUi("excelHint")}</p>
             </div>
-            <div>
-              <div class="field-label">${locUi("pasteRows")}</div>
-              <textarea id="locPasteRows" placeholder="${esc(locUi("pastePlaceholder"))}"></textarea>
-              <button class="primary" id="locPasteBtn" type="button" style="margin-top:12px">${locUi("localizeRows")}</button>
-            </div>
           </div>
           <p class="note" id="locBatchStatus">${locUi("batchStatus")}</p>
           `, "localization-workspace")}
@@ -1410,7 +1405,6 @@
       $("locBtn").addEventListener("click", generateLocalization);
       $("copyLocBtn").addEventListener("click", () => navigator.clipboard?.writeText(document.querySelector(".localization-output-box")?.textContent || $("locOutput").textContent));
       $("locExcelBtn").addEventListener("click", handleLocalizationExcel);
-      $("locPasteBtn").addEventListener("click", handleLocalizationPaste);
     }
 
     function competitorsPage() {
@@ -4115,7 +4109,7 @@ ${copy}`;
       return rowsToObjects(sheetRows);
     }
 
-    async function localizeBatchRows(rows) {
+    async function localizeBatchRows(rows, sourceType = "excel") {
       const tone = $("locTone").value;
       const selectedGenre = $("locGenre").value;
       const mode = $("locMode")?.value || "game";
@@ -4162,6 +4156,7 @@ ${copy}`;
         });
       }
       state.localizationBatch = outputs;
+      state.localizationBatchSource = sourceType;
       saveState();
       $("locBatchOutput").innerHTML = renderLocalizationBatch(outputs);
       $("locBatchStatus").textContent = outputs.length ? `${outputs.length} row(s) localized.` : "No usable source text found.";
@@ -4176,15 +4171,10 @@ ${copy}`;
           return;
         }
         status.textContent = "Reading file...";
-        await localizeBatchRows(await localizationRowsFromFile(file));
+        await localizeBatchRows(await localizationRowsFromFile(file), "excel");
       } catch (error) {
         status.textContent = "File could not be read: " + error.message;
       }
-    }
-
-    async function handleLocalizationPaste() {
-      const rows = rowsToObjects(parseDelimitedRows($("locPasteRows").value));
-      await localizeBatchRows(rows);
     }
 
     function localizationLanguageName(lang) {
@@ -4280,11 +4270,13 @@ ${source}`;
       return formatBrowserGoogleLocalization({ source: text, translated, lang, tone, genre, mode });
     }
 
-    function shortGoogleLocalization(text, lang) {
+    function shortGoogleLocalization(text, lang, source = "") {
       const clean = String(text || "").trim();
+      const sourceText = String(source || "").trim();
       if (!clean) return "";
       if (lang === "zh") return clean.split(/[，。！？]/)[0].slice(0, 8);
       if (lang === "tr") {
+        if (/leader|lider/i.test(`${sourceText} ${clean}`)) return "Kendi liderin ol";
         if (/Silahını kuşan, loncanla dünyayı fethet/i.test(clean)) return "Loncanla fethet";
         if (/Silahını kuşan, hedefe kilitlen ve dünyayı fethet/i.test(clean)) return "Hedefe kilitlen";
         if (/Ordunu hazırla ve dünyayı stratejinle fethet/i.test(clean)) return "Ordunu hazırla";
@@ -4292,8 +4284,10 @@ ${source}`;
         if (/Silahını kuşan ve karanlığı alt et/i.test(clean)) return "Karanlığı alt et";
         if (/Hazırlan ve zirveye çık/i.test(clean)) return "Zirveye çık";
         if (/Düzenini kur ve kendi dünyanı inşa et/i.test(clean)) return "Dünyanı inşa et";
+        if (clean.split(/\s+/).length <= 6) return clean;
       }
       if (lang === "en") {
+        if (/leader/i.test(`${sourceText} ${clean}`)) return "Be your leader";
         if (/conquer the world with your guild/i.test(clean)) return "Conquer with your guild";
         if (/dominate the battlefield/i.test(clean)) return "Dominate the battlefield";
         if (/conquer the world with strategy/i.test(clean)) return "Command and conquer";
@@ -4301,14 +4295,18 @@ ${source}`;
         if (/race to the top/i.test(clean)) return "Race to the top";
         if (/build/i.test(clean)) return "Build your world";
       }
-      return clean.includes(",") ? clean.split(",")[0].trim() : clean.split(/\s+/).slice(0, 4).join(" ");
+      if (clean.includes(",")) return clean.split(",")[0].trim();
+      const words = clean.split(/\s+/);
+      return words.length <= 6 ? clean : words.slice(0, 6).join(" ");
     }
 
-    function naturalGoogleLocalization(baseText, adaptedText, lang, genre) {
+    function naturalGoogleLocalization(baseText, adaptedText, lang, genre, source = "") {
       const base = String(baseText || "").trim();
       const adapted = String(adaptedText || "").trim();
+      const sourceText = String(source || "").trim();
       if (!base && !adapted) return "";
       if (lang === "tr") {
+        if (/leader|lider/i.test(`${sourceText} ${base} ${adapted}`)) return "Hazırlan, kendi liderin ol";
         if (/^Silahını hazırla ve dünyayı fethet$/i.test(base)) {
           if (genre === "mmo") return "Silahını kuşan ve loncanla dünyayı fethet";
           if (genre === "fps") return "Silahını kuşan, hedefe kilitlen ve savaşı kazan";
@@ -4394,8 +4392,8 @@ ${source}`;
       }[lang] || {};
       const profile = localizationProfileForLang(genre, lang);
       const adapted = genreAdaptedTranslation(translated, lang, genre);
-      const naturalText = naturalGoogleLocalization(translated, adapted, lang, genre);
-      const shortText = shortGoogleLocalization(adapted, lang);
+      const naturalText = naturalGoogleLocalization(translated, adapted, lang, genre, source);
+      const shortText = shortGoogleLocalization(adapted, lang, source);
       if (mode === "normal") {
         return `${labels.normal}:\n${translated}\n\n${labels.source}:\n${source}\n\n${labels.note}: ${labels.noteText}`;
       }

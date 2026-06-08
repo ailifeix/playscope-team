@@ -442,11 +442,13 @@ async function googleTranslateText(source = "", lang = "en") {
   return Array.isArray(data?.[0]) ? data[0].map((part) => part?.[0] || "").join("").trim() : "";
 }
 
-function shortLocalizationText(text = "", lang = "en") {
+function shortLocalizationText(text = "", lang = "en", source = "") {
   const clean = String(text || "").trim();
+  const sourceText = String(source || "").trim();
   if (!clean) return "";
   if (lang === "zh") return clean.split(/[，。！？]/)[0].slice(0, 8);
   if (lang === "tr") {
+    if (/leader|lider/i.test(`${sourceText} ${clean}`)) return "Kendi liderin ol";
     if (/Silahını kuşan, loncanla dünyayı fethet/i.test(clean)) return "Loncanla fethet";
     if (/Silahını kuşan, hedefe kilitlen ve dünyayı fethet/i.test(clean)) return "Hedefe kilitlen";
     if (/Ordunu hazırla ve dünyayı stratejinle fethet/i.test(clean)) return "Ordunu hazırla";
@@ -454,8 +456,10 @@ function shortLocalizationText(text = "", lang = "en") {
     if (/Silahını kuşan ve karanlığı alt et/i.test(clean)) return "Karanlığı alt et";
     if (/Hazırlan ve zirveye çık/i.test(clean)) return "Zirveye çık";
     if (/Düzenini kur ve kendi dünyanı inşa et/i.test(clean)) return "Dünyanı inşa et";
+    if (clean.split(/\s+/).length <= 6) return clean;
   }
   if (lang === "en") {
+    if (/leader/i.test(`${sourceText} ${clean}`)) return "Be your leader";
     if (/conquer the world with your guild/i.test(clean)) return "Conquer with your guild";
     if (/dominate the battlefield/i.test(clean)) return "Dominate the battlefield";
     if (/conquer the world with strategy/i.test(clean)) return "Command and conquer";
@@ -463,14 +467,18 @@ function shortLocalizationText(text = "", lang = "en") {
     if (/race to the top/i.test(clean)) return "Race to the top";
     if (/build/i.test(clean)) return "Build your world";
   }
-  return clean.includes(",") ? clean.split(",")[0].trim() : clean.split(/\s+/).slice(0, 4).join(" ");
+  if (clean.includes(",")) return clean.split(",")[0].trim();
+  const words = clean.split(/\s+/);
+  return words.length <= 6 ? clean : words.slice(0, 6).join(" ");
 }
 
-function naturalLocalizationText(baseText = "", adaptedText = "", lang = "en", genre = "") {
+function naturalLocalizationText(baseText = "", adaptedText = "", lang = "en", genre = "", source = "") {
   const base = String(baseText || "").trim();
   const adapted = String(adaptedText || "").trim();
+  const sourceText = String(source || "").trim();
   if (!base && !adapted) return "";
   if (lang === "tr") {
+    if (/leader|lider/i.test(`${sourceText} ${base} ${adapted}`)) return "Hazırlan, kendi liderin ol";
     if (/^Silahını hazırla ve dünyayı fethet$/i.test(base)) {
       if (genre === "mmo") return "Silahını kuşan ve loncanla dünyayı fethet";
       if (genre === "fps") return "Silahını kuşan, hedefe kilitlen ve savaşı kazan";
@@ -550,8 +558,8 @@ function genreAdaptedGoogleText(text = "", lang = "en", genre = "") {
 
 function formatGoogleTranslateLocalization({ source, translated, lang, genre, mode, tone }) {
   const adapted = genreAdaptedGoogleText(translated, lang, genre);
-  const naturalText = naturalLocalizationText(translated, adapted, lang, genre);
-  const shortText = shortLocalizationText(adapted, lang);
+  const naturalText = naturalLocalizationText(translated, adapted, lang, genre, source);
+  const shortText = shortLocalizationText(adapted, lang, source);
   const labels = {
     tr: {
       gameType: "Oyun türü",
