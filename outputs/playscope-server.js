@@ -1110,9 +1110,94 @@ function serveFile(req, res) {
   send(res, 200, fs.readFileSync(filePath), type);
 }
 
+function aiLanguageName(code) {
+  if (code === "zh" || code === "Chinese") return "Chinese";
+  if (code === "tr" || code === "Turkish") return "Turkish";
+  return "English";
+}
+
+function aiModuleInstructions(module, inputs = {}) {
+  const common = `Return JSON only. Do not wrap in markdown. Do not invent unsupported facts. Do not claim internet, store, API, or database access unless provided in the input.`;
+  const modules = {
+    reviewAnalyzer: `${common}
+Analyze only the provided player reviews. Return:
+{"summary":"","sentiment":{"positive":0,"neutral":0,"negative":0},"topComplaints":[{"category":"","severity":"Low|Medium|High","explanation":"","example":""}],"topPraises":[{"category":"","explanation":"","example":""}],"productActions":[],"marketingActions":[],"localizationRisks":[{"language":"","issue":"","suggestion":""}],"executiveSummary":""}`,
+    localizationQa: `${common}
+Check source text and current translation. Respect established terminology if provided; do not invent a random glossary. Return:
+{"score":0,"verdict":"","meaningAccuracy":{"status":"Good|Needs review|Problematic","explanation":""},"naturalness":{"status":"Good|Needs improvement","explanation":""},"uiLengthRisk":{"status":"Safe|Slightly long|Too long","explanation":""},"terminology":{"status":"Consistent|Inconsistent|Needs review","issues":[]},"toneStyle":{"status":"","explanation":""},"culturalRisk":{"status":"Low|Medium|High","explanation":""},"suggestedTranslation":"","explanation":""}`,
+    campaignIdeas: `${common}
+Generate game campaign ideas only. Do not use or modify influencer database. Do not invent real partnerships. Return:
+{"campaignName":"","concept":"","audienceInsight":"","creativeAngle":"","socialIdeas":[{"channel":"","idea":"","execution":""}],"kolIdeas":[],"inGameEventIdeas":[],"localizationSuggestions":[],"riskNotes":[],"adCopies":{"headlines":[],"bodyTexts":[],"pushNotifications":[]}}`,
+    weeklyReport: `${common}
+Polish only the user's notes. Do not invent specific completed work. Return:
+{"language":"","title":"","sections":[{"heading":"","items":[]}],"risks":[],"supportNeeded":[]}`,
+    workspace: `${common}
+Reply as a practical project assistant. If route is code, answer like a code/debug assistant; otherwise use GPT-style marketing/localization/report help. Return:
+{"role":"assistant","title":"","summary":"","bullets":[],"suggestedNextActions":[],"text":""}`
+  };
+  return modules[module] || modules.workspace;
+}
+
+async function aiModuleResponse(body = {}) {
+  if (!env.OPENAI_API_KEY || typeof fetch !== "function") {
+    return { ok: false, code: "AI_NOT_CONFIGURED", notConfigured: true };
+  }
+  if (body.module === "status") return { ok: true, configured: true, data: { configured: true } };
+  const language = aiLanguageName(body.language);
+  const prompt = `${aiModuleInstructions(body.module, body.inputs)}
+
+Output language: ${language}
+Response style: ${body.responseStyle || "professional"}
+Model routing mode: ${body.modelMode || "Auto"}
+Project context:
+${JSON.stringify(body.projectContext || {}, null, 2)}
+
+User inputs:
+${JSON.stringify(body.inputs || {}, null, 2)}`;
+
+  let lastError = "";
+  for (const model of getAiModelCandidates()) {
+    const response = await fetch(`${getAiBaseUrl()}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: "You are PlayScope AI for game marketing, localization, review analysis, and professional reports. Return structured JSON only." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.35,
+        max_tokens: 1800,
+        stream: false
+      })
+    }).catch((error) => {
+      lastError = error.message;
+      return null;
+    });
+    if (!response || !response.ok) {
+      lastError = response ? `HTTP ${response.status}` : lastError;
+      continue;
+    }
+    const data = await response.json().catch(() => null);
+    const text = data?.choices?.[0]?.message?.content?.trim();
+    const parsed = parseJsonObject(text);
+    if (parsed) return { ok: true, module: body.module, language, source: "openai", model, data: parsed };
+    lastError = "AI returned non-JSON output.";
+  }
+  return { ok: false, code: "AI_FAILED", error: lastError || "AI response failed." };
+}
+
 const server = http.createServer(async (req, res) => {
   if (req.method === "OPTIONS") return send(res, 204, {});
   try {
+    if (req.method === "POST" && req.url === "/api/ai") {
+      const body = await readJson(req);
+      const result = await aiModuleResponse(body).catch(() => ({ ok: false, code: "AI_FAILED" }));
+      return send(res, 200, result);
+    }
     if (req.method === "POST" && req.url === "/api/research") {
       const body = await readJson(req);
       const result = await youtubeResearch(body).catch(() => demoInfluencer(body));

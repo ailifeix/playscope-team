@@ -913,6 +913,13 @@
       model: "Prototype",
       theme: "System"
     };
+    state.ai.settings = {
+      modelMode: "Auto",
+      outputLanguage: "Follow UI",
+      responseStyle: "professional",
+      backendStatus: "unknown",
+      ...state.ai.settings
+    };
 
     const competitors = {
       strategy: [
@@ -4259,49 +4266,34 @@ Return exactly this JSON shape:
       const copy = String(source || "").trim() || "Build your fleet";
       const displayTone = localizeLocalizationTone(tone, lang);
       const labels = {
-        tr: { gameType: "Oyun türü", style: "Tarz analizi", rule: "Dil kuralı", avoid: "Kaçın", tone: "Ton", normal: "Normal çeviri", option1: "Seçenek 1 - Oyun içi çeviri", option2: "Seçenek 2 - Daha doğal", option3: "Seçenek 3 - Kısa UI", words: "Kelime kelime öneriler", source: "Kaynak metin" },
-        en: { gameType: "Game type", style: "Style analysis", rule: "Language rule", avoid: "Avoid", tone: "Tone", normal: "Normal translation", option1: "Option 1 - In-game translation", option2: "Option 2 - More natural", option3: "Option 3 - Short UI", words: "Word-by-word suggestions", source: "Source text" },
-        zh: { gameType: "游戏类型", style: "风格分析", rule: "语言规则", avoid: "避免", tone: "语气", normal: "普通翻译", option1: "选项 1 - 游戏内翻译", option2: "选项 2 - 更自然", option3: "选项 3 - 短 UI", words: "逐词建议", source: "源文本" }
+        tr: { gameType: "Oyun türü", style: "Tarz analizi", rule: "Dil kuralı", avoid: "Kaçın", tone: "Ton", translation: "Çeviri", words: "Sözlük / kullanabileceğin öneriler", source: "Kaynak metin", note: "Not" },
+        en: { gameType: "Game type", style: "Style analysis", rule: "Language rule", avoid: "Avoid", tone: "Tone", translation: "Translation", words: "Glossary / reusable suggestions", source: "Source text", note: "Note" },
+        zh: { gameType: "游戏类型", style: "风格分析", rule: "语言规则", avoid: "避免", tone: "语气", translation: "翻译", words: "术语 / 可复用建议", source: "源文本", note: "备注" }
       }[lang] || {
-        gameType: "Game type", style: "Style analysis", rule: "Language rule", avoid: "Avoid", tone: "Tone", normal: "Normal translation", option1: "Option 1 - In-game translation", option2: "Option 2 - More natural", option3: "Option 3 - Short UI", words: "Word-by-word suggestions", source: "Source text"
+        gameType: "Game type", style: "Style analysis", rule: "Language rule", avoid: "Avoid", tone: "Tone", translation: "Translation", words: "Glossary / reusable suggestions", source: "Source text", note: "Note"
       };
       const normalTranslation = translateGameString(copy, lang, genre, { normal: true });
       const rawTranslation = translateGameString(copy, lang, genre);
       const translated = naturalizeGameString(rawTranslation, lang, genre);
-      const natural = naturalizeGameString(translated, lang, genre);
-      const shortUi = shortenGameString(natural, lang);
       const words = wordSuggestions(copy, lang, genre);
       if (!normalTranslation || !translated) return localizationNeedsGptMessage(copy, lang, genre);
-      const fallbackOk = isUsableFallbackTranslation(copy, [normalTranslation, translated, natural, shortUi].join("\n"), lang);
+      const fallbackOk = isUsableFallbackTranslation(copy, [normalTranslation, translated].join("\n"), lang);
       if (!fallbackOk) return localizationNeedsGptMessage(copy, lang, genre);
-      if (mode === "normal") {
-        return `${labels.normal}:
-${normalTranslation}
-
-${labels.words}:
-${words}
-
-${labels.source}:
-${copy}`;
-      }
-      const normalBlock = mode === "both" ? `${labels.normal}:\n${normalTranslation}\n\n` : "";
+      const finalTranslation = mode === "normal" ? normalTranslation : translated;
       return `${labels.gameType}: ${profile.label}
 ${labels.style}: ${gameStyleAnalysis(copy, lang, genre)}
 ${labels.rule}: ${profile.rule}
 ${labels.avoid}: ${profile.avoid}
 ${labels.tone}: ${displayTone}
 
-${normalBlock}${labels.option1}:
-${translated}
-
-${labels.option2}:
-${natural}
-
-${labels.option3}:
-${shortUi}
+${labels.translation}:
+${finalTranslation}
 
 ${labels.words}:
 ${words}
+
+${labels.note}:
+${lang === "tr" ? "Düz çeviri esas alındı; oyun türüne göre ton yumuşakça düzenlendi." : lang === "zh" ? "以直接翻译为主，并根据游戏类型轻微调整语气。" : "Direct translation first, lightly adjusted for game genre."}
 
 ${labels.source}:
 ${copy}`;
@@ -4317,6 +4309,15 @@ ${copy}`;
           "hello": "merhaba",
           "hi": "selam",
           "say": "de / söyle",
+          "pull your gun and shot the person": "Silahını çek ve kişiyi vur",
+          "pull your gun and shoot the person": "Silahını çek ve kişiyi vur",
+          "pull your gun": "Silahını çek",
+          "shoot the person": "Kişiyi vur",
+          "shot the person": "Kişiyi vur",
+          "gun": "silah",
+          "shoot": "vur",
+          "shot": "vur",
+          "person": "kişi",
           "selam ver": "Selam gönder",
           "merhaba de": "Merhaba de",
           "arkadaş ekle": "Arkadaş ekle",
@@ -4578,7 +4579,7 @@ ${copy}`;
       const stop = new Set("a an the and or your you our we in on at to of for with into by from this that fast mobile".split(" "));
       const unique = [...new Set(terms.filter((term) => !stop.has(term) && term.length > 2))].slice(0, 8);
       const termOverrides = {
-        tr: { selam: "selam", ver: "gönder / ver", merhaba: "merhaba", ready: "hazırla / kuşan", weapon: "silah", weapons: "silahlar", conquer: "fethet", world: "dünya", build: "kur", fleet: "filo", join: "katıl", guild: "lonca", collect: "topla", daily: "günlük", reward: "ödül" },
+        tr: { selam: "selam", ver: "gönder / ver", merhaba: "merhaba", pull: "çek / çıkar", gun: "silah", shoot: "vur / ateş et", shot: "vur / ateş et", person: "kişi / hedef", ready: "hazırla / kuşan", weapon: "silah", weapons: "silahlar", conquer: "fethet", world: "dünya", build: "kur", fleet: "filo", join: "katıl", guild: "lonca", collect: "topla", daily: "günlük", reward: "ödül" },
         en: { selam: "greeting / hello", ver: "send / give", merhaba: "hello" },
         zh: { selam: "问候 / 你好", ver: "发送 / 给", merhaba: "你好", ready: "准备好", weapon: "武器", weapons: "武器", conquer: "征服", world: "世界", build: "建造", fleet: "舰队", join: "加入", guild: "公会", collect: "领取 / 收集", daily: "每日", reward: "奖励" }
       };
@@ -4603,14 +4604,15 @@ ${copy}`;
       const meta = [];
       const cards = [];
       let current = null;
+      const cardHeading = /^(translation|çeviri|ceviri|翻译|glossary|sözlük|sozluk|word-by-word suggestions|kelime kelime öneriler|kelime kelime oneriler|术语|逐词建议|note|not|备注):/i;
       for (const line of lines) {
         if (/^(option\s+\d+|seçenek\s+\d+|secenek\s+\d+|se.ene?k\s+\d+|选项\s*\d+)/i.test(line)) {
+          current = { title: line.replace(/^(option\s+\d+\s*-\s*|seçenek\s+\d+\s*-\s*|secenek\s+\d+\s*-\s*|se.ene?k\s+\d+\s*-\s*|选项\s*\d+\s*-\s*)/i, "").replace(/:$/, "") || "Translation", body: [] };
+          cards.push(current);
+        } else if (cardHeading.test(line)) {
           current = { title: line.replace(/:$/, ""), body: [] };
           cards.push(current);
-        } else if (/^(normal translation|normal çeviri|normal ceviri|普通翻译|word-by-word suggestions|kelime kelime öneriler|kelime kelime oneriler|逐词建议):/i.test(line)) {
-          current = { title: line.replace(/:$/, ""), body: [] };
-          cards.push(current);
-        } else if (/^(game type|style analysis|language rule|avoid|tone|note|source text|source meaning kept|oyun türü|oyun turu|tarz analizi|dil kuralı|dil kurali|kaçın|kacin|ton|not|kaynak metin|korunan kaynak anlamı|korunan kaynak anlami|游戏类型|风格分析|语言规则|避免|语气|源文本|保留原意):/i.test(line)) {
+        } else if (/^(game type|style analysis|language rule|avoid|tone|source text|source meaning kept|oyun türü|oyun turu|tarz analizi|dil kuralı|dil kurali|kaçın|kacin|ton|kaynak metin|korunan kaynak anlamı|korunan kaynak anlami|游戏类型|风格分析|语言规则|避免|语气|源文本|保留原意):/i.test(line)) {
           meta.push(line);
           current = null;
         } else if (current) {
@@ -4622,7 +4624,8 @@ ${copy}`;
       if (!cards.length) {
         return `<div class="loc-output"><div class="option-card">${esc(raw)}</div></div>`;
       }
-      return `<div class="loc-output">${meta.length ? `<div class="meta">${meta.map((item) => `<span>${esc(item)}</span>`).join("")}</div>` : ""}${cards.map((card) => `<div class="option-card"><strong>${esc(card.title)}</strong>${esc(card.body.join(" "))}</div>`).join("")}</div>`;
+      const normalized = normalizeLocalizationCardsForDisplay(cards);
+      return `<div class="loc-output">${meta.length ? `<div class="meta">${meta.map((item) => `<span>${esc(item)}</span>`).join("")}</div>` : ""}${normalized.map((card) => `<div class="option-card"><strong>${esc(card.title)}</strong>${esc(card.body.join(" "))}</div>`).join("")}</div>`;
     }
 
     function parseLocalizationCards(text) {
@@ -4630,14 +4633,15 @@ ${copy}`;
       const meta = [];
       const cards = [];
       let current = null;
+      const cardHeading = /^(translation|çeviri|ceviri|翻译|glossary|sözlük|sozluk|word-by-word suggestions|kelime kelime öneriler|kelime kelime oneriler|术语|逐词建议|note|not|备注):/i;
       for (const line of lines) {
         if (/^(option\s+\d+|seçenek\s+\d+|secenek\s+\d+|se.ene?k\s+\d+|选项\s*\d+)/i.test(line)) {
+          current = { title: line.replace(/^(option\s+\d+\s*-\s*|seçenek\s+\d+\s*-\s*|secenek\s+\d+\s*-\s*|se.ene?k\s+\d+\s*-\s*|选项\s*\d+\s*-\s*)/i, "").replace(/:$/, "") || "Translation", body: [] };
+          cards.push(current);
+        } else if (cardHeading.test(line)) {
           current = { title: line.replace(/:$/, ""), body: [] };
           cards.push(current);
-        } else if (/^(normal translation|normal çeviri|normal ceviri|普通翻译|word-by-word suggestions|kelime kelime öneriler|kelime kelime oneriler|逐词建议):/i.test(line)) {
-          current = { title: line.replace(/:$/, ""), body: [] };
-          cards.push(current);
-        } else if (/^(game type|style analysis|language rule|avoid|tone|note|source text|source meaning kept|oyun türü|oyun turu|tarz analizi|dil kuralı|dil kurali|kaçın|kacin|ton|not|kaynak metin|korunan kaynak anlamı|korunan kaynak anlami|游戏类型|风格分析|语言规则|避免|语气|源文本|保留原意):/i.test(line)) {
+        } else if (/^(game type|style analysis|language rule|avoid|tone|source text|source meaning kept|oyun türü|oyun turu|tarz analizi|dil kuralı|dil kurali|kaçın|kacin|ton|kaynak metin|korunan kaynak anlamı|korunan kaynak anlami|游戏类型|风格分析|语言规则|避免|语气|源文本|保留原意):/i.test(line)) {
           meta.push(line);
           current = null;
         } else if (current) {
@@ -4647,6 +4651,26 @@ ${copy}`;
         }
       }
       return { meta, cards };
+    }
+
+    function localizationDisplayLabels(lang = state.lang) {
+      return {
+        tr: { translation: "Çeviri", glossary: "Sözlük / kullanabileceğin öneriler", note: "Not" },
+        en: { translation: "Translation", glossary: "Glossary / reusable suggestions", note: "Note" },
+        zh: { translation: "翻译", glossary: "术语 / 可复用建议", note: "备注" }
+      }[lang] || { translation: "Translation", glossary: "Glossary / reusable suggestions", note: "Note" };
+    }
+
+    function normalizeLocalizationCardsForDisplay(cards = [], lang = state.lang) {
+      const labels = localizationDisplayLabels(lang);
+      const translationCard = cards.find((card) => /translation|çeviri|ceviri|翻译|oyun içi|in-game|游戏内|normal/i.test(card.title)) || cards[0];
+      const glossaryCard = cards.find((card) => /glossary|sözlük|sozluk|word-by-word|kelime|öneri|oneri|suggestion|术语|逐词/i.test(card.title));
+      const noteCard = cards.find((card) => /note|not|备注/i.test(card.title));
+      const result = [];
+      if (translationCard) result.push({ title: labels.translation, body: translationCard.body });
+      if (glossaryCard) result.push({ title: labels.glossary, body: glossaryCard.body });
+      if (noteCard) result.push({ title: labels.note, body: noteCard.body });
+      return result.length ? result : cards;
     }
 
     function normalizeLocalizationOption(text) {
@@ -4826,18 +4850,18 @@ ${copy}`;
       const raw = String(text || "").trim();
       if (!raw) return raw;
       const parsed = parseLocalizationCards(raw);
-      const optionCards = parsed.cards.filter((card) => /^(option|seçenek|secenek|se.ene?k|选项)/i.test(card.title));
-      if (optionCards.length < 3) return raw;
-      const values = optionCards.slice(0, 3).map((card) => card.body.join(" ").trim());
-      const normalized = values.map(normalizeLocalizationOption);
-      const duplicates = normalized[0] && (normalized[0] === normalized[1] || normalized[0] === normalized[2] || normalized[1] === normalized[2]);
-      if (!duplicates) return raw;
-      const [natural, shortUi] = fallbackLocalizationVariants(values[0], context.lang || "en", context.source || "");
-      optionCards[1].body = [natural];
-      optionCards[2].body = [shortUi];
+      if (!parsed.cards.length) return raw;
+      const labels = localizationDisplayLabels(context.lang || state.lang);
+      const translationCard = parsed.cards.find((card) => /translation|çeviri|ceviri|翻译|oyun içi|in-game|游戏内|normal/i.test(card.title)) || parsed.cards[0];
+      const glossaryCard = parsed.cards.find((card) => /glossary|sözlük|sozluk|word-by-word|kelime|öneri|oneri|suggestion|术语|逐词/i.test(card.title));
+      const noteCard = parsed.cards.find((card) => /note|not|备注/i.test(card.title));
+      const translation = translationCard?.body.join(" ").trim();
+      if (!translation) return raw;
       return [
         ...parsed.meta,
-        ...parsed.cards.map((card) => `${card.title}:\n${card.body.join(" ")}`)
+        `${labels.translation}:\n${translation}`,
+        `${labels.glossary}:\n${glossaryCard?.body.join(" ").trim() || wordSuggestions(context.source || translation, context.lang || state.lang, context.genre || "strategy")}`,
+        `${labels.note}:\n${noteCard?.body.join(" ").trim() || (context.lang === "tr" ? "Tek ana çeviri üretildi; seçenek varyasyonları kaldırıldı." : context.lang === "zh" ? "已保留一个主译文，并移除选项变体。" : "One main translation was kept; option variants were removed.")}`
       ].join("\n\n");
     }
 
@@ -4976,15 +5000,14 @@ Translate and adapt the source text into ${languageName}.
 Important:
 - This is for game UI, in-game words, skill/item names, quest text, tutorial text, buttons, dialogue, rewards, and system messages.
 - If mode is normal, give a faithful normal translation.
-- If mode is game, adapt the wording to the game genre and in-game context.
-- If mode is both, show both normal translation and game adaptation.
+- If mode is game or both, still give one main translation; lightly adapt tone to the game genre without changing the meaning.
 - Do not leave source-language fragments untranslated.
 - Do not do broken word-by-word replacement.
 - Use natural target-language grammar and correct characters.
 - Keep short UI text short.
-- Option 1 must be accurate and ready to use in-game.
-- Option 2 must be a more natural/emotional alternative, not a duplicate.
-- Option 3 must be a complete short UI version, never a cut-off fragment.
+- Do not return Option 1, Option 2, Option 3, variants, or duplicate alternatives.
+- Return one clean final translation only.
+- Under the translation, provide a glossary with reusable terms or phrase suggestions.
 - Preserve key meaning such as create, conquer, build, lead, reward, claim, upgrade, join, battle, survive, explore.
 - For Turkish, use Turkish characters.
 - For Chinese, use Simplified Chinese.
@@ -4994,11 +5017,9 @@ Important:
 
 Return with clear headings in the target language:
 Game type/style analysis
-Normal translation when requested
-Option 1 - In-game translation
-Option 2 - More natural
-Option 3 - Short UI
-Word-by-word suggestions
+Translation
+Glossary / reusable suggestions
+Note
 Source text
 
 Source text:
@@ -5068,9 +5089,9 @@ ${source}`;
       const raw = String(source || "").trim();
       const key = raw.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
       const labels = {
-        tr: { gameType: "Oyun türü", style: "Tarz analizi", rule: "Dil kuralı", tone: "Ton", option1: "Seçenek 1 - Oyun içi çeviri", option2: "Seçenek 2 - Daha doğal", option3: "Seçenek 3 - Kısa UI", source: "Kaynak metin", note: "Not", noteText: "Kısa slogan için yerel oyun lokalizasyonu kullanıldı." },
-        en: { gameType: "Game type", style: "Style analysis", rule: "Language rule", tone: "Tone", option1: "Option 1 - In-game translation", option2: "Option 2 - More natural", option3: "Option 3 - Short UI", source: "Source text", note: "Note", noteText: "Curated game localization was used for this short slogan." },
-        zh: { gameType: "游戏类型", style: "风格分析", rule: "语言规则", tone: "语气", option1: "选项 1 - 游戏内翻译", option2: "选项 2 - 更自然", option3: "选项 3 - 短 UI", source: "源文本", note: "备注", noteText: "此短标语使用了游戏本地化表达。" }
+        tr: { gameType: "Oyun türü", style: "Tarz analizi", rule: "Dil kuralı", tone: "Ton", translation: "Çeviri", words: "Sözlük / kullanabileceğin öneriler", source: "Kaynak metin", note: "Not", noteText: "Kısa slogan için yerel oyun lokalizasyonu kullanıldı." },
+        en: { gameType: "Game type", style: "Style analysis", rule: "Language rule", tone: "Tone", translation: "Translation", words: "Glossary / reusable suggestions", source: "Source text", note: "Note", noteText: "Curated game localization was used for this short slogan." },
+        zh: { gameType: "游戏类型", style: "风格分析", rule: "语言规则", tone: "语气", translation: "翻译", words: "术语 / 可复用建议", source: "源文本", note: "备注", noteText: "此短标语使用了游戏本地化表达。" }
       }[lang] || {};
       const profile = localizationProfileForLang(genre, lang);
       let options = null;
@@ -5089,21 +5110,18 @@ ${source}`;
       }
       if (!options) return "";
       if (mode === "normal") {
-        return `${labels.option2}:\n${options[1]}\n\n${labels.source}:\n${raw}\n\n${labels.note}: ${labels.noteText}`;
+        return `${labels.translation}:\n${options[1]}\n\n${labels.words}:\n${wordSuggestions(raw, lang, genre)}\n\n${labels.source}:\n${raw}\n\n${labels.note}: ${labels.noteText}`;
       }
       return `${labels.gameType}: ${profile.label}
 ${labels.style}: ${lang === "zh" ? "短标语；优先保留力量感和选择感。" : lang === "tr" ? "Kısa slogan; anlam, güç ve seçim hissi korundu." : "Short slogan; preserves meaning, power, and choice."}
 ${labels.rule}: ${lang === "zh" ? "自然、短、适合游戏内按钮或宣传句。" : lang === "tr" ? "Doğal, kısa ve oyun içi metne uygun." : "Natural, short, and ready for in-game use."}
 ${labels.tone}: ${localizeLocalizationTone(tone, lang)}
 
-${labels.option1}:
+${labels.translation}:
 ${options[0]}
 
-${labels.option2}:
-${options[1]}
-
-${labels.option3}:
-${options[2]}
+${labels.words}:
+${wordSuggestions(raw, lang, genre)}
 
 ${labels.source}:
 ${raw}
@@ -5227,31 +5245,27 @@ ${labels.note}: ${labels.noteText}`;
 
     function formatBrowserGoogleLocalization({ source, translated, lang, tone, genre, mode }) {
       const labels = {
-        tr: { gameType: "Oyun türü", style: "Tarz analizi", rule: "Dil kuralı", tone: "Ton", normal: "Normal çeviri", option1: "Seçenek 1 - Oyun içi çeviri", option2: "Seçenek 2 - Daha doğal", option3: "Seçenek 3 - Kısa UI", source: "Kaynak metin", note: "Not", noteText: "Google Translate fallback kullanıldı; oyun tonunu GPT kadar derin uyarlamayabilir." },
-        en: { gameType: "Game type", style: "Style analysis", rule: "Language rule", tone: "Tone", normal: "Normal translation", option1: "Option 1 - In-game translation", option2: "Option 2 - More natural", option3: "Option 3 - Short UI", source: "Source text", note: "Note", noteText: "Google Translate fallback was used; game tone may be less nuanced than GPT." },
-        zh: { gameType: "游戏类型", style: "风格分析", rule: "语言规则", tone: "语气", normal: "普通翻译", option1: "选项 1 - 游戏内翻译", option2: "选项 2 - 更自然", option3: "选项 3 - 短 UI", source: "源文本", note: "备注", noteText: "已使用 Google Translate fallback；游戏语气可能不如 GPT 细致。" }
+        tr: { gameType: "Oyun türü", style: "Tarz analizi", rule: "Dil kuralı", tone: "Ton", translation: "Çeviri", words: "Sözlük / kullanabileceğin öneriler", source: "Kaynak metin", note: "Not", noteText: "Google Translate fallback kullanıldı; sonuç düz çeviri olarak temizlendi." },
+        en: { gameType: "Game type", style: "Style analysis", rule: "Language rule", tone: "Tone", translation: "Translation", words: "Glossary / reusable suggestions", source: "Source text", note: "Note", noteText: "Google Translate fallback was used; output was cleaned as a direct translation." },
+        zh: { gameType: "游戏类型", style: "风格分析", rule: "语言规则", tone: "语气", translation: "翻译", words: "术语 / 可复用建议", source: "源文本", note: "备注", noteText: "已使用 Google Translate fallback；结果已按直接翻译整理。" }
       }[lang] || {};
       const profile = localizationProfileForLang(genre, lang);
       const adapted = genreAdaptedTranslation(translated, lang, genre);
       const naturalText = naturalGoogleLocalization(translated, adapted, lang, genre, source);
-      const shortText = shortGoogleLocalization(adapted, lang, source);
+      const finalTranslation = mode === "normal" ? translated : naturalText || adapted || translated;
       if (mode === "normal") {
-        return `${labels.normal}:\n${translated}\n\n${labels.source}:\n${source}\n\n${labels.note}: ${labels.noteText}`;
+        return `${labels.translation}:\n${finalTranslation}\n\n${labels.words}:\n${wordSuggestions(source, lang, genre)}\n\n${labels.source}:\n${source}\n\n${labels.note}: ${labels.noteText}`;
       }
-      const normalBlock = mode === "both" ? `${labels.normal}:\n${translated}\n\n` : "";
       return `${labels.gameType}: ${profile.label}
 ${labels.style}: ${lang === "zh" ? "先做基础翻译，再作为游戏内文本使用。" : lang === "tr" ? "Önce temel çeviri yapıldı, sonra oyun içi metne hazırlandı." : "Base translation first, then prepared as in-game text."}
 ${labels.rule}: ${lang === "zh" ? "保留原意，短而自然。" : lang === "tr" ? "Anlamı koru, kısa ve doğal tut." : "Keep the meaning clear, short, and natural."}
 ${labels.tone}: ${localizeLocalizationTone(tone, lang)}
 
-${normalBlock}${labels.option1}:
-${adapted}
+${labels.translation}:
+${finalTranslation}
 
-${labels.option2}:
-${naturalText}
-
-${labels.option3}:
-${shortText}
+${labels.words}:
+${wordSuggestions(source, lang, genre)}
 
 ${labels.source}:
 ${source}
@@ -5433,8 +5447,93 @@ ${labels.note}: ${labels.noteText}`;
     function aiCheckedValues(name) {
       return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map((input) => input.value);
     }
-    function aiServiceReady() {
-      return Boolean(window.MockAiService);
+    function aiOutputLanguage() {
+      const setting = state.ai.settings.outputLanguage || "Follow UI";
+      if (setting === "Turkish") return "tr";
+      if (setting === "Chinese") return "zh";
+      if (setting === "English") return "en";
+      return state.lang;
+    }
+    function aiMessage(key) {
+      const messages = {
+        notConfigured: {
+          tr: "AI service is not configured. Please connect the backend AI service.",
+          en: "AI service is not configured. Please connect the backend AI service.",
+          zh: "AI service is not configured. Please connect the backend AI service."
+        },
+        failed: {
+          tr: "AI response failed. Please try again.",
+          en: "AI response failed. Please try again.",
+          zh: "AI response failed. Please try again."
+        },
+        demo: {
+          tr: "Demo example. This is not a real AI result.",
+          en: "Demo example. This is not a real AI result.",
+          zh: "Demo example. This is not a real AI result."
+        },
+        loading: {
+          tr: "AI yanıtı hazırlanıyor...",
+          en: "Preparing AI response...",
+          zh: "正在生成 AI 回复..."
+        }
+      };
+      return messages[key]?.[state.lang] || messages[key]?.en || key;
+    }
+    function aiVisibleResult(result) {
+      if (!result) return null;
+      if (result.fromAiBackend || result.demo) return result;
+      return null;
+    }
+    function aiDemoButton(id) {
+      return `<button class="ghost" id="${id}" type="button">Use demo example</button>`;
+    }
+    function renderAiNotConfigured() {
+      return `<div class="ai-empty"><strong>${esc(aiMessage("notConfigured"))}</strong></div>`;
+    }
+    function renderAiDemoNotice() {
+      return `<div class="ai-card"><span class="ai-badge">DEMO</span><p class="note">${esc(aiMessage("demo"))}</p></div>`;
+    }
+    function aiResultData(result) {
+      return result?.data || result;
+    }
+    async function requestAiModule(module, inputs = {}) {
+      const payload = {
+        module,
+        language: aiOutputLanguage(),
+        modelMode: state.ai.settings.modelMode || "Auto",
+        responseStyle: state.ai.settings.responseStyle || "professional",
+        projectContext: state.project,
+        inputs
+      };
+      let response;
+      try {
+        response = await fetchTeamApi("/api/ai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...sharedHeaders() },
+          body: JSON.stringify(payload)
+        });
+      } catch (error) {
+        return { ok: false, notConfigured: true, message: aiMessage("notConfigured") };
+      }
+      let result = null;
+      try {
+        result = await response.json();
+      } catch (error) {
+        return { ok: false, message: aiMessage("failed") };
+      }
+      if (!result?.ok && (result?.code === "AI_NOT_CONFIGURED" || result?.notConfigured)) {
+        state.ai.settings.backendStatus = "not configured";
+        saveState();
+        return { ok: false, notConfigured: true, message: aiMessage("notConfigured") };
+      }
+      if (!result?.ok) return { ok: false, message: aiMessage("failed") };
+      state.ai.settings.backendStatus = "configured";
+      saveState();
+      return { ...result, fromAiBackend: true };
+    }
+    function setAiStatus(id, message) {
+      const node = $(id);
+      if (node) node.textContent = message || "";
     }
     function aiEmptyState(message) {
       return `<div class="ai-empty">${esc(message)}</div>`;
@@ -5456,8 +5555,8 @@ ${labels.note}: ${labels.noteText}`;
       });
     }
     function aiReviewsPage() {
-      const result = state.ai.review;
-      $("content").innerHTML = `
+      const result = aiVisibleResult(state.ai.review);
+      $("page").innerHTML = `
         ${pageHead(aiT("aiReviews"), aiT("aiReviewsSub"))}
         <div class="ai-module-grid">
           ${panel(aiT("aiReviews"), `
@@ -5470,17 +5569,33 @@ ${labels.note}: ${labels.noteText}`;
               <div class="ai-full"><div class="field-label">${aiT("focus")}</div><div class="ai-checks">
                 ${["Sentiment","Bugs / crashes","Performance / lag","Payment / monetization","Localization issues","Gameplay feedback","Event feedback","Marketing insights"].map((item) => `<label><input type="checkbox" name="aiReviewFocus" value="${esc(item)}" checked> ${esc(item)}</label>`).join("")}
               </div></div>
-              <div class="ai-full"><button class="primary" id="aiReviewAnalyzeBtn" type="button">${aiT("analyzeReviews")}</button> <button class="ghost" disabled type="button">${aiT("exportReport")} - ${aiT("comingSoon")}</button></div>
+              <div class="ai-full"><button class="primary" id="aiReviewAnalyzeBtn" type="button">${aiT("analyzeReviews")}</button> ${aiDemoButton("aiReviewDemoBtn")} <button class="ghost" disabled type="button">${aiT("exportReport")} - ${aiT("comingSoon")}</button></div>
               <p class="note ai-full" id="aiReviewStatus"></p>
             </div>
           `)}
-          ${panel(aiT("executiveSummary"), result ? renderAiReviewResult(result) : aiEmptyState(aiT("aiReviewsSub")))}
+          ${panel(aiT("executiveSummary"), result ? `${result.demo ? renderAiDemoNotice() : ""}${renderAiReviewResult(aiResultData(result))}` : aiEmptyState(aiT("aiReviewsSub")))}
         </div>`;
       $("aiReviewAnalyzeBtn").addEventListener("click", async () => {
         const reviews = $("aiReviewText").value.trim();
         if (!reviews) { $("aiReviewStatus").textContent = aiT("emptyReviews"); return; }
-        $("aiReviewStatus").textContent = "Analyzing...";
-        state.ai.review = window.MockAiService.analyzeReviews({
+        setAiStatus("aiReviewStatus", aiMessage("loading"));
+        const inputs = {
+          gameName: $("aiReviewGame").value,
+          platform: $("aiReviewPlatform").value,
+          market: $("aiReviewMarket").value,
+          reviewLanguage: $("aiReviewLang").value,
+          reviews,
+          focus: aiCheckedValues("aiReviewFocus")
+        };
+        const result = await requestAiModule("reviewAnalyzer", inputs);
+        if (!result.ok) { setAiStatus("aiReviewStatus", result.message || aiMessage("failed")); return; }
+        state.ai.review = { fromAiBackend: true, data: result.data };
+        saveState();
+        render();
+      });
+      $("aiReviewDemoBtn").addEventListener("click", () => {
+        const reviews = $("aiReviewText").value.trim() || "great game\nlag and crash after update\nbad translation in event";
+        state.ai.review = { demo: true, data: window.MockAiService.analyzeReviews({
           gameName: $("aiReviewGame").value,
           platform: $("aiReviewPlatform").value,
           market: $("aiReviewMarket").value,
@@ -5488,29 +5603,36 @@ ${labels.note}: ${labels.noteText}`;
           reviews,
           focus: aiCheckedValues("aiReviewFocus"),
           uiLanguage: state.lang
-        });
+        }) };
         saveState();
         render();
       });
     }
     function renderAiReviewResult(result) {
+      result = result || {};
+      const sentiment = result.sentiment || { positive: 0, neutral: 0, negative: 0 };
+      const complaints = Array.isArray(result.topComplaints) ? result.topComplaints : [];
+      const praises = Array.isArray(result.topPraises) ? result.topPraises : [];
+      const productActions = Array.isArray(result.productActions) ? result.productActions : [];
+      const marketingActions = Array.isArray(result.marketingActions) ? result.marketingActions : [];
+      const localizationRisks = Array.isArray(result.localizationRisks) ? result.localizationRisks : [];
       return `<div class="ai-result-stack">
-        <div class="ai-card"><span class="ai-badge">${aiT("executiveSummary")}</span><p>${esc(result.executiveSummary)}</p><p class="note">${esc(result.summary)}</p></div>
+        <div class="ai-card"><span class="ai-badge">${aiT("executiveSummary")}</span><p>${esc(result.executiveSummary || "")}</p><p class="note">${esc(result.summary || "")}</p></div>
         <div class="ai-stat-grid">
-          <div class="ai-stat">Positive<strong>${esc(result.sentiment.positive)}%</strong></div>
-          <div class="ai-stat">Neutral<strong>${esc(result.sentiment.neutral)}%</strong></div>
-          <div class="ai-stat">Negative<strong>${esc(result.sentiment.negative)}%</strong></div>
+          <div class="ai-stat">Positive<strong>${esc(sentiment.positive || 0)}%</strong></div>
+          <div class="ai-stat">Neutral<strong>${esc(sentiment.neutral || 0)}%</strong></div>
+          <div class="ai-stat">Negative<strong>${esc(sentiment.negative || 0)}%</strong></div>
         </div>
-        <div class="ai-card"><h4>${aiT("complaints")}</h4><table class="ai-table"><thead><tr><th>Category</th><th>Severity</th><th>Explanation</th><th>Example</th></tr></thead><tbody>${result.topComplaints.map((item) => `<tr><td>${esc(item.category)}</td><td><span class="ai-badge">${esc(item.severity)}</span></td><td>${esc(item.explanation)}</td><td>${esc(item.example)}</td></tr>`).join("")}</tbody></table></div>
-        <div class="ai-card"><h4>${aiT("praises")}</h4>${result.topPraises.map((item) => `<p><strong>${esc(item.category)}:</strong> ${esc(item.explanation)}<br><span class="note">${esc(item.example)}</span></p>`).join("")}</div>
-        <div class="ai-card"><h4>${aiT("productActions")}</h4>${aiList(result.productActions)}</div>
-        <div class="ai-card"><h4>${aiT("marketingActions")}</h4>${aiList(result.marketingActions)}</div>
-        <div class="ai-card"><h4>${aiT("localizationRisks")}</h4>${result.localizationRisks.length ? result.localizationRisks.map((item) => `<p><strong>${esc(item.language)}:</strong> ${esc(item.issue)} ${esc(item.suggestion)}</p>`).join("") : `<p class="note">No major localization risk detected in this mock analysis.</p>`}</div>
+        <div class="ai-card"><h4>${aiT("complaints")}</h4><table class="ai-table"><thead><tr><th>Category</th><th>Severity</th><th>Explanation</th><th>Example</th></tr></thead><tbody>${complaints.map((item) => `<tr><td>${esc(item.category || "")}</td><td><span class="ai-badge">${esc(item.severity || "")}</span></td><td>${esc(item.explanation || "")}</td><td>${esc(item.example || "")}</td></tr>`).join("")}</tbody></table></div>
+        <div class="ai-card"><h4>${aiT("praises")}</h4>${praises.map((item) => `<p><strong>${esc(item.category || "")}:</strong> ${esc(item.explanation || "")}<br><span class="note">${esc(item.example || "")}</span></p>`).join("")}</div>
+        <div class="ai-card"><h4>${aiT("productActions")}</h4>${aiList(productActions)}</div>
+        <div class="ai-card"><h4>${aiT("marketingActions")}</h4>${aiList(marketingActions)}</div>
+        <div class="ai-card"><h4>${aiT("localizationRisks")}</h4>${localizationRisks.length ? localizationRisks.map((item) => `<p><strong>${esc(item.language || "")}:</strong> ${esc(item.issue || "")} ${esc(item.suggestion || "")}</p>`).join("") : `<p class="note">No major localization risk detected.</p>`}</div>
       </div>`;
     }
     function aiLocQaPage() {
-      const result = state.ai.locQa;
-      $("content").innerHTML = `
+      const result = aiVisibleResult(state.ai.locQa);
+      $("page").innerHTML = `
         ${pageHead(aiT("aiLocQa"), aiT("aiLocQaSub"))}
         <div class="ai-module-grid">
           ${panel(aiT("aiLocQa"), `
@@ -5522,18 +5644,19 @@ ${labels.note}: ${labels.noteText}`;
               <div class="ai-full"><div class="field-label">${aiT("currentTranslation")}</div><textarea id="aiQaTranslation" rows="5"></textarea></div>
               <div class="ai-full"><div class="field-label">${aiT("terms")}</div><textarea id="aiQaTerms" rows="3" placeholder="阵营 = Kamp, 邮件 = Posta, 战盟 = Savaş Birliği"></textarea></div>
               <div class="ai-full"><div class="field-label">${aiT("lengthLimit")}</div><input id="aiQaLengthLimit" placeholder="max 12 characters per line, 2 lines"></div>
-              <div class="ai-full"><button class="primary" id="aiQaBtn" type="button">${aiT("checkLocalization")}</button></div>
+              <div class="ai-full"><button class="primary" id="aiQaBtn" type="button">${aiT("checkLocalization")}</button> ${aiDemoButton("aiQaDemoBtn")}</div>
               <p class="note ai-full" id="aiQaStatus"></p>
             </div>
           `)}
-          ${panel(aiT("verdict"), result ? renderAiQaResult(result) : aiEmptyState(aiT("aiLocQaSub")))}
+          ${panel(aiT("verdict"), result ? `${result.demo ? renderAiDemoNotice() : ""}${renderAiQaResult(aiResultData(result))}` : aiEmptyState(aiT("aiLocQaSub")))}
         </div>`;
-      $("aiQaBtn").addEventListener("click", () => {
+      $("aiQaBtn").addEventListener("click", async () => {
         if (!$("aiQaSourceText").value.trim() || !$("aiQaTranslation").value.trim()) {
           $("aiQaStatus").textContent = "Source text and current translation are required.";
           return;
         }
-        state.ai.locQa = window.MockAiService.checkLocalization({
+        setAiStatus("aiQaStatus", aiMessage("loading"));
+        const inputs = {
           sourceLanguage: $("aiQaSourceLang").value,
           targetLanguage: $("aiQaTargetLang").value,
           contextType: $("aiQaContext").value,
@@ -5541,30 +5664,55 @@ ${labels.note}: ${labels.noteText}`;
           currentTranslation: $("aiQaTranslation").value,
           terminology: $("aiQaTerms").value,
           lengthLimit: $("aiQaLengthLimit").value
-        });
+        };
+        const result = await requestAiModule("localizationQa", inputs);
+        if (!result.ok) { setAiStatus("aiQaStatus", result.message || aiMessage("failed")); return; }
+        state.ai.locQa = { fromAiBackend: true, data: result.data };
+        saveState();
+        render();
+      });
+      $("aiQaDemoBtn").addEventListener("click", () => {
+        const sourceText = $("aiQaSourceText").value.trim() || "领取每日奖励";
+        const currentTranslation = $("aiQaTranslation").value.trim() || "Günlük ödülü al";
+        state.ai.locQa = { demo: true, data: window.MockAiService.checkLocalization({
+          sourceLanguage: $("aiQaSourceLang").value,
+          targetLanguage: $("aiQaTargetLang").value,
+          contextType: $("aiQaContext").value,
+          sourceText,
+          currentTranslation,
+          terminology: $("aiQaTerms").value,
+          lengthLimit: $("aiQaLengthLimit").value
+        }) };
         saveState();
         render();
       });
     }
     function renderAiQaResult(result) {
+      result = result || {};
+      const meaningAccuracy = result.meaningAccuracy || {};
+      const naturalness = result.naturalness || {};
+      const uiLengthRisk = result.uiLengthRisk || {};
+      const terminology = result.terminology || { issues: [] };
+      const toneStyle = result.toneStyle || {};
+      const culturalRisk = result.culturalRisk || {};
       const cards = [
-        ["Meaning Accuracy", result.meaningAccuracy.status, result.meaningAccuracy.explanation],
-        ["Naturalness", result.naturalness.status, result.naturalness.explanation],
-        ["UI Length Risk", result.uiLengthRisk.status, result.uiLengthRisk.explanation],
-        ["Terminology", result.terminology.status, result.terminology.issues.join("; ") || "No terminology issue detected."],
-        ["Tone & Style", result.toneStyle.status, result.toneStyle.explanation],
-        ["Cultural Risk", result.culturalRisk.status, result.culturalRisk.explanation]
+        ["Meaning Accuracy", meaningAccuracy.status, meaningAccuracy.explanation],
+        ["Naturalness", naturalness.status, naturalness.explanation],
+        ["UI Length Risk", uiLengthRisk.status, uiLengthRisk.explanation],
+        ["Terminology", terminology.status, (terminology.issues || []).join("; ") || "No terminology issue detected."],
+        ["Tone & Style", toneStyle.status, toneStyle.explanation],
+        ["Cultural Risk", culturalRisk.status, culturalRisk.explanation]
       ];
       return `<div class="ai-result-stack">
-        <div class="ai-stat-grid"><div class="ai-stat">${aiT("qaScore")}<strong>${esc(result.score)}/100</strong></div><div class="ai-stat">${aiT("verdict")}<strong>${esc(result.verdict)}</strong></div><div class="ai-stat">Risk<strong>${esc(result.culturalRisk.status)}</strong></div></div>
+        <div class="ai-stat-grid"><div class="ai-stat">${aiT("qaScore")}<strong>${esc(result.score || 0)}/100</strong></div><div class="ai-stat">${aiT("verdict")}<strong>${esc(result.verdict || "")}</strong></div><div class="ai-stat">Risk<strong>${esc(culturalRisk.status || "")}</strong></div></div>
         ${cards.map(([title, status, explanation]) => `<div class="ai-card"><span class="ai-badge">${esc(status)}</span><h4>${esc(title)}</h4><p>${esc(explanation)}</p></div>`).join("")}
-        <div class="ai-card"><h4>${aiT("suggestedTranslation")}</h4><div class="result-box">${esc(result.suggestedTranslation)}</div>${aiCopyButton("aiQaCopy", result.suggestedTranslation)}</div>
-        <div class="ai-card"><h4>${aiT("explanation")}</h4><p>${esc(result.explanation)}</p></div>
+        <div class="ai-card"><h4>${aiT("suggestedTranslation")}</h4><div class="result-box">${esc(result.suggestedTranslation || "")}</div>${aiCopyButton("aiQaCopy", result.suggestedTranslation || "")}</div>
+        <div class="ai-card"><h4>${aiT("explanation")}</h4><p>${esc(result.explanation || "")}</p></div>
       </div>`;
     }
     function aiCampaignPage() {
-      const result = state.ai.campaign;
-      $("content").innerHTML = `
+      const result = aiVisibleResult(state.ai.campaign);
+      $("page").innerHTML = `
         ${pageHead(aiT("aiCampaign"), aiT("aiCampaignSub"))}
         <div class="ai-module-grid">
           ${panel(aiT("aiCampaign"), `
@@ -5576,15 +5724,16 @@ ${labels.note}: ${labels.noteText}`;
               <div><div class="field-label">${aiT("budget")}</div><select id="aiCampBudget">${aiOptions(["Low","Medium","High"], "Medium")}</select></div>
               <div class="ai-full"><div class="field-label">${aiT("channels")}</div><div class="ai-checks">${["TikTok","Instagram","YouTube","X/Twitter","Discord","Facebook","Google Ads","Influencer/KOL","Community event","In-game event"].map((item) => `<label><input type="checkbox" name="aiCampChannel" value="${esc(item)}" checked> ${esc(item)}</label>`).join("")}</div></div>
               <div class="ai-full"><div class="field-label">${aiT("notes")}</div><textarea id="aiCampNotes" rows="4"></textarea></div>
-              <div class="ai-full"><button class="primary" id="aiCampBtn" type="button">${aiT("generateIdeas")}</button></div>
+              <div class="ai-full"><button class="primary" id="aiCampBtn" type="button">${aiT("generateIdeas")}</button> ${aiDemoButton("aiCampDemoBtn")}</div>
               <p class="note ai-full" id="aiCampStatus"></p>
             </div>
           `)}
-          ${panel(aiT("concept"), result ? renderAiCampaignResult(result) : aiEmptyState(aiT("aiCampaignSub")))}
+          ${panel(aiT("concept"), result ? `${result.demo ? renderAiDemoNotice() : ""}${renderAiCampaignResult(aiResultData(result))}` : aiEmptyState(aiT("aiCampaignSub")))}
         </div>`;
-      $("aiCampBtn").addEventListener("click", () => {
+      $("aiCampBtn").addEventListener("click", async () => {
         if (!$("aiCampRegion").value || !$("aiCampGoal").value) { $("aiCampStatus").textContent = "Campaign goal and target region are required."; return; }
-        state.ai.campaign = window.MockAiService.generateCampaignIdeas({
+        setAiStatus("aiCampStatus", aiMessage("loading"));
+        const inputs = {
           gameName: $("aiCampGame").value,
           genre: $("aiCampGenre").value,
           region: $("aiCampRegion").value,
@@ -5592,27 +5741,46 @@ ${labels.note}: ${labels.noteText}`;
           budget: $("aiCampBudget").value,
           channels: aiCheckedValues("aiCampChannel"),
           notes: $("aiCampNotes").value
-        });
+        };
+        const result = await requestAiModule("campaignIdeas", inputs);
+        if (!result.ok) { setAiStatus("aiCampStatus", result.message || aiMessage("failed")); return; }
+        state.ai.campaign = { fromAiBackend: true, data: result.data };
+        saveState();
+        render();
+      });
+      $("aiCampDemoBtn").addEventListener("click", () => {
+        state.ai.campaign = { demo: true, data: window.MockAiService.generateCampaignIdeas({
+          gameName: $("aiCampGame").value,
+          genre: $("aiCampGenre").value,
+          region: $("aiCampRegion").value,
+          goal: $("aiCampGoal").value,
+          budget: $("aiCampBudget").value,
+          channels: aiCheckedValues("aiCampChannel"),
+          notes: $("aiCampNotes").value
+        }) };
         saveState();
         render();
       });
     }
     function renderAiCampaignResult(result) {
+      result = result || {};
+      const socialIdeas = Array.isArray(result.socialIdeas) ? result.socialIdeas : [];
+      const adCopies = result.adCopies || {};
       return `<div class="ai-result-stack">
-        <div class="ai-card"><span class="ai-badge">${esc(result.campaignName)}</span><h4>${aiT("concept")}</h4><p>${esc(result.concept)}</p></div>
-        <div class="ai-card"><h4>${aiT("audienceInsight")}</h4><p>${esc(result.audienceInsight)}</p></div>
-        <div class="ai-card"><h4>${aiT("creativeAngle")}</h4><p>${esc(result.creativeAngle)}</p></div>
-        <div class="ai-card"><h4>${aiT("socialIdeas")}</h4><table class="ai-table"><thead><tr><th>Channel</th><th>Idea</th><th>Execution</th></tr></thead><tbody>${result.socialIdeas.map((item) => `<tr><td>${esc(item.channel)}</td><td>${esc(item.idea)}</td><td>${esc(item.execution)}</td></tr>`).join("")}</tbody></table></div>
-        <div class="ai-card"><h4>${aiT("kolIdeas")}</h4>${aiList(result.kolIdeas)}</div>
-        <div class="ai-card"><h4>${aiT("eventIdeas")}</h4>${aiList(result.inGameEventIdeas)}</div>
-        <div class="ai-card"><h4>${aiT("localizationRisks")}</h4>${aiList(result.localizationSuggestions)}</div>
-        <div class="ai-card"><h4>Risk Notes</h4>${aiList(result.riskNotes)}</div>
-        <div class="ai-card"><h4>${aiT("adCopy")}</h4><p><strong>Headlines:</strong> ${esc(result.adCopies.headlines.join(" | "))}</p><p><strong>Body:</strong> ${esc(result.adCopies.bodyTexts.join(" | "))}</p><p><strong>Push:</strong> ${esc(result.adCopies.pushNotifications.join(" | "))}</p></div>
+        <div class="ai-card"><span class="ai-badge">${esc(result.campaignName || "")}</span><h4>${aiT("concept")}</h4><p>${esc(result.concept || "")}</p></div>
+        <div class="ai-card"><h4>${aiT("audienceInsight")}</h4><p>${esc(result.audienceInsight || "")}</p></div>
+        <div class="ai-card"><h4>${aiT("creativeAngle")}</h4><p>${esc(result.creativeAngle || "")}</p></div>
+        <div class="ai-card"><h4>${aiT("socialIdeas")}</h4><table class="ai-table"><thead><tr><th>Channel</th><th>Idea</th><th>Execution</th></tr></thead><tbody>${socialIdeas.map((item) => `<tr><td>${esc(item.channel || "")}</td><td>${esc(item.idea || "")}</td><td>${esc(item.execution || "")}</td></tr>`).join("")}</tbody></table></div>
+        <div class="ai-card"><h4>${aiT("kolIdeas")}</h4>${aiList(result.kolIdeas || [])}</div>
+        <div class="ai-card"><h4>${aiT("eventIdeas")}</h4>${aiList(result.inGameEventIdeas || [])}</div>
+        <div class="ai-card"><h4>${aiT("localizationRisks")}</h4>${aiList(result.localizationSuggestions || [])}</div>
+        <div class="ai-card"><h4>Risk Notes</h4>${aiList(result.riskNotes || [])}</div>
+        <div class="ai-card"><h4>${aiT("adCopy")}</h4><p><strong>Headlines:</strong> ${esc((adCopies.headlines || []).join(" | "))}</p><p><strong>Body:</strong> ${esc((adCopies.bodyTexts || []).join(" | "))}</p><p><strong>Push:</strong> ${esc((adCopies.pushNotifications || []).join(" | "))}</p></div>
       </div>`;
     }
     function aiWeeklyReportPage() {
-      const result = state.ai.report;
-      $("content").innerHTML = `
+      const result = aiVisibleResult(state.ai.report);
+      $("page").innerHTML = `
         ${pageHead(aiT("aiReport"), aiT("aiReportSub"))}
         <div class="ai-module-grid">
           ${panel(aiT("aiReport"), `
@@ -5624,16 +5792,17 @@ ${labels.note}: ${labels.noteText}`;
               <div><div class="field-label">${aiT("department")}</div><select id="aiReportDept">${aiOptions(["Marketing","Localization","Operations","Community","Product","General"], "Marketing")}</select></div>
               <div><div class="field-label">${aiT("outputLanguage")}</div><select id="aiReportLang">${aiOptions(["Chinese","English","Turkish"], "English")}</select></div>
               <div class="ai-full"><div class="field-label">${aiT("reportStyle")}</div><select id="aiReportStyle">${aiOptions(["Formal","Concise","Detailed"], "Formal")}</select></div>
-              <div class="ai-full"><button class="primary" id="aiReportBtn" type="button">${aiT("generateReport")}</button> <button class="ghost" disabled type="button">Export - ${aiT("comingSoon")}</button></div>
+              <div class="ai-full"><button class="primary" id="aiReportBtn" type="button">${aiT("generateReport")}</button> ${aiDemoButton("aiReportDemoBtn")} <button class="ghost" disabled type="button">Export - ${aiT("comingSoon")}</button></div>
               <p class="note ai-full" id="aiReportStatus"></p>
             </div>
           `)}
-          ${panel(aiT("reportPreview"), result ? renderAiReportResult(result) : aiEmptyState(aiT("aiReportSub")))}
+          ${panel(aiT("reportPreview"), result ? `${result.demo ? renderAiDemoNotice() : ""}${renderAiReportResult(aiResultData(result))}` : aiEmptyState(aiT("aiReportSub")))}
         </div>`;
-      $("aiReportBtn").addEventListener("click", () => {
+      $("aiReportBtn").addEventListener("click", async () => {
         const hasText = [$("aiReportCompleted").value, $("aiReportOngoing").value, $("aiReportBlockers").value, $("aiReportNext").value].some((value) => value.trim());
         if (!hasText) { $("aiReportStatus").textContent = "Please enter at least one task or note."; return; }
-        state.ai.report = window.MockAiService.generateWeeklyReport({
+        setAiStatus("aiReportStatus", aiMessage("loading"));
+        const inputs = {
           completedTasks: $("aiReportCompleted").value,
           ongoingTasks: $("aiReportOngoing").value,
           blockers: $("aiReportBlockers").value,
@@ -5641,21 +5810,47 @@ ${labels.note}: ${labels.noteText}`;
           department: $("aiReportDept").value,
           language: $("aiReportLang").value,
           style: $("aiReportStyle").value
-        });
+        };
+        const result = await requestAiModule("weeklyReport", inputs);
+        if (!result.ok) { setAiStatus("aiReportStatus", result.message || aiMessage("failed")); return; }
+        state.ai.report = { fromAiBackend: true, data: result.data };
+        saveState();
+        render();
+      });
+      $("aiReportDemoBtn").addEventListener("click", () => {
+        state.ai.report = { demo: true, data: window.MockAiService.generateWeeklyReport({
+          completedTasks: $("aiReportCompleted").value || "Prepared campaign copy",
+          ongoingTasks: $("aiReportOngoing").value,
+          blockers: $("aiReportBlockers").value,
+          nextWeekPriorities: $("aiReportNext").value || "Review next week priorities",
+          department: $("aiReportDept").value,
+          language: $("aiReportLang").value,
+          style: $("aiReportStyle").value
+        }) };
         saveState();
         render();
       });
     }
     function renderAiReportResult(result) {
-      const fullText = [result.title, ...result.sections.flatMap((section) => [section.heading, ...section.items.map((item) => `- ${item}`)])].join("\n");
+      result = result || {};
+      const sections = Array.isArray(result.sections) ? result.sections : [];
+      const fullText = [result.title || "", ...sections.flatMap((section) => [section.heading || "", ...(section.items || []).map((item) => `- ${item}`)])].join("\n");
       return `<div class="ai-result-stack">
-        <div class="ai-card"><span class="ai-badge">${esc(result.language)}</span><h3>${esc(result.title)}</h3></div>
-        ${result.sections.map((section) => `<div class="ai-card"><h4>${esc(section.heading)}</h4>${aiList(section.items)}</div>`).join("")}
+        <div class="ai-card"><span class="ai-badge">${esc(result.language || "")}</span><h3>${esc(result.title || "")}</h3></div>
+        ${sections.map((section) => `<div class="ai-card"><h4>${esc(section.heading || "")}</h4>${aiList(section.items || [])}</div>`).join("")}
         ${aiCopyButton("aiReportCopy", fullText)}
       </div>`;
     }
+    function aiWorkspaceRoute(message) {
+      const text = String(message || "").toLowerCase();
+      if (/code|bug|build|api|repository|repo|deploy|deployment|vite|react|next|server|json|html|css|javascript|debug/.test(text)) return "code";
+      if (/localization|translation|çeviri|ceviri|turkish|ui wording/.test(text)) return "localization";
+      if (/campaign|kol|marketing|launch/.test(text)) return "campaign";
+      if (/weekly report|report|rapor|周报/.test(text)) return "report";
+      return "general";
+    }
     function aiWorkspacePage() {
-      $("content").innerHTML = `
+      $("page").innerHTML = `
         ${pageHead(aiT("aiWorkspace"), aiT("aiWorkspaceSub"))}
         <div class="ai-module-grid">
           ${panel(aiT("aiWorkspace"), `
@@ -5665,19 +5860,37 @@ ${labels.note}: ${labels.noteText}`;
             <div class="controls" style="margin-top:12px">
               <textarea id="aiChatInput" rows="3" placeholder="Ask about reviews, localization, campaign, or report..."></textarea>
               <button class="primary" id="aiChatSendBtn" type="button">${aiT("send")}</button>
+              ${aiDemoButton("aiChatDemoBtn")}
             </div>
+            <p class="note" id="aiChatStatus"></p>
           `)}
           ${panel(aiT("projectContext"), `
             <div class="ai-card"><strong>${esc(state.project.name)}</strong><p>${esc(state.project.genre)} | ${esc(state.project.markets)}</p><p class="note">${esc(state.project.goal)}</p></div>
             <div class="ai-card"><h4>Prompt ideas</h4>${aiList(["Analyze these game reviews", "Improve this Turkish localization", "Generate a weekly report in Chinese", "Create campaign ideas for Turkey", "Summarize product feedback"])}</div>
           `)}
         </div>`;
-      $("aiChatSendBtn").addEventListener("click", () => {
+      $("aiChatSendBtn").addEventListener("click", async () => {
         const message = $("aiChatInput").value.trim();
         if (!message) return;
         state.ai.chatMessages.push({ role: "user", text: message });
+        saveState();
+        setAiStatus("aiChatStatus", aiMessage("loading"));
+        const route = aiWorkspaceRoute(message);
+        const result = await requestAiModule("workspace", { message, route });
+        if (!result.ok) {
+          state.ai.chatMessages.push({ role: "assistant", text: result.message || aiMessage("failed") });
+        } else {
+          const reply = result.data || {};
+          state.ai.chatMessages.push({ role: "assistant", ...reply, text: reply.text || reply.summary || "" });
+        }
+        saveState();
+        render();
+      });
+      $("aiChatDemoBtn").addEventListener("click", () => {
+        const message = $("aiChatInput").value.trim() || "Create campaign ideas for Turkey";
+        state.ai.chatMessages.push({ role: "user", text: message });
         const reply = window.MockAiService.generateChatResponse({ message, uiLanguage: state.lang, project: state.project });
-        state.ai.chatMessages.push({ role: "assistant", ...reply, text: reply.summary });
+        state.ai.chatMessages.push({ role: "assistant", ...reply, text: `[DEMO] ${reply.summary}` });
         saveState();
         render();
       });
@@ -5686,7 +5899,7 @@ ${labels.note}: ${labels.noteText}`;
     }
     function aiSettingsPage() {
       const settings = state.ai.settings;
-      $("content").innerHTML = `
+      $("page").innerHTML = `
         ${pageHead(aiT("aiSettings"), aiT("aiSettingsSub"))}
         <div class="grid two">
           ${panel(aiT("profile"), `
@@ -5707,20 +5920,30 @@ ${labels.note}: ${labels.noteText}`;
           `)}
           ${panel("AI", `
             <div class="grid two">
-              <div><div class="field-label">${aiT("aiProvider")}</div><input id="aiSetProvider" value="${esc(settings.provider)}" placeholder="Mock AI / OpenAI later"></div>
-              <div><div class="field-label">${aiT("model")}</div><input id="aiSetModel" value="${esc(settings.model)}"></div>
-              <div class="ai-full"><div class="field-label">API key</div><input value="" placeholder="Not stored in this mock module" disabled></div>
+              <div><div class="field-label">Model Mode</div><select id="aiSetModelMode">${aiOptions(["Auto","GPT","Codex for code tasks"], settings.modelMode)}</select></div>
+              <div><div class="field-label">Output Language</div><select id="aiSetOutputLanguage">${aiOptions(["Follow UI","Chinese","Turkish","English"], settings.outputLanguage)}</select></div>
+              <div><div class="field-label">Response Style</div><select id="aiSetResponseStyle">${aiOptions(["concise","detailed","professional"], settings.responseStyle)}</select></div>
+              <div><div class="field-label">AI Backend Status</div><div class="field-value">${esc(settings.backendStatus || "unknown")}</div></div>
+              <div class="ai-full"><p class="note">API keys are not stored in this frontend. Add the server API key in environment settings.</p></div>
             </div>
           `)}
           ${panel(aiT("theme"), `
             <select id="aiSetTheme">${aiOptions(["Light","Dark","System"], settings.theme)}</select>
-            <p class="note">Current AI module outputs are mock/prototype unless a real backend is connected. Existing protected API features stay separate.</p>
+            <p class="note">AI modules use the backend AI service. Demo output appears only when you click Use demo example. Existing protected API features stay separate.</p>
             <button class="primary" id="aiSettingsSaveBtn" type="button">${aiT("saveSettings")}</button>
+            <button class="ghost" id="aiStatusCheckBtn" type="button">Check AI status</button>
             <p class="note" id="aiSettingsStatus"></p>
           `)}
         </div>`;
+      $("aiStatusCheckBtn").addEventListener("click", async () => {
+        const status = await requestAiModule("status", {});
+        state.ai.settings.backendStatus = status.ok ? "configured" : "not configured";
+        saveState();
+        render();
+      });
       $("aiSettingsSaveBtn").addEventListener("click", () => {
         state.ai.settings = {
+          ...state.ai.settings,
           name: $("aiSetName").value,
           email: $("aiSetEmail").value,
           role: $("aiSetRole").value,
@@ -5729,8 +5952,9 @@ ${labels.note}: ${labels.noteText}`;
           defaultProjectType: $("aiSetProjectType").value,
           defaultMarket: $("aiSetMarket").value,
           defaultLanguage: $("aiSetLang").value,
-          provider: $("aiSetProvider").value,
-          model: $("aiSetModel").value,
+          modelMode: $("aiSetModelMode").value,
+          outputLanguage: $("aiSetOutputLanguage").value,
+          responseStyle: $("aiSetResponseStyle").value,
           theme: $("aiSetTheme").value
         };
         saveState();
