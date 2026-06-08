@@ -220,6 +220,8 @@
     .localization-workspace .loc-import-grid { display: grid; grid-template-columns: minmax(280px, .95fr) minmax(320px, 1.05fr); gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
     .localization-workspace textarea { min-height: 118px; }
     .localization-workspace .loc-import-grid textarea { min-height: 106px; }
+    .localization-output-box { display: grid; gap: 12px; }
+    .localization-output-box .loc-batch-list { max-height: none; padding-right: 0; }
     .task-list { display: grid; gap: 10px; }
     .task { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
     .task strong { display: block; font-size: 13px; }
@@ -1384,7 +1386,10 @@
           </div>
           <p class="note" id="locStatus">${tr("apiSafe")}</p>
           <div class="field-label">${tr("output")}</div>
-          <div class="result-box" id="locOutput">${formatLocalizationOutput(state.localizationOutput || "Output will appear here.")}</div>
+          <div class="result-box localization-output-box">
+            <div id="locOutput">${formatLocalizationOutput(state.localizationOutput || "Output will appear here.")}</div>
+            <div class="loc-batch-list" id="locBatchOutput">${renderLocalizationBatch(state.localizationBatch || [])}</div>
+          </div>
           <button id="copyLocBtn" type="button" style="margin-top:12px">${tr("copy")}</button>
           <div class="loc-import-grid">
             <div>
@@ -1400,7 +1405,7 @@
             </div>
           </div>
           <p class="note" id="locBatchStatus">${locUi("batchStatus")}</p>
-          <div class="loc-batch-list" id="locBatchOutput">${renderLocalizationBatch(state.localizationBatch || [])}</div>`, "localization-workspace")}
+          `, "localization-workspace")}
           ${panel(locUi("guideTitle"), `<table><thead><tr><th>${locUi("type")}</th><th>${locUi("style")}</th><th>${locUi("avoid")}</th></tr></thead><tbody><tr><td>FPS</td><td>${locUi("fpsStyle")}</td><td>${locUi("fpsAvoid")}</td></tr><tr><td>MMO / RPG</td><td>${locUi("mmoStyle")}</td><td>${locUi("mmoAvoid")}</td></tr><tr><td>Strategy</td><td>${locUi("strategyStyle")}</td><td>${locUi("strategyAvoid")}</td></tr><tr><td>Casual</td><td>${locUi("casualStyle")}</td><td>${locUi("casualAvoid")}</td></tr><tr><td>Horror</td><td>${locUi("horrorStyle")}</td><td>${locUi("horrorAvoid")}</td></tr></tbody></table>`)}
         </div>`;
       $("locBtn").addEventListener("click", generateLocalization);
@@ -4280,7 +4285,58 @@ ${source}`;
       const clean = String(text || "").trim();
       if (!clean) return "";
       if (lang === "zh") return clean.split(/[，。！？]/)[0].slice(0, 8);
+      if (lang === "tr") {
+        if (/Silahını kuşan, loncanla dünyayı fethet/i.test(clean)) return "Loncanla fethet";
+        if (/Silahını kuşan, hedefe kilitlen ve dünyayı fethet/i.test(clean)) return "Hedefe kilitlen";
+        if (/Ordunu hazırla ve dünyayı stratejinle fethet/i.test(clean)) return "Ordunu hazırla";
+        if (/Hazırlan ve dünyayı kazan/i.test(clean)) return "Hazırlan ve kazan";
+        if (/Silahını kuşan ve karanlığı alt et/i.test(clean)) return "Karanlığı alt et";
+        if (/Hazırlan ve zirveye çık/i.test(clean)) return "Zirveye çık";
+        if (/Düzenini kur ve kendi dünyanı inşa et/i.test(clean)) return "Dünyanı inşa et";
+      }
+      if (lang === "en") {
+        if (/conquer the world with your guild/i.test(clean)) return "Conquer with your guild";
+        if (/dominate the battlefield/i.test(clean)) return "Dominate the battlefield";
+        if (/conquer the world with strategy/i.test(clean)) return "Command and conquer";
+        if (/survive the darkness/i.test(clean)) return "Survive the darkness";
+        if (/race to the top/i.test(clean)) return "Race to the top";
+        if (/build/i.test(clean)) return "Build your world";
+      }
       return clean.includes(",") ? clean.split(",")[0].trim() : clean.split(/\s+/).slice(0, 4).join(" ");
+    }
+
+    function naturalGoogleLocalization(baseText, adaptedText, lang, genre) {
+      const base = String(baseText || "").trim();
+      const adapted = String(adaptedText || "").trim();
+      if (!base && !adapted) return "";
+      if (lang === "tr") {
+        if (/^Silahını hazırla ve dünyayı fethet$/i.test(base)) {
+          if (genre === "mmo") return "Silahını kuşan ve loncanla dünyayı fethet";
+          if (genre === "fps") return "Silahını kuşan, hedefe kilitlen ve savaşı kazan";
+          if (genre === "strategy") return "Ordunu hazırla ve dünyayı stratejinle fethet";
+          if (genre === "casual") return "Hazırlan, dene ve dünyayı kazan";
+          if (genre === "horror") return "Silahını kuşan ve karanlığa meydan oku";
+          if (genre === "racing") return "Hazırlan ve zirveye doğru yarış";
+          if (genre === "simulation") return "Düzenini kur ve kendi dünyanı büyüt";
+        }
+        return adapted
+          .replace(/, loncanla /i, " ve loncanla ")
+          .replace(/hedefe kilitlen ve dünyayı fethet/i, "hedefe kilitlen ve savaşı kazan")
+          .replace(/dünyayı stratejinle fethet/i, "dünyayı stratejinle ele geçir");
+      }
+      if (lang === "en") {
+        return adapted
+          .replace(/conquer the world with your guild/i, "conquer the world together with your guild")
+          .replace(/dominate the battlefield/i, "win every fight")
+          .replace(/conquer the world with strategy/i, "conquer through strategy");
+      }
+      if (lang === "zh") {
+        return adapted
+          .replace(/与公会一起征服世界/, "和公会一起征服世界")
+          .replace(/主宰战场/, "赢下战场")
+          .replace(/用策略征服世界/, "用策略拿下世界");
+      }
+      return adapted || base;
     }
 
     function genreAdaptedTranslation(text, lang, genre) {
@@ -4339,6 +4395,7 @@ ${source}`;
       }[lang] || {};
       const profile = localizationProfileForLang(genre, lang);
       const adapted = genreAdaptedTranslation(translated, lang, genre);
+      const naturalText = naturalGoogleLocalization(translated, adapted, lang, genre);
       const shortText = shortGoogleLocalization(adapted, lang);
       if (mode === "normal") {
         return `${labels.normal}:\n${translated}\n\n${labels.source}:\n${source}\n\n${labels.note}: ${labels.noteText}`;
@@ -4353,7 +4410,7 @@ ${normalBlock}${labels.option1}:
 ${adapted}
 
 ${labels.option2}:
-${translated}
+${naturalText}
 
 ${labels.option3}:
 ${shortText}
