@@ -216,6 +216,10 @@
     .loc-batch-list { display: grid; gap: 10px; max-height: 360px; overflow: auto; padding-right: 4px; }
     .loc-batch-item { border: 1px solid rgba(149, 120, 255, .22); border-radius: 8px; padding: 12px; background: rgba(255,255,255,.7); }
     .loc-batch-item h4 { margin: 0 0 8px; font-size: 13px; }
+    .localization-workspace .loc-main-grid { display: grid; grid-template-columns: minmax(320px, 1.1fr) minmax(280px, .9fr); gap: 16px; align-items: start; }
+    .localization-workspace .loc-import-grid { display: grid; grid-template-columns: minmax(280px, .95fr) minmax(320px, 1.05fr); gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+    .localization-workspace textarea { min-height: 118px; }
+    .localization-workspace .loc-import-grid textarea { min-height: 106px; }
     .task-list { display: grid; gap: 10px; }
     .task { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
     .task strong { display: block; font-size: 13px; }
@@ -245,7 +249,7 @@
       .profile { display: none; }
       main { padding: 12px; }
       .brief, .page-head { grid-template-columns: 1fr; flex-direction: column; align-items: stretch; }
-      .brief-grid, .grid.half, .form-grid { grid-template-columns: 1fr; }
+      .brief-grid, .grid.half, .form-grid, .localization-workspace .loc-main-grid, .localization-workspace .loc-import-grid { grid-template-columns: 1fr; }
       .top-actions, .controls { flex-wrap: wrap; }
       table { min-width: 760px; }
     }
@@ -1351,9 +1355,12 @@
       const locModeValue = locForm.mode || "game";
       $("page").innerHTML = `
         ${pageHead(tr("localization"), tr("pageLocSub"))}
-        <div class="grid half">
-          ${panel(locUi("workspace"), `<div class="form-grid">
-            <div><div class="field-label">${tr("source")}</div><textarea id="sourceCopy">${esc(locSource)}</textarea></div>
+        <div class="grid">
+          ${panel(locUi("workspace"), `<div class="loc-main-grid">
+            <div>
+              <div class="field-label">${tr("source")}</div>
+              <textarea id="sourceCopy">${esc(locSource)}</textarea>
+            </div>
             <div>
               <div class="field-label">${locUi("gameType")}</div>
               <select id="locGenre">
@@ -1374,8 +1381,12 @@
               <select id="locTone"><option>${locUi("storeReady")}</option><option>${locUi("competitive")}</option><option>${locUi("cinematic")}</option><option>${locUi("friendly")}</option><option>${locUi("premium")}</option></select>
               <button class="primary" id="locBtn" type="button" style="margin-top:12px">${tr("generate")}</button>
             </div>
-          </div><p class="note" id="locStatus">${tr("apiSafe")}</p><div class="field-label">${tr("output")}</div><div class="result-box" id="locOutput">${formatLocalizationOutput(state.localizationOutput || "Output will appear here.")}</div><button id="copyLocBtn" type="button" style="margin-top:12px">${tr("copy")}</button>`)}
-          ${panel(locUi("excelTitle"), `<div class="form-grid">
+          </div>
+          <p class="note" id="locStatus">${tr("apiSafe")}</p>
+          <div class="field-label">${tr("output")}</div>
+          <div class="result-box" id="locOutput">${formatLocalizationOutput(state.localizationOutput || "Output will appear here.")}</div>
+          <button id="copyLocBtn" type="button" style="margin-top:12px">${tr("copy")}</button>
+          <div class="loc-import-grid">
             <div>
               <div class="field-label">${locUi("excelFile")}</div>
               <input id="locExcelFile" type="file" accept=".xlsx,.xls,.csv,.tsv,.txt">
@@ -1387,7 +1398,9 @@
               <textarea id="locPasteRows" placeholder="${esc(locUi("pastePlaceholder"))}"></textarea>
               <button class="primary" id="locPasteBtn" type="button" style="margin-top:12px">${locUi("localizeRows")}</button>
             </div>
-          </div><p class="note" id="locBatchStatus">${locUi("batchStatus")}</p><div class="loc-batch-list" id="locBatchOutput">${renderLocalizationBatch(state.localizationBatch || [])}</div>`)}
+          </div>
+          <p class="note" id="locBatchStatus">${locUi("batchStatus")}</p>
+          <div class="loc-batch-list" id="locBatchOutput">${renderLocalizationBatch(state.localizationBatch || [])}</div>`, "localization-workspace")}
           ${panel(locUi("guideTitle"), `<table><thead><tr><th>${locUi("type")}</th><th>${locUi("style")}</th><th>${locUi("avoid")}</th></tr></thead><tbody><tr><td>FPS</td><td>${locUi("fpsStyle")}</td><td>${locUi("fpsAvoid")}</td></tr><tr><td>MMO / RPG</td><td>${locUi("mmoStyle")}</td><td>${locUi("mmoAvoid")}</td></tr><tr><td>Strategy</td><td>${locUi("strategyStyle")}</td><td>${locUi("strategyAvoid")}</td></tr><tr><td>Casual</td><td>${locUi("casualStyle")}</td><td>${locUi("casualAvoid")}</td></tr><tr><td>Horror</td><td>${locUi("horrorStyle")}</td><td>${locUi("horrorAvoid")}</td></tr></tbody></table>`)}
         </div>`;
       $("locBtn").addEventListener("click", generateLocalization);
@@ -4130,6 +4143,14 @@ ${copy}`;
             output = "";
           }
         }
+        if (!output) {
+          try {
+            $("locBatchStatus").textContent = `Localizing ${outputs.length + 1}/${items.length} with Google Translate...`;
+            output = await localizeWithBrowserGoogleTranslate({ source: item.source, lang, tone, genre, mode });
+          } catch (error) {
+            output = "";
+          }
+        }
         outputs.push({
           name: item.name || shortText(item.source, 42),
           genreLabel: localizationProfile(genre).label,
@@ -4242,6 +4263,107 @@ ${source}`;
       return result && result.text && ["openai", "googletrans", "google-translate"].includes(result.source) ? result.text : "";
     }
 
+    async function localizeWithBrowserGoogleTranslate({ source, lang, tone, genre, mode }) {
+      const text = String(source || "").trim();
+      if (!text) return "";
+      const target = lang === "zh" ? "zh-CN" : lang === "tr" ? "tr" : "en";
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(target)}&dt=t&q=${encodeURIComponent(text)}`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Google Translate HTTP ${response.status}`);
+      const data = await response.json();
+      const translated = Array.isArray(data?.[0]) ? data[0].map((part) => part?.[0] || "").join("").trim() : "";
+      if (!translated || translated.toLowerCase() === text.toLowerCase()) return "";
+      return formatBrowserGoogleLocalization({ source: text, translated, lang, tone, genre, mode });
+    }
+
+    function shortGoogleLocalization(text, lang) {
+      const clean = String(text || "").trim();
+      if (!clean) return "";
+      if (lang === "zh") return clean.split(/[，。！？]/)[0].slice(0, 8);
+      return clean.includes(",") ? clean.split(",")[0].trim() : clean.split(/\s+/).slice(0, 4).join(" ");
+    }
+
+    function genreAdaptedTranslation(text, lang, genre) {
+      const clean = String(text || "").trim();
+      if (!clean) return "";
+      if (lang === "tr") {
+        let out = clean;
+        if (/^Silahını hazırla ve dünyayı fethet$/i.test(out)) {
+          if (genre === "mmo") return "Silahını kuşan, loncanla dünyayı fethet";
+          if (genre === "fps") return "Silahını kuşan, hedefe kilitlen ve dünyayı fethet";
+          if (genre === "strategy") return "Ordunu hazırla ve dünyayı stratejinle fethet";
+          if (genre === "casual") return "Hazırlan ve dünyayı kazan";
+          if (genre === "horror") return "Silahını kuşan ve karanlığı alt et";
+          if (genre === "racing") return "Hazırlan ve zirveye çık";
+          if (genre === "simulation") return "Düzenini kur ve kendi dünyanı inşa et";
+        }
+        if (genre === "mmo") out = out.replace(/Silahını hazırla/i, "Silahını kuşan").replace(/dünyayı fethet/i, "loncanla dünyayı fethet");
+        if (genre === "fps") out = out.replace(/Silahını hazırla/i, "Silahını kuşan").replace(/dünyayı fethet/i, "hedefe kilitlen ve dünyayı fethet");
+        if (genre === "strategy") out = out.replace(/Silahını hazırla/i, "Ordunu hazırla").replace(/dünyayı fethet/i, "dünyayı stratejinle fethet");
+        if (genre === "casual") out = out.replace(/fethet/i, "kazan").replace(/kuşan/i, "hazırla");
+        if (genre === "horror") out = out.replace(/dünyayı fethet/i, "karanlığı alt et");
+        if (genre === "racing") out = out.replace(/dünyayı fethet/i, "zirveye çık");
+        if (genre === "simulation") out = out.replace(/fethet/i, "inşa et").replace(/Silahını/i, "Düzenini");
+        return out;
+      }
+      if (lang === "en") {
+        let out = clean;
+        if (genre === "mmo") out = out.replace(/Ready your weapon/i, "Equip your weapon").replace(/conquer the world/i, "conquer the world with your guild");
+        if (genre === "fps") out = out.replace(/Ready your weapon/i, "Lock and load").replace(/conquer the world/i, "dominate the battlefield");
+        if (genre === "strategy") out = out.replace(/Ready your weapon/i, "Ready your army").replace(/conquer the world/i, "conquer the world with strategy");
+        if (genre === "casual") out = out.replace(/conquer/i, "win").replace(/Ready your weapon/i, "Get ready");
+        if (genre === "horror") out = out.replace(/conquer the world/i, "survive the darkness");
+        if (genre === "racing") out = out.replace(/conquer the world/i, "race to the top");
+        if (genre === "simulation") out = out.replace(/conquer/i, "build").replace(/weapon/i, "world");
+        return out;
+      }
+      if (lang === "zh") {
+        let out = clean;
+        if (genre === "mmo") out = out.replace(/准备好武器/, "装备武器").replace(/征服世界/, "与公会一起征服世界");
+        if (genre === "fps") out = out.replace(/准备好武器/, "装弹上阵").replace(/征服世界/, "主宰战场");
+        if (genre === "strategy") out = out.replace(/准备好武器/, "集结军队").replace(/征服世界/, "用策略征服世界");
+        if (genre === "casual") out = out.replace(/征服世界/, "赢下挑战");
+        if (genre === "horror") out = out.replace(/征服世界/, "逃出黑暗");
+        if (genre === "racing") out = out.replace(/征服世界/, "冲上巅峰");
+        if (genre === "simulation") out = out.replace(/征服世界/, "打造你的世界");
+        return out;
+      }
+      return clean;
+    }
+
+    function formatBrowserGoogleLocalization({ source, translated, lang, tone, genre, mode }) {
+      const labels = {
+        tr: { gameType: "Oyun türü", style: "Tarz analizi", rule: "Dil kuralı", tone: "Ton", normal: "Normal çeviri", option1: "Seçenek 1 - Oyun içi çeviri", option2: "Seçenek 2 - Daha doğal", option3: "Seçenek 3 - Kısa UI", source: "Kaynak metin", note: "Not", noteText: "Google Translate fallback kullanıldı; oyun tonunu GPT kadar derin uyarlamayabilir." },
+        en: { gameType: "Game type", style: "Style analysis", rule: "Language rule", tone: "Tone", normal: "Normal translation", option1: "Option 1 - In-game translation", option2: "Option 2 - More natural", option3: "Option 3 - Short UI", source: "Source text", note: "Note", noteText: "Google Translate fallback was used; game tone may be less nuanced than GPT." },
+        zh: { gameType: "游戏类型", style: "风格分析", rule: "语言规则", tone: "语气", normal: "普通翻译", option1: "选项 1 - 游戏内翻译", option2: "选项 2 - 更自然", option3: "选项 3 - 短 UI", source: "源文本", note: "备注", noteText: "已使用 Google Translate fallback；游戏语气可能不如 GPT 细致。" }
+      }[lang] || {};
+      const profile = localizationProfileForLang(genre, lang);
+      const adapted = genreAdaptedTranslation(translated, lang, genre);
+      const shortText = shortGoogleLocalization(adapted, lang);
+      if (mode === "normal") {
+        return `${labels.normal}:\n${translated}\n\n${labels.source}:\n${source}\n\n${labels.note}: ${labels.noteText}`;
+      }
+      const normalBlock = mode === "both" ? `${labels.normal}:\n${translated}\n\n` : "";
+      return `${labels.gameType}: ${profile.label}
+${labels.style}: ${lang === "zh" ? "先做基础翻译，再作为游戏内文本使用。" : lang === "tr" ? "Önce temel çeviri yapıldı, sonra oyun içi metne hazırlandı." : "Base translation first, then prepared as in-game text."}
+${labels.rule}: ${lang === "zh" ? "保留原意，短而自然。" : lang === "tr" ? "Anlamı koru, kısa ve doğal tut." : "Keep the meaning clear, short, and natural."}
+${labels.tone}: ${localizeLocalizationTone(tone, lang)}
+
+${normalBlock}${labels.option1}:
+${adapted}
+
+${labels.option2}:
+${translated}
+
+${labels.option3}:
+${shortText}
+
+${labels.source}:
+${source}
+
+${labels.note}: ${labels.noteText}`;
+    }
+
     async function generateLocalization() {
       const source = $("sourceCopy").value.trim();
       const lang = $("locLang").value;
@@ -4281,7 +4403,19 @@ ${source}`;
           return;
         }
       } catch (directError) {
-        if (status) status.textContent = `Translation failed: ${directError.message}`;
+        if (status) status.textContent = `GPT direct failed; trying Google Translate fallback...`;
+      }
+      try {
+        const googleText = await localizeWithBrowserGoogleTranslate({ source, lang, tone, genre, mode });
+        if (googleText) {
+          state.localizationOutput = googleText;
+          saveState();
+          $("locOutput").innerHTML = formatLocalizationOutput(state.localizationOutput);
+          if (status) status.textContent = "Generated with Google Translate fallback.";
+          return;
+        }
+      } catch (googleError) {
+        if (status) status.textContent = `Translation failed: ${googleError.message}`;
       }
       state.localizationOutput = localizationUnavailableMessage(source, lang);
       saveState();

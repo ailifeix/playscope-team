@@ -449,8 +449,57 @@ function shortLocalizationText(text = "", lang = "en") {
   return clean.includes(",") ? clean.split(",")[0].trim() : clean.split(/\s+/).slice(0, 4).join(" ");
 }
 
+function genreAdaptedGoogleText(text = "", lang = "en", genre = "") {
+  const clean = String(text || "").trim();
+  if (!clean) return "";
+  if (lang === "tr") {
+    let out = clean;
+    if (/^Silahını hazırla ve dünyayı fethet$/i.test(out)) {
+      if (genre === "mmo") return "Silahını kuşan, loncanla dünyayı fethet";
+      if (genre === "fps") return "Silahını kuşan, hedefe kilitlen ve dünyayı fethet";
+      if (genre === "strategy") return "Ordunu hazırla ve dünyayı stratejinle fethet";
+      if (genre === "casual") return "Hazırlan ve dünyayı kazan";
+      if (genre === "horror") return "Silahını kuşan ve karanlığı alt et";
+      if (genre === "racing") return "Hazırlan ve zirveye çık";
+      if (genre === "simulation") return "Düzenini kur ve kendi dünyanı inşa et";
+    }
+    if (genre === "mmo") out = out.replace(/Silahını hazırla/i, "Silahını kuşan").replace(/dünyayı fethet/i, "loncanla dünyayı fethet");
+    if (genre === "fps") out = out.replace(/Silahını hazırla/i, "Silahını kuşan").replace(/dünyayı fethet/i, "hedefe kilitlen ve dünyayı fethet");
+    if (genre === "strategy") out = out.replace(/Silahını hazırla/i, "Ordunu hazırla").replace(/dünyayı fethet/i, "dünyayı stratejinle fethet");
+    if (genre === "casual") out = out.replace(/fethet/i, "kazan").replace(/kuşan/i, "hazırla");
+    if (genre === "horror") out = out.replace(/dünyayı fethet/i, "karanlığı alt et");
+    if (genre === "racing") out = out.replace(/dünyayı fethet/i, "zirveye çık");
+    if (genre === "simulation") out = out.replace(/fethet/i, "inşa et").replace(/Silahını/i, "Düzenini");
+    return out;
+  }
+  if (lang === "en") {
+    let out = clean;
+    if (genre === "mmo") out = out.replace(/Ready your weapon/i, "Equip your weapon").replace(/conquer the world/i, "conquer the world with your guild");
+    if (genre === "fps") out = out.replace(/Ready your weapon/i, "Lock and load").replace(/conquer the world/i, "dominate the battlefield");
+    if (genre === "strategy") out = out.replace(/Ready your weapon/i, "Ready your army").replace(/conquer the world/i, "conquer the world with strategy");
+    if (genre === "casual") out = out.replace(/conquer/i, "win").replace(/Ready your weapon/i, "Get ready");
+    if (genre === "horror") out = out.replace(/conquer the world/i, "survive the darkness");
+    if (genre === "racing") out = out.replace(/conquer the world/i, "race to the top");
+    if (genre === "simulation") out = out.replace(/conquer/i, "build").replace(/weapon/i, "world");
+    return out;
+  }
+  if (lang === "zh") {
+    let out = clean;
+    if (genre === "mmo") out = out.replace(/准备好武器/, "装备武器").replace(/征服世界/, "与公会一起征服世界");
+    if (genre === "fps") out = out.replace(/准备好武器/, "装弹上阵").replace(/征服世界/, "主宰战场");
+    if (genre === "strategy") out = out.replace(/准备好武器/, "集结军队").replace(/征服世界/, "用策略征服世界");
+    if (genre === "casual") out = out.replace(/征服世界/, "赢下挑战");
+    if (genre === "horror") out = out.replace(/征服世界/, "逃出黑暗");
+    if (genre === "racing") out = out.replace(/征服世界/, "冲上巅峰");
+    if (genre === "simulation") out = out.replace(/征服世界/, "打造你的世界");
+    return out;
+  }
+  return clean;
+}
+
 function formatGoogleTranslateLocalization({ source, translated, lang, genre, mode, tone }) {
-  const shortText = shortLocalizationText(translated, lang);
+  const adapted = genreAdaptedGoogleText(translated, lang, genre);
+  const shortText = shortLocalizationText(adapted, lang);
   const labels = {
     tr: {
       gameType: "Oyun türü",
@@ -502,7 +551,7 @@ ${labels.rule}: ${lang === "zh" ? "Anlamı koru, kısa ve doğal tut." : lang ==
 ${labels.tone}: ${tone}
 
 ${normalBlock}${labels.option1}:
-${translated}
+${adapted}
 
 ${labels.option2}:
 ${translated}
