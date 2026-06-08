@@ -610,9 +610,128 @@
       line-height: 1.25;
       -webkit-line-clamp: 2;
     }
+    .ai-module-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .8fr) minmax(420px, 1.2fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .ai-form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .ai-full {
+      grid-column: 1 / -1;
+    }
+    .ai-checks {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .ai-checks label {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.86);
+      font-size: 13px;
+    }
+    .ai-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 12px 0;
+    }
+    .ai-stat,
+    .ai-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, #fff, #fbf8ff);
+      padding: 14px;
+    }
+    .ai-stat strong {
+      display: block;
+      font-size: 26px;
+      color: var(--purple-2);
+      margin-top: 4px;
+    }
+    .ai-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 9px;
+      background: #efe3ff;
+      color: #5a249d;
+      font-weight: 800;
+      font-size: 12px;
+    }
+    .ai-result-stack {
+      display: grid;
+      gap: 12px;
+    }
+    .ai-table {
+      width: 100%;
+      min-width: 0;
+      border-collapse: collapse;
+    }
+    .ai-table th,
+    .ai-table td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .ai-chat-box {
+      min-height: 360px;
+      max-height: 520px;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.82);
+    }
+    .ai-bubble {
+      max-width: 78%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #fff;
+      line-height: 1.45;
+    }
+    .ai-bubble.user {
+      margin-left: auto;
+      color: #fff;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--purple), #6d3bff);
+    }
+    .ai-bubble.assistant {
+      margin-right: auto;
+    }
+    .ai-empty {
+      border: 1px dashed #cdb8ff;
+      border-radius: 8px;
+      padding: 18px;
+      color: var(--muted);
+      background: rgba(255,255,255,.65);
+    }
+    @media (max-width: 980px) {
+      .ai-module-grid,
+      .ai-form-grid,
+      .ai-stat-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="mockAiService.js"></script>
 </head>
 <body>
   <div class="app">
@@ -688,7 +807,40 @@
       target: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="8"/></svg>',
       settings: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3h.1a1.6 1.6 0 0 0 .9-1.5V3a2 2 0 1 1 4 0v.2a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8 1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.2a1.6 1.6 0 0 0-1.4 1Z"/></svg>',
       help: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 1 1 5 2.2c-.9.5-1.4 1.1-1.4 2.1"/><path d="M12 17h.01"/></svg>',
-      doc: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>'
+      doc: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>',
+      spark: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"/></svg>',
+      chat: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path d="M8 9h8M8 13h5"/></svg>',
+      report: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5a2 2 0 0 1 2-2h10l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M14 3v5h5"/><path d="M8 13h8M8 17h6"/></svg>'
+    };
+
+    const aiCopy = {
+      tr: {
+        aiReviews: "AI Review Analizi", aiLocQa: "AI Lokalizasyon QA", aiCampaign: "AI Kampanya", aiReport: "AI Haftalık Rapor", aiWorkspace: "AI Workspace", aiSettings: "AI Ayarları",
+        aiReviewsSub: "Oyuncu yorumlarını ürün, pazarlama, lokalizasyon ve operasyon içgörülerine çevir.", aiLocQaSub: "Oyun metninin anlam, doğallık, uzunluk ve terminoloji kalitesini kontrol et.", aiCampaignSub: "Mobil oyun kampanyası için konsept, kanal fikri, risk ve örnek reklam metni üret.", aiReportSub: "Haftalık işleri profesyonel rapora dönüştür.", aiWorkspaceSub: "Proje işleri için genel AI çalışma alanı.", aiSettingsSub: "Yeni AI modüllerinin prototip ayarları.",
+        gameName: "Oyun adı", platform: "Platform", market: "Pazar / Bölge", reviewLanguage: "Yorum dili", reviews: "Yorumlar", focus: "Analiz odağı", analyzeReviews: "Yorumları analiz et", emptyReviews: "Lütfen en az bir yorum yapıştır.", executiveSummary: "Yönetici özeti", sentiment: "Duygu dağılımı", complaints: "Ana şikayetler", praises: "Öne çıkan olumlu noktalar", productActions: "Ürün aksiyonları", marketingActions: "Pazarlama aksiyonları", localizationRisks: "Lokalizasyon riskleri", exportReport: "Raporu dışa aktar",
+        sourceLang: "Kaynak dil", targetLang: "Hedef dil", contextType: "Metin bağlamı", sourceText: "Kaynak metin", currentTranslation: "Mevcut çeviri", terms: "Sabit terminoloji", lengthLimit: "UI uzunluk limiti", checkLocalization: "Lokalizasyonu kontrol et", qaScore: "QA skoru", verdict: "Sonuç", suggestedTranslation: "Önerilen çeviri", explanation: "Açıklama",
+        genre: "Tür", region: "Hedef ülke / bölge", goal: "Kampanya hedefi", budget: "Bütçe seviyesi", channels: "Kanallar", notes: "Notlar", generateIdeas: "Kampanya fikirleri üret", concept: "Kampanya konsepti", audienceInsight: "Kitle içgörüsü", creativeAngle: "Yaratıcı açı", socialIdeas: "Sosyal medya fikirleri", kolIdeas: "KOL fikirleri", eventIdeas: "Oyun içi event fikirleri", adCopy: "Örnek reklam metinleri",
+        completed: "Tamamlanan işler", ongoing: "Devam eden işler", blockers: "Sorunlar / blocker", nextWeek: "Gelecek hafta öncelikleri", department: "Departman", outputLanguage: "Çıktı dili", reportStyle: "Rapor stili", generateReport: "Rapor oluştur", reportPreview: "Rapor önizleme",
+        send: "Gönder", projectContext: "Proje bağlamı", profile: "Profil", workspace: "Workspace", aiProvider: "AI sağlayıcı", model: "Model", theme: "Tema", saveSettings: "Ayarları kaydet", saved: "Kaydedildi", comingSoon: "Yakında"
+      },
+      en: {
+        aiReviews: "AI Review Analyzer", aiLocQa: "AI Localization QA", aiCampaign: "AI Campaign Ideas", aiReport: "AI Weekly Report", aiWorkspace: "AI Workspace", aiSettings: "AI Settings",
+        aiReviewsSub: "Turn player reviews into product, marketing, localization, and operations insights.", aiLocQaSub: "Check game text for meaning, naturalness, length, terminology, and cultural risk.", aiCampaignSub: "Generate campaign concepts, channel ideas, risks, and sample ad copy for mobile games.", aiReportSub: "Convert weekly notes into a professional work report.", aiWorkspaceSub: "General AI workspace for project tasks.", aiSettingsSub: "Prototype settings for the new AI modules.",
+        gameName: "Game name", platform: "Platform", market: "Market / Region", reviewLanguage: "Review language", reviews: "Reviews", focus: "Analysis focus", analyzeReviews: "Analyze reviews", emptyReviews: "Please paste at least one review.", executiveSummary: "Executive summary", sentiment: "Sentiment", complaints: "Main complaints", praises: "Main praises", productActions: "Product actions", marketingActions: "Marketing actions", localizationRisks: "Localization risks", exportReport: "Export report",
+        sourceLang: "Source language", targetLang: "Target language", contextType: "Context type", sourceText: "Source text", currentTranslation: "Current translation", terms: "Established terminology", lengthLimit: "UI length limit", checkLocalization: "Check localization", qaScore: "QA score", verdict: "Verdict", suggestedTranslation: "Suggested translation", explanation: "Explanation",
+        genre: "Genre", region: "Target country / region", goal: "Campaign goal", budget: "Budget level", channels: "Channels", notes: "Notes", generateIdeas: "Generate campaign ideas", concept: "Campaign concept", audienceInsight: "Audience insight", creativeAngle: "Creative angle", socialIdeas: "Social media ideas", kolIdeas: "KOL ideas", eventIdeas: "In-game event ideas", adCopy: "Example ad copy",
+        completed: "Completed tasks", ongoing: "Ongoing tasks", blockers: "Problems / blockers", nextWeek: "Next week priorities", department: "Department", outputLanguage: "Output language", reportStyle: "Report style", generateReport: "Generate report", reportPreview: "Report preview",
+        send: "Send", projectContext: "Project context", profile: "Profile", workspace: "Workspace", aiProvider: "AI provider", model: "Model", theme: "Theme", saveSettings: "Save settings", saved: "Saved", comingSoon: "Coming soon"
+      },
+      zh: {
+        aiReviews: "AI 评论分析", aiLocQa: "AI 本地化 QA", aiCampaign: "AI 营销方案", aiReport: "AI 周报生成", aiWorkspace: "AI 工作台", aiSettings: "AI 设置",
+        aiReviewsSub: "把玩家评论整理成产品、营销、本地化和运营洞察。", aiLocQaSub: "检查游戏文本的含义、自然度、长度、术语和文化风险。", aiCampaignSub: "为手游生成营销概念、渠道创意、风险提示和广告文案。", aiReportSub: "把每周工作记录整理成专业周报。", aiWorkspaceSub: "面向项目任务的通用 AI 工作区。", aiSettingsSub: "新 AI 模块的原型设置。",
+        gameName: "游戏名称", platform: "平台", market: "市场 / 地区", reviewLanguage: "评论语言", reviews: "评论", focus: "分析重点", analyzeReviews: "分析评论", emptyReviews: "请至少粘贴一条评论。", executiveSummary: "管理层摘要", sentiment: "情绪分布", complaints: "主要问题", praises: "主要好评", productActions: "产品行动", marketingActions: "营销行动", localizationRisks: "本地化风险", exportReport: "导出报告",
+        sourceLang: "源语言", targetLang: "目标语言", contextType: "文本场景", sourceText: "源文本", currentTranslation: "当前翻译", terms: "固定术语", lengthLimit: "UI 长度限制", checkLocalization: "检查本地化", qaScore: "QA 分数", verdict: "结论", suggestedTranslation: "建议译文", explanation: "说明",
+        genre: "类型", region: "目标国家 / 地区", goal: "营销目标", budget: "预算级别", channels: "渠道", notes: "备注", generateIdeas: "生成营销方案", concept: "营销概念", audienceInsight: "受众洞察", creativeAngle: "创意角度", socialIdeas: "社媒创意", kolIdeas: "KOL 方向", eventIdeas: "游戏内活动", adCopy: "广告文案示例",
+        completed: "已完成", ongoing: "进行中", blockers: "问题 / 阻塞", nextWeek: "下周重点", department: "部门", outputLanguage: "输出语言", reportStyle: "报告风格", generateReport: "生成报告", reportPreview: "报告预览",
+        send: "发送", projectContext: "项目上下文", profile: "个人资料", workspace: "工作区", aiProvider: "AI 服务商", model: "模型", theme: "主题", saveSettings: "保存设置", saved: "已保存", comingSoon: "即将上线"
+      }
     };
 
     const text = {
@@ -742,6 +894,25 @@
       selectedCompetitor: 0,
       api: { youtube: "", openai: "", googleSecret: "", openaiBaseUrl: "https://api.1475258.xyz/v1", openaiModel: "auto" }
     };
+    state.ai = state.ai || {};
+    state.ai.review = state.ai.review || null;
+    state.ai.locQa = state.ai.locQa || null;
+    state.ai.campaign = state.ai.campaign || null;
+    state.ai.report = state.ai.report || null;
+    state.ai.chatMessages = state.ai.chatMessages || [];
+    state.ai.settings = state.ai.settings || {
+      name: "",
+      email: "",
+      role: "Marketing",
+      company: "",
+      workspaceName: "PlayScope Team",
+      defaultProjectType: "Mobile Game",
+      defaultMarket: "Turkey",
+      defaultLanguage: "Turkish",
+      provider: "Mock AI",
+      model: "Prototype",
+      theme: "System"
+    };
 
     const competitors = {
       strategy: [
@@ -762,6 +933,8 @@
     };
 
     function tr(key) { return text[state.lang][key] || text.tr[key] || key; }
+    function aiT(key) { return (aiCopy[state.lang] && aiCopy[state.lang][key]) || aiCopy.en[key] || key; }
+    function navT(key) { return (text[state.lang] && text[state.lang][key]) ? tr(key) : aiT(key); }
     function sharedHeaders() {
       const password = localStorage.getItem("playscope-team-password") || "";
       return password ? { "X-Team-Password": password } : {};
@@ -1053,13 +1226,19 @@
         ["search", "search", "search"],
         ["list", "list", "list"],
         ["localization", "globe", "localization"],
-        ["competitors", "target", "competitors"]
+        ["competitors", "target", "competitors"],
+        ["aiReviews", "spark", "aiReviews"],
+        ["aiLocQa", "globe", "aiLocQa"],
+        ["aiCampaign", "target", "aiCampaign"],
+        ["aiReport", "report", "aiReport"],
+        ["aiWorkspace", "chat", "aiWorkspace"]
       ];
-      $("mainNav").innerHTML = nav.map(([page, icon, label]) => `<button class="${state.page === page ? "active" : ""}" data-page="${page}" type="button">${icons[icon]}<span>${tr(label)}</span></button>`).join("");
+      $("mainNav").innerHTML = nav.map(([page, icon, label]) => `<button class="${state.page === page ? "active" : ""}" data-page="${page}" type="button">${icons[icon]}<span>${navT(label)}</span></button>`).join("");
       $("footNav").innerHTML = [
+        ["aiSettings", "spark", "aiSettings"],
         ["settings", "settings", "settings"],
         ["help", "help", "help"]
-      ].map(([page, icon, label]) => `<button class="${state.page === page ? "active" : ""}" data-page="${page}" type="button">${icons[icon]}<span>${tr(label)}</span></button>`).join("");
+      ].map(([page, icon, label]) => `<button class="${state.page === page ? "active" : ""}" data-page="${page}" type="button">${icons[icon]}<span>${navT(label)}</span></button>`).join("");
       document.querySelectorAll("[data-page]").forEach((button) => button.addEventListener("click", () => {
         state.page = button.dataset.page;
         saveState();
@@ -1416,6 +1595,8 @@
       const sourceList = hasGoogleResults ? state.googlePlayResults : (competitors[state.competitorGenre] || competitors.strategy);
       const list = state.competitorStore === "all" ? sourceList : sourceList.filter((item) => item.store === state.competitorStore);
       const selected = list[state.selectedCompetitor] || list[0];
+      const analysisKey = competitorAnalysisKey(selected);
+      const currentAnalysis = state.competitorAnalysis?.key === analysisKey ? state.competitorAnalysis : null;
       $("page").innerHTML = `
         ${pageHead(tr("competitors"), tr("pageCompSub"))}
         <div class="grid two">
@@ -1432,7 +1613,7 @@
             <p class="note" id="googlePlayStatus">${hasGoogleResults ? `${state.googlePlayResults.length} store result(s) loaded.` : "Search a game or genre to load live store descriptions."}</p>
             <div class="table-wrap"><table><thead><tr><th>Game</th><th>Store</th><th>Length</th><th>Main message</th><th>Keywords</th></tr></thead><tbody>${list.map((item, index) => `<tr data-comp="${index}" class="${index === state.selectedCompetitor ? "selected" : ""}"><td>${esc(item.name)}${item.meta ? `<div class="cell-muted">${esc(item.meta)}</div>` : ""}</td><td><span class="tag ${item.store === "Google Play" ? "good" : "warn"}">${esc(item.store)}</span></td><td>${esc(item.length)}</td><td>${esc(item.message)}</td><td>${esc(item.keywords || item.strength || "")}</td></tr>`).join("") || `<tr><td colspan="5">No results for this store.</td></tr>`}</tbody></table></div>
           </section>
-          ${selected ? panel(esc(selected.name), `<div class="field-label">General overview</div><div class="result-box">${esc(competitorOverview(selected))}</div><div class="field-label" style="margin-top:14px">Store description</div><div class="result-box">${esc(selected.desc)}</div><div class="field-label" style="margin-top:14px">Store review</div><ul class="analysis-list"><li><strong>Opening:</strong> ${esc(selected.message)}</li><li><strong>Feature angle:</strong> ${esc(selected.strength)}</li><li><strong>Market:</strong> ${esc(state.googlePlayCountry || "-")} / ${esc(state.googlePlayLang || "-")}</li><li><strong>Keywords:</strong> ${esc(selected.keywords || [state.project.genre, state.project.keywords, selected.message].filter(Boolean).join(", "))}</li>${selected.url ? `<li><a href="${esc(selected.url)}" target="_blank" rel="noreferrer">Open store page</a></li>` : ""}</ul><button class="primary" id="compareBtn">${tr("analyze")}</button>`, "detail") : panel("No competitor selected", `<p class="note">Choose another store or genre.</p>`, "detail")}
+          ${selected ? panel(esc(selected.name), `<div class="field-label">General overview</div><div class="result-box">${esc(competitorOverview(selected))}</div><div class="field-label" style="margin-top:14px">Store description</div><div class="result-box">${esc(selected.desc)}</div><div class="field-label" style="margin-top:14px">Store review</div><ul class="analysis-list"><li><strong>Opening:</strong> ${esc(selected.message)}</li><li><strong>Feature angle:</strong> ${esc(selected.strength)}</li><li><strong>Market:</strong> ${esc(state.googlePlayCountry || "-")} / ${esc(state.googlePlayLang || "-")}</li><li><strong>Keywords:</strong> ${esc(selected.keywords || [state.project.genre, state.project.keywords, selected.message].filter(Boolean).join(", "))}</li>${selected.url ? `<li><a href="${esc(selected.url)}" target="_blank" rel="noreferrer">Open store page</a></li>` : ""}</ul><button class="primary" id="compareBtn">${tr("analyze")}</button><div id="competitorAnalysisOutput" style="margin-top:14px">${renderCompetitorAnalysisResult(currentAnalysis)}</div>`, "detail") : panel("No competitor selected", `<p class="note">Choose another store or genre.</p>`, "detail")}
         </div>`;
       $("genreSelect").value = state.competitorGenre;
       $("storeSelect").value = state.competitorStore;
@@ -1446,7 +1627,7 @@
       $("appStoreSearchBtn").addEventListener("click", () => searchStoreCompetitors("app-store"));
       $("clearGooglePlayBtn").addEventListener("click", () => { state.googlePlayResults = []; state.selectedCompetitor = 0; saveState(); render(); });
       document.querySelectorAll("[data-comp]").forEach((row) => row.addEventListener("click", () => { state.selectedCompetitor = Number(row.dataset.comp); saveState(); render(); }));
-      $("compareBtn")?.addEventListener("click", () => alert("Demo insight: lead with game fantasy, then 3 feature bullets, then one clear CTA."));
+      $("compareBtn")?.addEventListener("click", analyzeCompetitorStore);
     }
 
     function storeApiTargets() {
@@ -1580,16 +1761,344 @@
     }
 
     function competitorOverview(item = {}) {
-      const text = `${item.name || ""} ${item.desc || ""} ${item.keywords || ""}`.toLowerCase();
-      let type = "Mobile game";
-      if (/strategy|empire|alliance|kingdom|war|conquer|base|fleet/.test(text)) type = "Strategy / 4X";
-      else if (/rpg|hero|guild|raid|quest|dungeon|loot/.test(text)) type = "MMO / RPG";
-      else if (/fps|shooter|gun|weapon|battle royale|squad/.test(text)) type = "FPS / Shooter";
-      else if (/match|puzzle|merge|tile|casual/.test(text)) type = "Casual / Puzzle";
-      else if (/race|racing|car|drift|speed/.test(text)) type = "Racing";
+      const type = competitorGenreLabel(state.competitorGenre || "mobile");
       const first = clientFirstSentence(item.desc || item.message || "");
       const market = [state.googlePlayCountry, state.googlePlayLang].filter(Boolean).join(" / ");
-      return `Type: ${type}\nMarket: ${market || "-"}\nCore message: ${first || item.message || "No description loaded."}\nKeyword angle: ${item.keywords || "No keywords loaded."}`;
+      return `Selected genre: ${type}\nMarket: ${market || "-"}\nCore message: ${first || item.message || "No description loaded."}\nKeyword angle: ${item.keywords || "No keywords loaded."}`;
+    }
+
+    function competitorGenreLabel(value) {
+      const labels = {
+        strategy: "Strategy / 4X",
+        puzzle: "Puzzle",
+        casual: "Casual",
+        fps: "FPS / Shooter",
+        mmo: "MMORPG / RPG",
+        horror: "Horror",
+        racing: "Racing",
+        simulation: "Simulation"
+      };
+      return labels[value] || value || "Mobile game";
+    }
+
+    function competitorAnalysisKey(item = {}) {
+      return [item.store || "", item.id || item.url || item.name || "", state.competitorGenre || "", state.googlePlayLang || "", state.googlePlayCountry || ""].join("|");
+    }
+
+    function storeKeywordList(item = {}) {
+      const source = Array.isArray(item.originalKeywords) && item.originalKeywords.length
+        ? item.originalKeywords
+        : Array.isArray(item.keywordList) && item.keywordList.length
+          ? item.keywordList
+          : String(item.keywords || "").split(/[,;\n|]/);
+      return [...new Set(source.map((keyword) => String(keyword || "").trim()).filter(Boolean))];
+    }
+
+    function properStoreTerm(keyword) {
+      const clean = String(keyword || "").trim();
+      return /^[A-Z0-9 .:'&+-]{2,}$/.test(clean) || /\b(pubg|roblox|minecraft|youtube|tiktok|pokemon|call of duty|fortnite|brawl stars|clash|valorant)\b/i.test(clean);
+    }
+
+    function fallbackKeywordTranslation(keyword, lang) {
+      const clean = String(keyword || "").trim();
+      const lower = clean.toLowerCase();
+      const maps = {
+        tr: {
+          "battle royale": "battle royale",
+          fps: "FPS",
+          tps: "TPS",
+          rpg: "RPG",
+          mmorpg: "MMORPG",
+          pvp: "PvP",
+          pve: "PvE",
+          survival: "hayatta kalma",
+          shooter: "nişancı",
+          action: "aksiyon",
+          adventure: "macera",
+          casual: "casual / gündelik oyun",
+          puzzle: "bulmaca",
+          strategy: "strateji",
+          simulation: "simülasyon",
+          racing: "yarış",
+          horror: "korku",
+          open: "açık",
+          "open world": "açık dünya",
+          multiplayer: "çok oyunculu",
+          online: "çevrimiçi",
+          offline: "çevrimdışı",
+          guild: "lonca",
+          clan: "klan",
+          server: "sunucu",
+          event: "etkinlik",
+          reward: "ödül",
+          rewards: "ödüller",
+          weapon: "silah",
+          weapons: "silahlar",
+          hero: "kahraman",
+          heroes: "kahramanlar",
+          quest: "görev",
+          quests: "görevler",
+          mission: "görev",
+          missions: "görevler",
+          battle: "savaş",
+          war: "savaş",
+          mobile: "mobil",
+          lite: "lite",
+          arena: "arena",
+          zombie: "zombi",
+          zombies: "zombiler",
+          sniper: "keskin nişancı",
+          car: "araba",
+          cars: "arabalar",
+          football: "futbol",
+          sports: "spor",
+          cards: "kartlar",
+          card: "kart"
+        },
+        zh: {
+          "battle royale": "大逃杀",
+          fps: "FPS",
+          tps: "TPS",
+          rpg: "RPG",
+          mmorpg: "MMORPG",
+          pvp: "PvP",
+          pve: "PvE",
+          survival: "生存",
+          shooter: "射击",
+          action: "动作",
+          adventure: "冒险",
+          casual: "休闲",
+          puzzle: "解谜",
+          strategy: "策略",
+          simulation: "模拟",
+          racing: "竞速",
+          horror: "恐怖",
+          "open world": "开放世界",
+          multiplayer: "多人",
+          online: "在线",
+          offline: "离线",
+          guild: "公会",
+          clan: "战队",
+          server: "服务器",
+          event: "活动",
+          reward: "奖励",
+          rewards: "奖励",
+          weapon: "武器",
+          weapons: "武器",
+          hero: "英雄",
+          heroes: "英雄",
+          quest: "任务",
+          quests: "任务",
+          battle: "战斗",
+          war: "战争",
+          mobile: "手游",
+          lite: "轻量版",
+          arena: "竞技场"
+        },
+        en: {}
+      };
+      if (lang === "en") return { translation: clean, note: "Original keyword kept in English." };
+      if (properStoreTerm(clean)) return { translation: clean.toUpperCase() === clean ? clean : clean, note: "Brand, game name, or standard abbreviation kept unchanged." };
+      const map = maps[lang] || {};
+      const translated = map[lower] || "";
+      if (translated) {
+        const note = translated.toLowerCase() === lower ? "Common gaming term, usually kept unchanged." : "Translated according to gaming context.";
+        return { translation: translated, note };
+      }
+      return { translation: clean, note: "Needs review. Kept unchanged because no reliable automatic translation was available." };
+    }
+
+    function fallbackDescriptionTranslation(textValue, lang) {
+      const text = String(textValue || "").trim();
+      if (!text) return {
+        translatedDescription: "No store description available. Analysis is based on title, genre, and available metadata.",
+        shortSummary: "No store description available."
+      };
+      return {
+        translatedDescription: lang === "tr"
+          ? `${text}\n\nNot: GPT/çeviri servisi yokken açıklama birebir korunur; canlı çeviri için GPT bağlantısı kullan.`
+          : lang === "zh"
+            ? `${text}\n\n备注：未连接 GPT/翻译服务时保留原文；连接 GPT 后会输出完整译文。`
+            : text,
+        shortSummary: clientFirstSentence(text) || text.slice(0, 160)
+      };
+    }
+
+    function generateFallbackCompetitorAnalysis({ selectedGame, selectedGenre, selectedStore, selectedCountry, selectedLanguage, projectBrief }) {
+      const originalKeywords = storeKeywordList(selectedGame);
+      const translatedKeywords = originalKeywords.map((keyword) => {
+        const translated = fallbackKeywordTranslation(keyword, selectedLanguage);
+        return { original: keyword, translation: translated.translation, note: translated.note };
+      });
+      const desc = fallbackDescriptionTranslation(selectedGame?.desc || selectedGame?.message || "", selectedLanguage);
+      const suggestedMarketingKeywords = originalKeywords.length
+        ? originalKeywords.slice(0, 6).map((keyword) => fallbackKeywordTranslation(keyword, selectedLanguage).translation)
+        : [];
+      return {
+        key: competitorAnalysisKey(selectedGame),
+        originalKeywords,
+        translatedKeywords,
+        suggestedMarketingKeywords,
+        translatedDescription: desc.translatedDescription,
+        shortSummary: desc.shortSummary,
+        genreAwareAnalysis: {
+          genreFit: `Selected genre kept as ${competitorGenreLabel(selectedGenre)}.`,
+          positioning: selectedGame?.message || "No opening message available.",
+          marketRelevance: `${selectedStore || selectedGame?.store || "Store"} / ${selectedCountry || "-"} / ${selectedLanguage || "-"}`,
+          localizationNotes: "Fallback preserved all store keywords. Items marked Needs review should be checked with GPT or a translator."
+        }
+      };
+    }
+
+    function renderCompetitorAnalysisResult(result) {
+      if (!result) return "";
+      const originalKeywords = result.originalKeywords?.length
+        ? `<ul>${result.originalKeywords.map((keyword) => `<li>${esc(keyword)}</li>`).join("")}</ul>`
+        : `<p class="note">No keywords available from store data.</p>`;
+      const translatedRows = result.translatedKeywords?.length
+        ? result.translatedKeywords.map((item) => `<tr><td>${esc(item.original)}</td><td>${esc(item.translation)}</td><td>${esc(item.note || "")}</td></tr>`).join("")
+        : `<tr><td colspan="3">No keywords available from store data.</td></tr>`;
+      const suggested = result.suggestedMarketingKeywords?.length
+        ? `<ul>${result.suggestedMarketingKeywords.map((keyword) => `<li>${esc(keyword)}</li>`).join("")}</ul>`
+        : `<p class="note">No suggested marketing keywords.</p>`;
+      const analysis = result.genreAwareAnalysis || {};
+      return `<div class="competitor-analysis-result">
+        <div class="field-label">Original Store Keywords</div>
+        ${originalKeywords}
+        <div class="field-label" style="margin-top:12px">Translated Keywords</div>
+        <div class="table-wrap"><table><thead><tr><th>Original</th><th>Translation</th><th>Note</th></tr></thead><tbody>${translatedRows}</tbody></table></div>
+        <div class="field-label" style="margin-top:12px">Suggested Marketing Keywords</div>
+        ${suggested}
+        <div class="field-label" style="margin-top:12px">Store Description Translation</div>
+        <div class="result-box">${esc(result.translatedDescription || "No store description available.")}</div>
+        <div class="field-label" style="margin-top:12px">Store Description Summary</div>
+        <div class="result-box">${esc(result.shortSummary || "-")}</div>
+        <div class="field-label" style="margin-top:12px">Genre-aware Analysis</div>
+        <ul class="analysis-list">
+          <li><strong>Genre fit:</strong> ${esc(analysis.genreFit || "-")}</li>
+          <li><strong>Positioning:</strong> ${esc(analysis.positioning || "-")}</li>
+          <li><strong>Market relevance:</strong> ${esc(analysis.marketRelevance || "-")}</li>
+          <li><strong>Localization notes:</strong> ${esc(analysis.localizationNotes || "-")}</li>
+        </ul>
+      </div>`;
+    }
+
+    function buildCompetitorPrompt(input) {
+      return `You are a senior mobile game store localization and ASO analyst.
+Return strict JSON only. Do not include markdown.
+
+Input:
+selectedGame.title: ${JSON.stringify(input.selectedGame?.name || "")}
+selectedGame.originalDescription: ${JSON.stringify(input.selectedGame?.desc || input.selectedGame?.message || "")}
+selectedGame.keywords: ${JSON.stringify(input.originalKeywords || [])}
+selectedGenre: ${JSON.stringify(input.selectedGenre || "")}
+selectedStore: ${JSON.stringify(input.selectedStore || "")}
+selectedCountry: ${JSON.stringify(input.selectedCountry || "")}
+selectedLanguage: ${JSON.stringify(input.selectedLanguage || "")}
+projectBrief: ${JSON.stringify(input.projectBrief || {})}
+
+Rules:
+- Translate every keyword. Do not skip any keyword.
+- Return original and translated keyword pairs.
+- Do not invent a replacement keyword dictionary.
+- Preserve originalKeywords exactly as received.
+- Keep suggested marketing keywords in a separate section.
+- Do not change the selected genre. Use selectedGenre only as context and rely on store description for factual claims.
+- Do not output Strategy / 4X unless selectedGenre is strategy or the original store data explicitly says Strategy / 4X.
+- Brand names, game names, abbreviations, and proper nouns should usually stay unchanged.
+- If a keyword translation is uncertain, include it and mark note as "Needs review".
+- Translate the full store description into the selectedLanguage.
+- Summarize the store description in the selectedLanguage.
+
+Return exactly this JSON shape:
+{
+  "originalKeywords": ["..."],
+  "translatedKeywords": [{"original":"...","translation":"...","note":"..."}],
+  "suggestedMarketingKeywords": ["..."],
+  "translatedDescription": "...",
+  "shortSummary": "...",
+  "genreAwareAnalysis": {
+    "genreFit": "...",
+    "positioning": "...",
+    "marketRelevance": "...",
+    "localizationNotes": "..."
+  }
+}`;
+    }
+
+    function validateCompetitorAnalysis(result, originalKeywords) {
+      const safe = result && typeof result === "object" ? result : {};
+      safe.originalKeywords = originalKeywords.slice();
+      const byOriginal = new Map((Array.isArray(safe.translatedKeywords) ? safe.translatedKeywords : []).map((item) => [String(item.original || "").trim().toLowerCase(), item]));
+      safe.translatedKeywords = originalKeywords.map((keyword) => {
+        const found = byOriginal.get(keyword.toLowerCase());
+        if (found?.translation) return { original: keyword, translation: String(found.translation), note: String(found.note || "") };
+        const fallback = fallbackKeywordTranslation(keyword, state.googlePlayLang || "en");
+        return { original: keyword, translation: fallback.translation, note: fallback.note };
+      });
+      safe.suggestedMarketingKeywords = Array.isArray(safe.suggestedMarketingKeywords) ? safe.suggestedMarketingKeywords.map(String).filter(Boolean) : [];
+      safe.genreAwareAnalysis = safe.genreAwareAnalysis || {};
+      return safe;
+    }
+
+    async function analyzeCompetitorStore() {
+      const sourceList = Array.isArray(state.googlePlayResults) && state.googlePlayResults.length ? state.googlePlayResults : (competitors[state.competitorGenre] || competitors.strategy);
+      const list = state.competitorStore === "all" ? sourceList : sourceList.filter((item) => item.store === state.competitorStore);
+      const selectedGame = list[state.selectedCompetitor] || list[0];
+      if (!selectedGame) return;
+      const output = $("competitorAnalysisOutput");
+      if (output) output.innerHTML = `<p class="note">Analyzing store keywords...</p>`;
+      const originalKeywords = storeKeywordList(selectedGame);
+      const payload = {
+        selectedGame,
+        originalKeywords,
+        selectedGenre: state.competitorGenre,
+        selectedStore: state.competitorStore === "all" ? selectedGame.store : state.competitorStore,
+        selectedCountry: state.googlePlayCountry,
+        selectedLanguage: state.googlePlayLang,
+        projectBrief: state.project
+      };
+      try {
+        const direct = await analyzeCompetitorWithGpt(payload);
+        state.competitorAnalysis = { key: competitorAnalysisKey(selectedGame), ...validateCompetitorAnalysis(direct, originalKeywords) };
+      } catch (error) {
+        state.competitorAnalysis = generateFallbackCompetitorAnalysis(payload);
+      }
+      saveState();
+      if (output) output.innerHTML = renderCompetitorAnalysisResult(state.competitorAnalysis);
+    }
+
+    async function analyzeCompetitorWithGpt(payload) {
+      const config = getSavedGptConfig();
+      if (!config.openaiApiKey) throw new Error("GPT key missing.");
+      const baseUrl = normalizeGptBaseUrl(config.openaiBaseUrl || "https://api.openai.com/v1");
+      const preferredModel = config.openaiModel && config.openaiModel !== "auto" ? config.openaiModel : "";
+      let lastError = "";
+      for (const model of gptModelCandidates(preferredModel)) {
+        const response = await fetch(`${baseUrl}/chat/completions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.openaiApiKey}` },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: "system", content: "You return strict JSON for mobile game store localization analysis. Never skip keywords." },
+              { role: "user", content: buildCompetitorPrompt(payload) }
+            ],
+            temperature: 0.1,
+            max_tokens: 2200,
+            stream: false
+          })
+        }).catch((error) => ({ ok: false, status: "network", error }));
+        if (!response.ok) {
+          lastError = `${model}: ${await readGptError(response)}`;
+          continue;
+        }
+        const data = await response.json().catch(() => null);
+        const parsed = parseJsonObject(data?.choices?.[0]?.message?.content || "");
+        if (parsed) return parsed;
+        lastError = `${model}: invalid JSON`;
+      }
+      throw new Error(lastError || "GPT competitor analysis failed.");
     }
 
     async function loadSerpApiKey() {
@@ -1637,6 +2146,7 @@
         message: clientFirstSentence(description) || category || "Google Play result loaded",
         strength: "SerpAPI Google Play",
         desc: description || "Description was not included in this result.",
+        originalKeywords: clientKeywordList(`${title} ${item.author || ""} ${category} ${description}`),
         keywords: clientKeywords(`${title} ${item.author || ""} ${category} ${description}`),
         meta: [item.author, item.rating ? `Rating ${item.rating}` : "", item.downloads ? `${item.downloads} downloads` : "", category].filter(Boolean).join(" · "),
         url: item.link || item.store_link || item.serpapi_link || (appId ? `https://play.google.com/store/apps/details?id=${encodeURIComponent(appId)}` : "")
@@ -1682,13 +2192,17 @@
       return flattenSerpResults(data).slice(0, 5).map(mapSerpGooglePlayItem);
     }
 
-    function clientKeywords(text) {
+    function clientKeywordList(text, limit = 80) {
       const stop = new Set("the and for with you your our are this that from into game play apps app mobile free new now all can will get more best build create games".split(" "));
       const counts = {};
       String(text || "").toLowerCase().match(/[a-z][a-z0-9-]{2,}/g)?.forEach((word) => {
         if (!stop.has(word)) counts[word] = (counts[word] || 0) + 1;
       });
-      return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([word]) => word).join(", ");
+      return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, limit).map(([word]) => word);
+    }
+
+    function clientKeywords(text) {
+      return clientKeywordList(text, 12).join(", ");
     }
 
     function clientFirstSentence(text) {
@@ -1714,6 +2228,7 @@
           message: clientFirstSentence(description) || item.primaryGenreName || "App Store description loaded",
           strength: "App Store public data",
           desc: description || "Description could not be read from App Store.",
+          originalKeywords: clientKeywordList(`${title} ${item.primaryGenreName || ""} ${(item.genres || []).join(" ")} ${description}`),
           keywords: clientKeywords(`${title} ${item.primaryGenreName || ""} ${(item.genres || []).join(" ")} ${description}`),
           url: item.trackViewUrl || ""
         };
@@ -4912,11 +5427,323 @@ ${labels.note}: ${labels.noteText}`;
       updateTeamLoginStatus();
     }
 
+    function aiOptions(values, selected = "") {
+      return values.map((value) => `<option value="${esc(value)}" ${value === selected ? "selected" : ""}>${esc(value)}</option>`).join("");
+    }
+    function aiCheckedValues(name) {
+      return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map((input) => input.value);
+    }
+    function aiServiceReady() {
+      return Boolean(window.MockAiService);
+    }
+    function aiEmptyState(message) {
+      return `<div class="ai-empty">${esc(message)}</div>`;
+    }
+    function aiList(items = []) {
+      return `<ul class="analysis-list">${items.map((item) => `<li>${esc(item)}</li>`).join("")}</ul>`;
+    }
+    function aiCopyButton(id, textValue) {
+      return `<button class="ghost" type="button" id="${id}" data-copy="${esc(textValue)}">${tr("copy")}</button>`;
+    }
+    function bindAiCopyButtons() {
+      document.querySelectorAll("[data-copy]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const value = button.dataset.copy || "";
+          if (navigator.clipboard) await navigator.clipboard.writeText(value);
+          button.textContent = aiT("saved");
+          setTimeout(() => { button.textContent = tr("copy"); }, 900);
+        });
+      });
+    }
+    function aiReviewsPage() {
+      const result = state.ai.review;
+      $("content").innerHTML = `
+        ${pageHead(aiT("aiReviews"), aiT("aiReviewsSub"))}
+        <div class="ai-module-grid">
+          ${panel(aiT("aiReviews"), `
+            <div class="ai-form-grid">
+              <div><div class="field-label">${aiT("gameName")}</div><input id="aiReviewGame" placeholder="Silkroad Origin: New Dawn"></div>
+              <div><div class="field-label">${aiT("platform")}</div><select id="aiReviewPlatform">${aiOptions(["Google Play","App Store","Steam","TapTap","Other"], "Google Play")}</select></div>
+              <div><div class="field-label">${aiT("market")}</div><select id="aiReviewMarket">${aiOptions(["Turkey","MENA/Gulf","Global","China","Southeast Asia","Europe","Other"], "Turkey")}</select></div>
+              <div><div class="field-label">${aiT("reviewLanguage")}</div><select id="aiReviewLang">${aiOptions(["Turkish","English","Chinese","Arabic","Mixed","Other"], "Turkish")}</select></div>
+              <div class="ai-full"><div class="field-label">${aiT("reviews")}</div><textarea id="aiReviewText" rows="9" placeholder="One review per line..."></textarea></div>
+              <div class="ai-full"><div class="field-label">${aiT("focus")}</div><div class="ai-checks">
+                ${["Sentiment","Bugs / crashes","Performance / lag","Payment / monetization","Localization issues","Gameplay feedback","Event feedback","Marketing insights"].map((item) => `<label><input type="checkbox" name="aiReviewFocus" value="${esc(item)}" checked> ${esc(item)}</label>`).join("")}
+              </div></div>
+              <div class="ai-full"><button class="primary" id="aiReviewAnalyzeBtn" type="button">${aiT("analyzeReviews")}</button> <button class="ghost" disabled type="button">${aiT("exportReport")} - ${aiT("comingSoon")}</button></div>
+              <p class="note ai-full" id="aiReviewStatus"></p>
+            </div>
+          `)}
+          ${panel(aiT("executiveSummary"), result ? renderAiReviewResult(result) : aiEmptyState(aiT("aiReviewsSub")))}
+        </div>`;
+      $("aiReviewAnalyzeBtn").addEventListener("click", async () => {
+        const reviews = $("aiReviewText").value.trim();
+        if (!reviews) { $("aiReviewStatus").textContent = aiT("emptyReviews"); return; }
+        $("aiReviewStatus").textContent = "Analyzing...";
+        state.ai.review = window.MockAiService.analyzeReviews({
+          gameName: $("aiReviewGame").value,
+          platform: $("aiReviewPlatform").value,
+          market: $("aiReviewMarket").value,
+          reviewLanguage: $("aiReviewLang").value,
+          reviews,
+          focus: aiCheckedValues("aiReviewFocus"),
+          uiLanguage: state.lang
+        });
+        saveState();
+        render();
+      });
+    }
+    function renderAiReviewResult(result) {
+      return `<div class="ai-result-stack">
+        <div class="ai-card"><span class="ai-badge">${aiT("executiveSummary")}</span><p>${esc(result.executiveSummary)}</p><p class="note">${esc(result.summary)}</p></div>
+        <div class="ai-stat-grid">
+          <div class="ai-stat">Positive<strong>${esc(result.sentiment.positive)}%</strong></div>
+          <div class="ai-stat">Neutral<strong>${esc(result.sentiment.neutral)}%</strong></div>
+          <div class="ai-stat">Negative<strong>${esc(result.sentiment.negative)}%</strong></div>
+        </div>
+        <div class="ai-card"><h4>${aiT("complaints")}</h4><table class="ai-table"><thead><tr><th>Category</th><th>Severity</th><th>Explanation</th><th>Example</th></tr></thead><tbody>${result.topComplaints.map((item) => `<tr><td>${esc(item.category)}</td><td><span class="ai-badge">${esc(item.severity)}</span></td><td>${esc(item.explanation)}</td><td>${esc(item.example)}</td></tr>`).join("")}</tbody></table></div>
+        <div class="ai-card"><h4>${aiT("praises")}</h4>${result.topPraises.map((item) => `<p><strong>${esc(item.category)}:</strong> ${esc(item.explanation)}<br><span class="note">${esc(item.example)}</span></p>`).join("")}</div>
+        <div class="ai-card"><h4>${aiT("productActions")}</h4>${aiList(result.productActions)}</div>
+        <div class="ai-card"><h4>${aiT("marketingActions")}</h4>${aiList(result.marketingActions)}</div>
+        <div class="ai-card"><h4>${aiT("localizationRisks")}</h4>${result.localizationRisks.length ? result.localizationRisks.map((item) => `<p><strong>${esc(item.language)}:</strong> ${esc(item.issue)} ${esc(item.suggestion)}</p>`).join("") : `<p class="note">No major localization risk detected in this mock analysis.</p>`}</div>
+      </div>`;
+    }
+    function aiLocQaPage() {
+      const result = state.ai.locQa;
+      $("content").innerHTML = `
+        ${pageHead(aiT("aiLocQa"), aiT("aiLocQaSub"))}
+        <div class="ai-module-grid">
+          ${panel(aiT("aiLocQa"), `
+            <div class="ai-form-grid">
+              <div><div class="field-label">${aiT("sourceLang")}</div><select id="aiQaSourceLang">${aiOptions(["Chinese","English","Turkish","Arabic","Korean","Other"], "Chinese")}</select></div>
+              <div><div class="field-label">${aiT("targetLang")}</div><select id="aiQaTargetLang">${aiOptions(["Turkish","English","Chinese","Arabic","Other"], "Turkish")}</select></div>
+              <div class="ai-full"><div class="field-label">${aiT("contextType")}</div><select id="aiQaContext">${aiOptions(["UI","Item description","Event title","Event rules","System message","Push notification","Store description","Marketing copy","Character/class description","Customer support message"], "UI")}</select></div>
+              <div class="ai-full"><div class="field-label">${aiT("sourceText")}</div><textarea id="aiQaSourceText" rows="5"></textarea></div>
+              <div class="ai-full"><div class="field-label">${aiT("currentTranslation")}</div><textarea id="aiQaTranslation" rows="5"></textarea></div>
+              <div class="ai-full"><div class="field-label">${aiT("terms")}</div><textarea id="aiQaTerms" rows="3" placeholder="阵营 = Kamp, 邮件 = Posta, 战盟 = Savaş Birliği"></textarea></div>
+              <div class="ai-full"><div class="field-label">${aiT("lengthLimit")}</div><input id="aiQaLengthLimit" placeholder="max 12 characters per line, 2 lines"></div>
+              <div class="ai-full"><button class="primary" id="aiQaBtn" type="button">${aiT("checkLocalization")}</button></div>
+              <p class="note ai-full" id="aiQaStatus"></p>
+            </div>
+          `)}
+          ${panel(aiT("verdict"), result ? renderAiQaResult(result) : aiEmptyState(aiT("aiLocQaSub")))}
+        </div>`;
+      $("aiQaBtn").addEventListener("click", () => {
+        if (!$("aiQaSourceText").value.trim() || !$("aiQaTranslation").value.trim()) {
+          $("aiQaStatus").textContent = "Source text and current translation are required.";
+          return;
+        }
+        state.ai.locQa = window.MockAiService.checkLocalization({
+          sourceLanguage: $("aiQaSourceLang").value,
+          targetLanguage: $("aiQaTargetLang").value,
+          contextType: $("aiQaContext").value,
+          sourceText: $("aiQaSourceText").value,
+          currentTranslation: $("aiQaTranslation").value,
+          terminology: $("aiQaTerms").value,
+          lengthLimit: $("aiQaLengthLimit").value
+        });
+        saveState();
+        render();
+      });
+    }
+    function renderAiQaResult(result) {
+      const cards = [
+        ["Meaning Accuracy", result.meaningAccuracy.status, result.meaningAccuracy.explanation],
+        ["Naturalness", result.naturalness.status, result.naturalness.explanation],
+        ["UI Length Risk", result.uiLengthRisk.status, result.uiLengthRisk.explanation],
+        ["Terminology", result.terminology.status, result.terminology.issues.join("; ") || "No terminology issue detected."],
+        ["Tone & Style", result.toneStyle.status, result.toneStyle.explanation],
+        ["Cultural Risk", result.culturalRisk.status, result.culturalRisk.explanation]
+      ];
+      return `<div class="ai-result-stack">
+        <div class="ai-stat-grid"><div class="ai-stat">${aiT("qaScore")}<strong>${esc(result.score)}/100</strong></div><div class="ai-stat">${aiT("verdict")}<strong>${esc(result.verdict)}</strong></div><div class="ai-stat">Risk<strong>${esc(result.culturalRisk.status)}</strong></div></div>
+        ${cards.map(([title, status, explanation]) => `<div class="ai-card"><span class="ai-badge">${esc(status)}</span><h4>${esc(title)}</h4><p>${esc(explanation)}</p></div>`).join("")}
+        <div class="ai-card"><h4>${aiT("suggestedTranslation")}</h4><div class="result-box">${esc(result.suggestedTranslation)}</div>${aiCopyButton("aiQaCopy", result.suggestedTranslation)}</div>
+        <div class="ai-card"><h4>${aiT("explanation")}</h4><p>${esc(result.explanation)}</p></div>
+      </div>`;
+    }
+    function aiCampaignPage() {
+      const result = state.ai.campaign;
+      $("content").innerHTML = `
+        ${pageHead(aiT("aiCampaign"), aiT("aiCampaignSub"))}
+        <div class="ai-module-grid">
+          ${panel(aiT("aiCampaign"), `
+            <div class="ai-form-grid">
+              <div><div class="field-label">${aiT("gameName")}</div><input id="aiCampGame" placeholder="Silkroad Origin"></div>
+              <div><div class="field-label">${aiT("genre")}</div><select id="aiCampGenre">${aiOptions(["MMORPG","Strategy","Survival","Shooter","MOBA","RPG","Casual","Other"], "MMORPG")}</select></div>
+              <div><div class="field-label">${aiT("region")}</div><select id="aiCampRegion">${aiOptions(["Turkey","MENA/Gulf","Saudi Arabia","UAE","Qatar","Europe","Global","Other"], "Turkey")}</select></div>
+              <div><div class="field-label">${aiT("goal")}</div><select id="aiCampGoal">${aiOptions(["User acquisition","Retention","Reactivation","Monetization","Community growth","Launch","Pre-registration","Brand awareness"], "Launch")}</select></div>
+              <div><div class="field-label">${aiT("budget")}</div><select id="aiCampBudget">${aiOptions(["Low","Medium","High"], "Medium")}</select></div>
+              <div class="ai-full"><div class="field-label">${aiT("channels")}</div><div class="ai-checks">${["TikTok","Instagram","YouTube","X/Twitter","Discord","Facebook","Google Ads","Influencer/KOL","Community event","In-game event"].map((item) => `<label><input type="checkbox" name="aiCampChannel" value="${esc(item)}" checked> ${esc(item)}</label>`).join("")}</div></div>
+              <div class="ai-full"><div class="field-label">${aiT("notes")}</div><textarea id="aiCampNotes" rows="4"></textarea></div>
+              <div class="ai-full"><button class="primary" id="aiCampBtn" type="button">${aiT("generateIdeas")}</button></div>
+              <p class="note ai-full" id="aiCampStatus"></p>
+            </div>
+          `)}
+          ${panel(aiT("concept"), result ? renderAiCampaignResult(result) : aiEmptyState(aiT("aiCampaignSub")))}
+        </div>`;
+      $("aiCampBtn").addEventListener("click", () => {
+        if (!$("aiCampRegion").value || !$("aiCampGoal").value) { $("aiCampStatus").textContent = "Campaign goal and target region are required."; return; }
+        state.ai.campaign = window.MockAiService.generateCampaignIdeas({
+          gameName: $("aiCampGame").value,
+          genre: $("aiCampGenre").value,
+          region: $("aiCampRegion").value,
+          goal: $("aiCampGoal").value,
+          budget: $("aiCampBudget").value,
+          channels: aiCheckedValues("aiCampChannel"),
+          notes: $("aiCampNotes").value
+        });
+        saveState();
+        render();
+      });
+    }
+    function renderAiCampaignResult(result) {
+      return `<div class="ai-result-stack">
+        <div class="ai-card"><span class="ai-badge">${esc(result.campaignName)}</span><h4>${aiT("concept")}</h4><p>${esc(result.concept)}</p></div>
+        <div class="ai-card"><h4>${aiT("audienceInsight")}</h4><p>${esc(result.audienceInsight)}</p></div>
+        <div class="ai-card"><h4>${aiT("creativeAngle")}</h4><p>${esc(result.creativeAngle)}</p></div>
+        <div class="ai-card"><h4>${aiT("socialIdeas")}</h4><table class="ai-table"><thead><tr><th>Channel</th><th>Idea</th><th>Execution</th></tr></thead><tbody>${result.socialIdeas.map((item) => `<tr><td>${esc(item.channel)}</td><td>${esc(item.idea)}</td><td>${esc(item.execution)}</td></tr>`).join("")}</tbody></table></div>
+        <div class="ai-card"><h4>${aiT("kolIdeas")}</h4>${aiList(result.kolIdeas)}</div>
+        <div class="ai-card"><h4>${aiT("eventIdeas")}</h4>${aiList(result.inGameEventIdeas)}</div>
+        <div class="ai-card"><h4>${aiT("localizationRisks")}</h4>${aiList(result.localizationSuggestions)}</div>
+        <div class="ai-card"><h4>Risk Notes</h4>${aiList(result.riskNotes)}</div>
+        <div class="ai-card"><h4>${aiT("adCopy")}</h4><p><strong>Headlines:</strong> ${esc(result.adCopies.headlines.join(" | "))}</p><p><strong>Body:</strong> ${esc(result.adCopies.bodyTexts.join(" | "))}</p><p><strong>Push:</strong> ${esc(result.adCopies.pushNotifications.join(" | "))}</p></div>
+      </div>`;
+    }
+    function aiWeeklyReportPage() {
+      const result = state.ai.report;
+      $("content").innerHTML = `
+        ${pageHead(aiT("aiReport"), aiT("aiReportSub"))}
+        <div class="ai-module-grid">
+          ${panel(aiT("aiReport"), `
+            <div class="ai-form-grid">
+              <div class="ai-full"><div class="field-label">${aiT("completed")}</div><textarea id="aiReportCompleted" rows="4"></textarea></div>
+              <div class="ai-full"><div class="field-label">${aiT("ongoing")}</div><textarea id="aiReportOngoing" rows="4"></textarea></div>
+              <div class="ai-full"><div class="field-label">${aiT("blockers")}</div><textarea id="aiReportBlockers" rows="4"></textarea></div>
+              <div class="ai-full"><div class="field-label">${aiT("nextWeek")}</div><textarea id="aiReportNext" rows="4"></textarea></div>
+              <div><div class="field-label">${aiT("department")}</div><select id="aiReportDept">${aiOptions(["Marketing","Localization","Operations","Community","Product","General"], "Marketing")}</select></div>
+              <div><div class="field-label">${aiT("outputLanguage")}</div><select id="aiReportLang">${aiOptions(["Chinese","English","Turkish"], "English")}</select></div>
+              <div class="ai-full"><div class="field-label">${aiT("reportStyle")}</div><select id="aiReportStyle">${aiOptions(["Formal","Concise","Detailed"], "Formal")}</select></div>
+              <div class="ai-full"><button class="primary" id="aiReportBtn" type="button">${aiT("generateReport")}</button> <button class="ghost" disabled type="button">Export - ${aiT("comingSoon")}</button></div>
+              <p class="note ai-full" id="aiReportStatus"></p>
+            </div>
+          `)}
+          ${panel(aiT("reportPreview"), result ? renderAiReportResult(result) : aiEmptyState(aiT("aiReportSub")))}
+        </div>`;
+      $("aiReportBtn").addEventListener("click", () => {
+        const hasText = [$("aiReportCompleted").value, $("aiReportOngoing").value, $("aiReportBlockers").value, $("aiReportNext").value].some((value) => value.trim());
+        if (!hasText) { $("aiReportStatus").textContent = "Please enter at least one task or note."; return; }
+        state.ai.report = window.MockAiService.generateWeeklyReport({
+          completedTasks: $("aiReportCompleted").value,
+          ongoingTasks: $("aiReportOngoing").value,
+          blockers: $("aiReportBlockers").value,
+          nextWeekPriorities: $("aiReportNext").value,
+          department: $("aiReportDept").value,
+          language: $("aiReportLang").value,
+          style: $("aiReportStyle").value
+        });
+        saveState();
+        render();
+      });
+    }
+    function renderAiReportResult(result) {
+      const fullText = [result.title, ...result.sections.flatMap((section) => [section.heading, ...section.items.map((item) => `- ${item}`)])].join("\n");
+      return `<div class="ai-result-stack">
+        <div class="ai-card"><span class="ai-badge">${esc(result.language)}</span><h3>${esc(result.title)}</h3></div>
+        ${result.sections.map((section) => `<div class="ai-card"><h4>${esc(section.heading)}</h4>${aiList(section.items)}</div>`).join("")}
+        ${aiCopyButton("aiReportCopy", fullText)}
+      </div>`;
+    }
+    function aiWorkspacePage() {
+      $("content").innerHTML = `
+        ${pageHead(aiT("aiWorkspace"), aiT("aiWorkspaceSub"))}
+        <div class="ai-module-grid">
+          ${panel(aiT("aiWorkspace"), `
+            <div class="ai-chat-box" id="aiChatBox">
+              ${state.ai.chatMessages.length ? state.ai.chatMessages.map((msg) => `<div class="ai-bubble ${esc(msg.role)}">${msg.role === "assistant" ? `<strong>${esc(msg.title || "Assistant")}</strong><br>` : ""}${esc(msg.text || msg.summary || "")}${msg.bullets ? aiList(msg.bullets) : ""}</div>`).join("") : aiEmptyState("Try: Analyze these game reviews / Improve this Turkish localization / Generate a weekly report in Chinese")}
+            </div>
+            <div class="controls" style="margin-top:12px">
+              <textarea id="aiChatInput" rows="3" placeholder="Ask about reviews, localization, campaign, or report..."></textarea>
+              <button class="primary" id="aiChatSendBtn" type="button">${aiT("send")}</button>
+            </div>
+          `)}
+          ${panel(aiT("projectContext"), `
+            <div class="ai-card"><strong>${esc(state.project.name)}</strong><p>${esc(state.project.genre)} | ${esc(state.project.markets)}</p><p class="note">${esc(state.project.goal)}</p></div>
+            <div class="ai-card"><h4>Prompt ideas</h4>${aiList(["Analyze these game reviews", "Improve this Turkish localization", "Generate a weekly report in Chinese", "Create campaign ideas for Turkey", "Summarize product feedback"])}</div>
+          `)}
+        </div>`;
+      $("aiChatSendBtn").addEventListener("click", () => {
+        const message = $("aiChatInput").value.trim();
+        if (!message) return;
+        state.ai.chatMessages.push({ role: "user", text: message });
+        const reply = window.MockAiService.generateChatResponse({ message, uiLanguage: state.lang, project: state.project });
+        state.ai.chatMessages.push({ role: "assistant", ...reply, text: reply.summary });
+        saveState();
+        render();
+      });
+      const box = $("aiChatBox");
+      if (box) box.scrollTop = box.scrollHeight;
+    }
+    function aiSettingsPage() {
+      const settings = state.ai.settings;
+      $("content").innerHTML = `
+        ${pageHead(aiT("aiSettings"), aiT("aiSettingsSub"))}
+        <div class="grid two">
+          ${panel(aiT("profile"), `
+            <div class="grid two">
+              <div><div class="field-label">Name</div><input id="aiSetName" value="${esc(settings.name)}"></div>
+              <div><div class="field-label">Email</div><input id="aiSetEmail" value="${esc(settings.email)}"></div>
+              <div><div class="field-label">Role</div><input id="aiSetRole" value="${esc(settings.role)}"></div>
+              <div><div class="field-label">Company / Team</div><input id="aiSetCompany" value="${esc(settings.company)}"></div>
+            </div>
+          `)}
+          ${panel(aiT("workspace"), `
+            <div class="grid two">
+              <div><div class="field-label">Workspace name</div><input id="aiSetWorkspace" value="${esc(settings.workspaceName)}"></div>
+              <div><div class="field-label">Default project type</div><input id="aiSetProjectType" value="${esc(settings.defaultProjectType)}"></div>
+              <div><div class="field-label">Default market</div><input id="aiSetMarket" value="${esc(settings.defaultMarket)}"></div>
+              <div><div class="field-label">Default language</div><input id="aiSetLang" value="${esc(settings.defaultLanguage)}"></div>
+            </div>
+          `)}
+          ${panel("AI", `
+            <div class="grid two">
+              <div><div class="field-label">${aiT("aiProvider")}</div><input id="aiSetProvider" value="${esc(settings.provider)}" placeholder="Mock AI / OpenAI later"></div>
+              <div><div class="field-label">${aiT("model")}</div><input id="aiSetModel" value="${esc(settings.model)}"></div>
+              <div class="ai-full"><div class="field-label">API key</div><input value="" placeholder="Not stored in this mock module" disabled></div>
+            </div>
+          `)}
+          ${panel(aiT("theme"), `
+            <select id="aiSetTheme">${aiOptions(["Light","Dark","System"], settings.theme)}</select>
+            <p class="note">Current AI module outputs are mock/prototype unless a real backend is connected. Existing protected API features stay separate.</p>
+            <button class="primary" id="aiSettingsSaveBtn" type="button">${aiT("saveSettings")}</button>
+            <p class="note" id="aiSettingsStatus"></p>
+          `)}
+        </div>`;
+      $("aiSettingsSaveBtn").addEventListener("click", () => {
+        state.ai.settings = {
+          name: $("aiSetName").value,
+          email: $("aiSetEmail").value,
+          role: $("aiSetRole").value,
+          company: $("aiSetCompany").value,
+          workspaceName: $("aiSetWorkspace").value,
+          defaultProjectType: $("aiSetProjectType").value,
+          defaultMarket: $("aiSetMarket").value,
+          defaultLanguage: $("aiSetLang").value,
+          provider: $("aiSetProvider").value,
+          model: $("aiSetModel").value,
+          theme: $("aiSetTheme").value
+        };
+        saveState();
+        $("aiSettingsStatus").textContent = aiT("saved");
+      });
+    }
+
     function render() {
       document.documentElement.lang = state.lang === "zh" ? "zh" : state.lang;
       renderShell();
-      const pages = { dashboard: dashboardPage, search: searchPage, list: listPage, localization: localizationPage, competitors: competitorsPage, settings: settingsPage, help: helpPage };
+      const pages = { dashboard: dashboardPage, search: searchPage, list: listPage, localization: localizationPage, competitors: competitorsPage, aiReviews: aiReviewsPage, aiLocQa: aiLocQaPage, aiCampaign: aiCampaignPage, aiReport: aiWeeklyReportPage, aiWorkspace: aiWorkspacePage, aiSettings: aiSettingsPage, settings: settingsPage, help: helpPage };
       (pages[state.page] || dashboardPage)();
+      bindAiCopyButtons();
       updateTeamLoginStatus();
     }
 

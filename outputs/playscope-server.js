@@ -785,12 +785,16 @@ function textFromMeta(html, name) {
 }
 
 function keywordSummary(text) {
+  return keywordListSummary(text, 12).join(", ");
+}
+
+function keywordListSummary(text, limit = 80) {
   const stop = new Set("the and for with you your our are this that from into game play apps app mobile free new now all can will get more best build create games".split(" "));
   const counts = {};
   String(text || "").toLowerCase().match(/[a-z][a-z0-9-]{2,}/g)?.forEach((word) => {
     if (!stop.has(word)) counts[word] = (counts[word] || 0) + 1;
   });
-  return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([word]) => word).join(", ");
+  return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, limit).map(([word]) => word);
 }
 
 function firstSentence(text) {
@@ -859,6 +863,7 @@ async function googlePlayDetails(appId, hl = "en", gl = "US") {
     message: firstSentence(description) || "Google Play description loaded",
     strength: inferStrength(description),
     desc: description || "Description could not be read from Google Play.",
+    originalKeywords: keywordListSummary(`${title} ${description}`),
     keywords: keywordSummary(`${title} ${description}`),
     url
   };
@@ -876,6 +881,7 @@ function mapGooglePlayApp(item = {}, details = {}) {
     message: firstSentence(description) || item.summary || details.genre || "Google Play description loaded",
     strength: inferStrength(description),
     desc: description || item.summary || "Description could not be read from Google Play.",
+    originalKeywords: keywordListSummary(`${title} ${details.genre || ""} ${details.categories?.join(" ") || ""} ${description}`),
     keywords: keywordSummary(`${title} ${details.genre || ""} ${details.categories?.join(" ") || ""} ${description}`),
     url
   };
@@ -895,6 +901,7 @@ function mapSerpApiGooglePlay(item = {}) {
     message: firstSentence(description) || category || "Google Play result loaded",
     strength: inferStrength(description || category),
     desc: description || "Description was not included in this search result.",
+    originalKeywords: keywordListSummary(`${title} ${item.author || ""} ${category} ${description}`),
     keywords: keywordSummary(`${title} ${item.author || ""} ${category} ${description}`),
     meta: [item.author, item.rating ? `Rating ${item.rating}` : "", item.downloads ? `${item.downloads} downloads` : "", category].filter(Boolean).join(" · "),
     url
@@ -1083,6 +1090,7 @@ async function appStoreSearch(input = {}) {
       message: firstSentence(description) || item.primaryGenreName || "App Store description loaded",
       strength: inferStrength(description),
       desc: description || "Description could not be read from App Store.",
+      originalKeywords: keywordListSummary(`${title} ${item.primaryGenreName || ""} ${item.genres?.join(" ") || ""} ${description}`),
       keywords: keywordSummary(`${title} ${item.primaryGenreName || ""} ${item.genres?.join(" ") || ""} ${description}`),
       url: item.trackViewUrl || ""
     };
