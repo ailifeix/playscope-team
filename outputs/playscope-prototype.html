@@ -5466,6 +5466,21 @@ ${labels.note}: ${labels.noteText}`;
           en: "AI response failed. Please try again.",
           zh: "AI response failed. Please try again."
         },
+        backendUnreachable: {
+          tr: "AI backend is not reachable. Please check the server deployment.",
+          en: "AI backend is not reachable. Please check the server deployment.",
+          zh: "AI backend is not reachable. Please check the server deployment."
+        },
+        requestFailed: {
+          tr: "AI request failed. Please check the server logs or try again.",
+          en: "AI request failed. Please check the server logs or try again.",
+          zh: "AI request failed. Please check the server logs or try again."
+        },
+        invalidFormat: {
+          tr: "AI response format was invalid. Please retry.",
+          en: "AI response format was invalid. Please retry.",
+          zh: "AI response format was invalid. Please retry."
+        },
         demo: {
           tr: "Demo example. This is not a real AI result.",
           en: "Demo example. This is not a real AI result.",
@@ -5513,20 +5528,24 @@ ${labels.note}: ${labels.noteText}`;
           body: JSON.stringify(payload)
         });
       } catch (error) {
-        return { ok: false, notConfigured: true, message: aiMessage("notConfigured") };
+        state.ai.settings.backendStatus = "unreachable";
+        saveState();
+        return { ok: false, backendUnreachable: true, message: aiMessage("backendUnreachable") };
       }
       let result = null;
       try {
         result = await response.json();
       } catch (error) {
-        return { ok: false, message: aiMessage("failed") };
+        return { ok: false, message: aiMessage("invalidFormat") };
       }
-      if (!result?.ok && (result?.code === "AI_NOT_CONFIGURED" || result?.notConfigured)) {
+      if (!result?.ok && (result?.code === "AI_NOT_CONFIGURED" || result?.error === "AI_NOT_CONFIGURED" || result?.notConfigured)) {
         state.ai.settings.backendStatus = "not configured";
         saveState();
         return { ok: false, notConfigured: true, message: aiMessage("notConfigured") };
       }
-      if (!result?.ok) return { ok: false, message: aiMessage("failed") };
+      if (!result?.ok && result?.code === "AI_RESPONSE_INVALID") return { ok: false, message: aiMessage("invalidFormat") };
+      if (!result?.ok && result?.code === "AI_REQUEST_FAILED") return { ok: false, message: aiMessage("requestFailed") };
+      if (!result?.ok) return { ok: false, message: result?.message || aiMessage("failed") };
       state.ai.settings.backendStatus = "configured";
       saveState();
       return { ...result, fromAiBackend: true };
@@ -5587,7 +5606,7 @@ ${labels.note}: ${labels.noteText}`;
           reviews,
           focus: aiCheckedValues("aiReviewFocus")
         };
-        const result = await requestAiModule("reviewAnalyzer", inputs);
+        const result = await requestAiModule("review", inputs);
         if (!result.ok) { setAiStatus("aiReviewStatus", result.message || aiMessage("failed")); return; }
         state.ai.review = { fromAiBackend: true, data: result.data };
         saveState();

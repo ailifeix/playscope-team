@@ -29,7 +29,7 @@ let env = readEnv();
 
 function writeEnv(updates) {
   env = { ...env, ...updates };
-  const order = ["YOUTUBE_API_KEY", "OPENAI_API_KEY", "GPT_API_BASE_URL", "GPT_MODEL", "SERPAPI_KEY", "GOOGLE_CLIENT_SECRET", "TEAM_PASSWORD"];
+  const order = ["YOUTUBE_API_KEY", "OPENAI_API_KEY", "GPT_API_BASE_URL", "GPT_MODEL", "AI_API_BASE_URL", "AI_MODEL", "REVIEW_MODEL", "OPENAI_WIRE_API", "MODEL_REASONING_EFFORT", "DISABLE_RESPONSE_STORAGE", "SERPAPI_KEY", "GOOGLE_CLIENT_SECRET", "TEAM_PASSWORD"];
   const keys = order.filter((key) => env[key] !== undefined && env[key] !== "");
   fs.writeFileSync(envPath, keys.map((key) => `${key}=${env[key]}`).join("\n"), "utf8");
 }
@@ -56,6 +56,122 @@ function getAiModelCandidates() {
     "gpt-3.5-turbo",
     "chatgpt-4o-latest"
   ].filter(Boolean))];
+}
+
+function getAiModuleBaseUrl() {
+  let base = String(env.AI_API_BASE_URL || env.GPT_API_BASE_URL || env.OPENAI_BASE_URL || "https://api.openai.com/v1").trim();
+  base = base.replace(/\/+$/, "").replace(/\/chat\/completions$/i, "").replace(/\/responses$/i, "");
+  if (/^https:\/\/api\.openai\.com$/i.test(base)) base += "/v1";
+  return base;
+}
+
+function getAiModuleWireApi() {
+  const value = String(env.OPENAI_WIRE_API || env.GPT_WIRE_API || env.AI_WIRE_API || env.WIRE_API || "responses").trim().toLowerCase();
+  return value === "responses" ? "responses" : "chat";
+}
+
+function getAiModuleModelCandidates(module) {
+  const preferred = module === "review"
+    ? (env.REVIEW_MODEL || env.AI_REVIEW_MODEL || env.AI_MODEL || "")
+    : (env.AI_MODEL || "");
+  const legacyModel = env.GPT_MODEL && env.GPT_MODEL !== "auto" ? env.GPT_MODEL : "";
+  return [...new Set([
+    preferred && preferred !== "auto" ? preferred : "",
+    "gpt-5.5",
+    legacyModel,
+    "gpt-4o-mini",
+    "gpt-4o",
+    "gpt-4.1-mini",
+    "gpt-4.1"
+  ].filter(Boolean))];
+}
+
+function getAiReasoningEffort() {
+  const raw = String(env.MODEL_REASONING_EFFORT || env.OPENAI_REASONING_EFFORT || env.REASONING_EFFORT || "").trim().toLowerCase();
+  if (!raw) return "";
+  if (raw === "xhigh") return "high";
+  return ["minimal", "low", "medium", "high"].includes(raw) ? raw : "";
+}
+
+function responseTextFromResponsesApi(data) {
+  if (typeof data?.output_text === "string") return data.output_text.trim();
+  const chunks = [];
+  (data?.output || []).forEach((item) => {
+    (item?.content || []).forEach((content) => {
+      if (typeof content?.text === "string") chunks.push(content.text);
+      if (typeof content?.text?.value === "string") chunks.push(content.text.value);
+      if (typeof content?.output_text === "string") chunks.push(content.output_text);
+    });
+  });
+  return chunks.join("").trim();
+}
+
+function aiModuleStoreEnabled() {
+  const raw = String(env.DISABLE_RESPONSE_STORAGE || env.OPENAI_DISABLE_RESPONSE_STORAGE || env.AI_DISABLE_RESPONSE_STORAGE || "true").trim().toLowerCase();
+  return !(raw === "true" || raw === "1" || raw === "yes");
+}
+
+async function callAiModuleModel(model, module, prompt) {
+  const wireApi = getAiModuleWireApi();
+  const baseUrl = getAiModuleBaseUrl();
+  const headers = {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${env.OPENAI_API_KEY}`
+  };
+  const systemText = "You are PlayScope AI for game marketing, localization, review analysis, and professional reports. Return structured JSON only.";
+
+  if (wireApi === "responses") {
+    const baseBody = {
+      model,
+      input: [
+        { role: "system", content: systemText },
+        { role: "user", content: prompt }
+      ],
+      max_output_tokens: 1800,
+      store: aiModuleStoreEnabled()
+    };
+    const effort = getAiReasoningEffort();
+    const fullBody = effort ? { ...baseBody, reasoning: { effort } } : baseBody;
+    let response = await fetch(`${baseUrl}/responses`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(fullBody)
+    });
+    if (!response.ok && response.status === 400 && effort) {
+      response = await fetch(`${baseUrl}/responses`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(baseBody)
+      });
+    }
+    const data = response.ok ? await response.json().catch(() => null) : null;
+    return {
+      response,
+      text: responseTextFromResponsesApi(data),
+      wireApi
+    };
+  }
+
+  const response = await fetch(`${baseUrl}/chat/completions`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: systemText },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.35,
+      max_tokens: 1800,
+      stream: false
+    })
+  });
+  const data = response.ok ? await response.json().catch(() => null) : null;
+  return {
+    response,
+    text: data?.choices?.[0]?.message?.content?.trim() || "",
+    wireApi
+  };
 }
 
 function getTeamPassword() {
@@ -1116,10 +1232,24 @@ function aiLanguageName(code) {
   return "English";
 }
 
+function normalizeAiModule(module) {
+  const key = String(module || "").trim();
+  const aliases = {
+    reviewAnalyzer: "review",
+    review: "review",
+    localizationQa: "localizationQa",
+    campaignIdeas: "campaignIdeas",
+    weeklyReport: "weeklyReport",
+    workspace: "workspace",
+    status: "status"
+  };
+  return aliases[key] || key || "workspace";
+}
+
 function aiModuleInstructions(module, inputs = {}) {
   const common = `Return JSON only. Do not wrap in markdown. Do not invent unsupported facts. Do not claim internet, store, API, or database access unless provided in the input.`;
   const modules = {
-    reviewAnalyzer: `${common}
+    review: `${common}
 Analyze only the provided player reviews. Return:
 {"summary":"","sentiment":{"positive":0,"neutral":0,"negative":0},"topComplaints":[{"category":"","severity":"Low|Medium|High","explanation":"","example":""}],"topPraises":[{"category":"","explanation":"","example":""}],"productActions":[],"marketingActions":[],"localizationRisks":[{"language":"","issue":"","suggestion":""}],"executiveSummary":""}`,
     localizationQa: `${common}
@@ -1139,12 +1269,24 @@ Reply as a practical project assistant. If route is code, answer like a code/deb
 }
 
 async function aiModuleResponse(body = {}) {
-  if (!env.OPENAI_API_KEY || typeof fetch !== "function") {
-    return { ok: false, code: "AI_NOT_CONFIGURED", notConfigured: true };
+  const module = normalizeAiModule(body.module);
+  const hasKey = Boolean(env.OPENAI_API_KEY);
+  console.log(`[ai] route reached module=${module} keyConfigured=${hasKey}`);
+  if (module === "status") {
+    return { ok: true, configured: hasKey, data: { configured: hasKey } };
   }
-  if (body.module === "status") return { ok: true, configured: true, data: { configured: true } };
+  if (!hasKey || typeof fetch !== "function") {
+    console.log(`[ai] not configured module=${module}`);
+    return {
+      ok: false,
+      code: "AI_NOT_CONFIGURED",
+      error: "AI_NOT_CONFIGURED",
+      notConfigured: true,
+      message: "AI service is not configured. Please connect the backend AI service."
+    };
+  }
   const language = aiLanguageName(body.language);
-  const prompt = `${aiModuleInstructions(body.module, body.inputs)}
+  const prompt = `${aiModuleInstructions(module, body.inputs)}
 
 Output language: ${language}
 Response style: ${body.responseStyle || "professional"}
@@ -1156,38 +1298,38 @@ User inputs:
 ${JSON.stringify(body.inputs || {}, null, 2)}`;
 
   let lastError = "";
-  for (const model of getAiModelCandidates()) {
-    const response = await fetch(`${getAiBaseUrl()}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: "You are PlayScope AI for game marketing, localization, review analysis, and professional reports. Return structured JSON only." },
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.35,
-        max_tokens: 1800,
-        stream: false
-      })
-    }).catch((error) => {
+  let lastCode = "AI_REQUEST_FAILED";
+  for (const model of getAiModuleModelCandidates(module)) {
+    console.log(`[ai] using model=${model} module=${module} wire=${getAiModuleWireApi()}`);
+    const result = await callAiModuleModel(model, module, prompt).catch((error) => {
       lastError = error.message;
+      lastCode = "AI_REQUEST_FAILED";
+      console.log(`[ai] openai call failed module=${module} model=${model}`);
       return null;
     });
+    const response = result?.response || null;
     if (!response || !response.ok) {
       lastError = response ? `HTTP ${response.status}` : lastError;
+      lastCode = "AI_REQUEST_FAILED";
+      console.log(`[ai] openai not ok module=${module} model=${model} status=${response ? response.status : "network"}`);
       continue;
     }
-    const data = await response.json().catch(() => null);
-    const text = data?.choices?.[0]?.message?.content?.trim();
+    const text = result?.text || "";
     const parsed = parseJsonObject(text);
-    if (parsed) return { ok: true, module: body.module, language, source: "openai", model, data: parsed };
+    if (parsed) {
+      console.log(`[ai] parse ok module=${module} model=${model} wire=${result.wireApi}`);
+      return { ok: true, module, language, source: "openai", model, wireApi: result.wireApi, data: parsed };
+    }
     lastError = "AI returned non-JSON output.";
+    lastCode = "AI_RESPONSE_INVALID";
+    console.log(`[ai] parse failed module=${module} model=${model}`);
   }
-  return { ok: false, code: "AI_FAILED", error: lastError || "AI response failed." };
+  return {
+    ok: false,
+    code: lastCode,
+    error: lastCode,
+    message: lastCode === "AI_RESPONSE_INVALID" ? "AI response format was invalid. Please retry." : "AI request failed. Please check the server logs or try again."
+  };
 }
 
 const server = http.createServer(async (req, res) => {
@@ -1195,7 +1337,10 @@ const server = http.createServer(async (req, res) => {
   try {
     if (req.method === "POST" && req.url === "/api/ai") {
       const body = await readJson(req);
-      const result = await aiModuleResponse(body).catch(() => ({ ok: false, code: "AI_FAILED" }));
+      const result = await aiModuleResponse(body).catch((error) => {
+        console.log(`[ai] route error module=${normalizeAiModule(body.module)}`);
+        return { ok: false, code: "AI_REQUEST_FAILED", error: "AI_REQUEST_FAILED", message: "AI request failed. Please check the server logs or try again." };
+      });
       return send(res, 200, result);
     }
     if (req.method === "POST" && req.url === "/api/research") {
