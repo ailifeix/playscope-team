@@ -625,6 +625,53 @@ ${source}
 ${labels.note}: ${labels.noteText}`;
 }
 
+function manualLocalizationOutput({ source = "", lang = "en", tone = "Store-ready", genre = "auto", mode = "game" }) {
+  const raw = String(source || "").trim();
+  const key = raw.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
+  const labels = {
+    tr: { gameType: "Oyun türü", style: "Tarz analizi", rule: "Dil kuralı", tone: "Ton", option1: "Seçenek 1 - Oyun içi çeviri", option2: "Seçenek 2 - Daha doğal", option3: "Seçenek 3 - Kısa UI", source: "Kaynak metin", note: "Not", noteText: "Kısa slogan için yerel oyun lokalizasyonu kullanıldı." },
+    en: { gameType: "Game type", style: "Style analysis", rule: "Language rule", tone: "Tone", option1: "Option 1 - In-game translation", option2: "Option 2 - More natural", option3: "Option 3 - Short UI", source: "Source text", note: "Note", noteText: "Curated game localization was used for this short slogan." },
+    zh: { gameType: "游戏类型", style: "风格分析", rule: "语言规则", tone: "语气", option1: "选项 1 - 游戏内翻译", option2: "选项 2 - 更自然", option3: "选项 3 - 短 UI", source: "源文本", note: "备注", noteText: "此短标语使用了游戏本地化表达。" }
+  }[lang] || {};
+  let options = null;
+  if (/life is your|life is yours|either create|either conquer|create.*conquer|yarat.*fethet/.test(key)) {
+    options = {
+      tr: ["Hayat senin; ya yarat ya fethet", "Hayat senin. İster yarat, ister fethet", "Yarat ya da fethet"],
+      en: ["Life is yours: create or conquer", "Your life, your choice: create or conquer", "Create or conquer"],
+      zh: ["人生由你掌控：创造，或征服", "人生属于你，创造或征服", "创造或征服"]
+    }[lang];
+  } else if (/be your own leader|own leader|kendi lider/.test(key)) {
+    options = {
+      tr: ["Hazırlan ve kendi liderin ol", "Hazırsan liderliği ele al", "Kendi liderin ol"],
+      en: ["Get ready and become your own leader", "Ready up and lead your own way", "Be your own leader"],
+      zh: ["准备好，成为自己的领袖", "准备出发，掌控自己的道路", "成为自己的领袖"]
+    }[lang];
+  }
+  if (!options) return "";
+  const genreLabel = genre || "auto";
+  if (mode === "normal") {
+    return `${labels.option2}:\n${options[1]}\n\n${labels.source}:\n${raw}\n\n${labels.note}: ${labels.noteText}`;
+  }
+  return `${labels.gameType}: ${genreLabel}
+${labels.style}: ${lang === "zh" ? "短标语；优先保留力量感和选择感。" : lang === "tr" ? "Kısa slogan; anlam, güç ve seçim hissi korundu." : "Short slogan; preserves meaning, power, and choice."}
+${labels.rule}: ${lang === "zh" ? "自然、短、适合游戏内按钮或宣传句。" : lang === "tr" ? "Doğal, kısa ve oyun içi metne uygun." : "Natural, short, and ready for in-game use."}
+${labels.tone}: ${tone}
+
+${labels.option1}:
+${options[0]}
+
+${labels.option2}:
+${options[1]}
+
+${labels.option3}:
+${options[2]}
+
+${labels.source}:
+${raw}
+
+${labels.note}: ${labels.noteText}`;
+}
+
 async function localize(input) {
   const languageName = input.lang === "zh" ? "Chinese" : input.lang === "tr" ? "Turkish" : "English";
   const genre = input.genre || input.project?.genre || "auto";
@@ -640,6 +687,10 @@ Rules:
 - This is for UI strings, skill names, dialogue, tutorial text, buttons, item names, quests, rewards, and system messages.
 - Keep UI strings short when the source is short.
 - Give word-by-word term suggestions when useful.
+- Option 1 must be accurate and ready to use in-game.
+- Option 2 must be a more natural/emotional alternative, not a duplicate.
+- Option 3 must be a complete short UI version, never a cut-off fragment.
+- Preserve key meaning such as create, conquer, build, lead, reward, claim, upgrade, join, battle, survive, explore.
 - FPS/Shooter: short, punchy, combat, squad, skill, ranked pressure.
 - MMO/RPG: world, class, guild, raid, loot, progression, adventure.
 - Strategy/4X: command, alliance, resources, tactics, conquest, expansion.
@@ -657,6 +708,14 @@ Source: ${input.source || ""}`;
   const ai = await openAiText(prompt);
   if (ai) return { source: "openai", text: ai };
   const source = String(input.source || "").trim();
+  const manual = manualLocalizationOutput({
+    source,
+    lang: input.lang || "en",
+    genre,
+    mode,
+    tone: input.tone || "Store-ready"
+  });
+  if (manual) return { source: "curated", text: manual };
   const googleText = await googleTranslateText(source, input.lang || "en").catch(() => "");
   if (googleText && googleText.toLowerCase() !== source.toLowerCase()) {
     return {
