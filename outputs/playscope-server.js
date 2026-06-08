@@ -1214,6 +1214,110 @@ async function appStoreSearch(input = {}) {
   return { ok: true, source: "app-store-search", query, results };
 }
 
+function storeCountry(value = "Turkey") {
+  const key = String(value || "").trim().toLowerCase();
+  const map = {
+    turkey: "TR",
+    türkiye: "TR",
+    tr: "TR",
+    china: "CN",
+    cn: "CN",
+    global: "US",
+    "mena/gulf": "SA",
+    europe: "DE",
+    "southeast asia": "SG",
+    us: "US",
+    usa: "US",
+    english: "US",
+    turkish: "TR",
+    chinese: "CN"
+  };
+  return map[key] || String(value || "US").slice(0, 2).toUpperCase();
+}
+
+function reviewLangCode(value = "Turkish") {
+  const key = String(value || "").trim().toLowerCase();
+  if (/turkish|türk|tr/.test(key)) return "tr";
+  if (/chinese|中文|zh|cn/.test(key)) return "zh";
+  if (/arabic|ar/.test(key)) return "ar";
+  return "en";
+}
+
+function googlePlayIdFromText(value = "") {
+  const text = String(value || "");
+  return text.match(/[?&]id=([A-Za-z0-9._]+)/)?.[1] || text.match(/\b([A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+){1,})\b/)?.[1] || "";
+}
+
+function appStoreIdFromText(value = "") {
+  const text = String(value || "");
+  return text.match(/\/id(\d+)/)?.[1] || text.match(/[?&]id=(\d+)/)?.[1] || "";
+}
+
+async function googlePlayReviewSearch(input = {}) {
+  if (!googlePlayScraper) return { ok: false, error: "Google Play review parser is not installed.", reviews: [] };
+  const query = String(input.query || input.gameName || "").trim();
+  if (!query) return { ok: false, error: "Game keyword is required.", reviews: [] };
+  const country = storeCountry(input.market || input.country || "Turkey").toLowerCase();
+  const lang = reviewLangCode(input.reviewLanguage || input.lang || "Turkish");
+  const limit = Math.max(1, Math.min(Number(input.limit || 30), 100));
+  let appId = googlePlayIdFromText(query);
+  let appTitle = "";
+  if (!appId) {
+    const found = await googlePlayScraper.search({ term: query, num: 1, lang, country });
+    appId = found?.[0]?.appId || "";
+    appTitle = found?.[0]?.title || "";
+  }
+  if (!appId) return { ok: false, error: "No Google Play app found for this keyword.", reviews: [] };
+  const sort = googlePlayScraper.sort?.NEWEST || 2;
+  const raw = await googlePlayScraper.reviews({ appId, sort, num: limit, lang, country });
+  const list = Array.isArray(raw) ? raw : (raw?.data || []);
+  const reviews = list.map((item) => ({
+    text: String(item.text || item.comment || item.title || "").trim(),
+    rating: item.score || item.rating || "",
+    author: item.userName || item.user || "",
+    date: item.date || item.dateText || ""
+  })).filter((item) => item.text);
+  return { ok: true, source: "google-play-reviews", appId, appName: appTitle || appId, reviews };
+}
+
+async function appStoreReviewSearch(input = {}) {
+  const query = String(input.query || input.gameName || "").trim();
+  if (!query) return { ok: false, error: "Game keyword is required.", reviews: [] };
+  const country = storeCountry(input.market || input.country || "Turkey");
+  const limit = Math.max(1, Math.min(Number(input.limit || 30), 100));
+  let appId = appStoreIdFromText(query);
+  let appName = "";
+  if (!appId) {
+    const search = await appStoreSearch({ query, country, limit: 1 });
+    appId = search.results?.[0]?.id || "";
+    appName = search.results?.[0]?.name || "";
+  }
+  if (!appId) return { ok: false, error: "No App Store app found for this keyword.", reviews: [] };
+  const url = `https://itunes.apple.com/${country.toLowerCase()}/rss/customerreviews/id=${encodeURIComponent(appId)}/sortBy=mostRecent/json`;
+  const response = await fetchWithTimeout(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 PlayScope/1.0",
+      "Accept": "application/json"
+    }
+  }, 15000);
+  if (!response.ok) throw new Error(`App Store reviews HTTP ${response.status}`);
+  const data = await response.json();
+  const entries = Array.isArray(data.feed?.entry) ? data.feed.entry : [];
+  const reviews = entries.map((entry) => ({
+    text: String(entry.content?.label || entry.title?.label || "").trim(),
+    rating: entry["im:rating"]?.label || "",
+    author: entry.author?.name?.label || "",
+    date: entry.updated?.label || ""
+  })).filter((item) => item.text).slice(0, limit);
+  return { ok: true, source: "app-store-reviews", appId, appName: appName || appId, reviews };
+}
+
+async function storeReviews(input = {}) {
+  const platform = String(input.platform || "Google Play").toLowerCase();
+  if (platform.includes("app")) return appStoreReviewSearch(input);
+  return googlePlayReviewSearch(input);
+}
+
 function serveFile(req, res) {
   const urlPath = decodeURIComponent(req.url.split("?")[0]);
   const fileName = urlPath === "/" ? "playscope-prototype.html" : urlPath.replace(/^\/+/, "");
@@ -1250,11 +1354,16 @@ function aiModuleInstructions(module, inputs = {}) {
   const common = `Return JSON only. Do not wrap in markdown. Do not invent unsupported facts. Do not claim internet, store, API, or database access unless provided in the input.`;
   const modules = {
     review: `${common}
-Analyze only the provided player reviews. Return:
+Analyze only the provided player reviews. If no real review text is provided, do not analyze and do not infer reviews.
+Do not quote original review lines in the output. Summarize themes only; keep example fields empty or paraphrased without copying user text.
+Return:
 {"summary":"","sentiment":{"positive":0,"neutral":0,"negative":0},"topComplaints":[{"category":"","severity":"Low|Medium|High","explanation":"","example":""}],"topPraises":[{"category":"","explanation":"","example":""}],"productActions":[],"marketingActions":[],"localizationRisks":[{"language":"","issue":"","suggestion":""}],"executiveSummary":""}`,
     localizationQa: `${common}
-Check source text and current translation. Respect established terminology if provided; do not invent a random glossary. Return:
-{"score":0,"verdict":"","meaningAccuracy":{"status":"Good|Needs review|Problematic","explanation":""},"naturalness":{"status":"Good|Needs improvement","explanation":""},"uiLengthRisk":{"status":"Safe|Slightly long|Too long","explanation":""},"terminology":{"status":"Consistent|Inconsistent|Needs review","issues":[]},"toneStyle":{"status":"","explanation":""},"culturalRisk":{"status":"Low|Medium|High","explanation":""},"suggestedTranslation":"","explanation":""}`,
+Check source text and current translation. Every explanation, verdict, note, and suggestion must be written in the selected output language. If the target language is Turkish, write natural Turkish with Turkish characters.
+Respect established terminology if provided; do not invent a random fixed glossary. If terminology is missing, provide reusable suggestions only as recommendations.
+For Chinese/Japanese/Korean source terms, always provide a target-language meaning/recommendation instead of leaving it blank.
+Return:
+{"score":0,"verdict":"","meaningAccuracy":{"status":"Good|Needs review|Problematic","explanation":""},"naturalness":{"status":"Good|Needs improvement","explanation":""},"uiLengthRisk":{"status":"Safe|Slightly long|Too long","explanation":""},"terminology":{"status":"Consistent|Inconsistent|Needs review","issues":[],"suggestions":[{"source":"","recommended":"","note":""}]},"toneStyle":{"status":"","explanation":""},"culturalRisk":{"status":"Low|Medium|High","explanation":""},"suggestedTranslation":"","glossarySuggestions":[{"source":"","recommended":"","note":""}],"explanation":""}`,
     campaignIdeas: `${common}
 Generate game campaign ideas only. Do not use or modify influencer database. Do not invent real partnerships. Return:
 {"campaignName":"","concept":"","audienceInsight":"","creativeAngle":"","socialIdeas":[{"channel":"","idea":"","execution":""}],"kolIdeas":[],"inGameEventIdeas":[],"localizationSuggestions":[],"riskNotes":[],"adCopies":{"headlines":[],"bodyTexts":[],"pushNotifications":[]}}`,
@@ -1274,6 +1383,10 @@ async function aiModuleResponse(body = {}) {
   console.log(`[ai] route reached module=${module} keyConfigured=${hasKey}`);
   if (module === "status") {
     return { ok: true, configured: hasKey, data: { configured: hasKey } };
+  }
+  const reviewText = String(body.inputs?.reviews || "").trim();
+  if (module === "review" && (!reviewText || /^one review per line/i.test(reviewText))) {
+    return { ok: false, code: "AI_INPUT_REQUIRED", error: "AI_INPUT_REQUIRED", message: "Please paste real review text before analyzing." };
   }
   if (!hasKey || typeof fetch !== "function") {
     console.log(`[ai] not configured module=${module}`);
@@ -1361,6 +1474,11 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && req.url === "/api/app-store-search") {
       const body = await readJson(req);
       const result = await appStoreSearch(body).catch((error) => ({ ok: false, error: error.message, results: [] }));
+      return send(res, 200, result);
+    }
+    if (req.method === "POST" && req.url === "/api/store-reviews") {
+      const body = await readJson(req);
+      const result = await storeReviews(body).catch((error) => ({ ok: false, error: error.message, reviews: [] }));
       return send(res, 200, result);
     }
     if (req.method === "POST" && req.url === "/api/ocr-screenshot") {

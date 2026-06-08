@@ -5511,10 +5511,10 @@ ${labels.note}: ${labels.noteText}`;
     function aiResultData(result) {
       return result?.data || result;
     }
-    async function requestAiModule(module, inputs = {}) {
+    async function requestAiModule(module, inputs = {}, options = {}) {
       const payload = {
         module,
-        language: aiOutputLanguage(),
+        language: options.language || aiOutputLanguage(),
         modelMode: state.ai.settings.modelMode || "Auto",
         responseStyle: state.ai.settings.responseStyle || "professional",
         projectContext: state.project,
@@ -5573,6 +5573,44 @@ ${labels.note}: ${labels.noteText}`;
         });
       });
     }
+    function aiReviewStorePayload() {
+      return {
+        query: $("aiReviewGame").value,
+        gameName: $("aiReviewGame").value,
+        platform: $("aiReviewPlatform").value,
+        market: $("aiReviewMarket").value,
+        reviewLanguage: $("aiReviewLang").value,
+        limit: 30
+      };
+    }
+    async function fetchStoreReviewsIntoBox(statusId = "aiReviewStatus") {
+      const payload = aiReviewStorePayload();
+      if (!payload.query.trim()) {
+        setAiStatus(statusId, "Önce oyun adı, keyword veya store linki gir.");
+        return { ok: false, message: "Game keyword is required." };
+      }
+      setAiStatus(statusId, "Store yorumları çekiliyor...");
+      let response;
+      try {
+        response = await fetchTeamApi("/api/store-reviews", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...sharedHeaders() },
+          body: JSON.stringify(payload)
+        });
+      } catch (error) {
+        setAiStatus(statusId, "Store yorumları çekilemedi. Backend açık mı kontrol et.");
+        return { ok: false, message: error.message };
+      }
+      const result = await response.json().catch(() => ({ ok: false, error: "Invalid response" }));
+      if (!result.ok || !result.reviews?.length) {
+        setAiStatus(statusId, result.error || "Bu keyword için store yorumu bulunamadı.");
+        return { ok: false, message: result.error || "No reviews found." };
+      }
+      const lines = result.reviews.map((item) => item.text).filter(Boolean);
+      $("aiReviewText").value = lines.join("\n");
+      setAiStatus(statusId, `${result.appName || payload.query}: ${lines.length} store yorumu çekildi.`);
+      return { ok: true, reviews: lines, result };
+    }
     function aiReviewsPage() {
       const result = aiVisibleResult(state.ai.review);
       $("page").innerHTML = `
@@ -5588,15 +5626,31 @@ ${labels.note}: ${labels.noteText}`;
               <div class="ai-full"><div class="field-label">${aiT("focus")}</div><div class="ai-checks">
                 ${["Sentiment","Bugs / crashes","Performance / lag","Payment / monetization","Localization issues","Gameplay feedback","Event feedback","Marketing insights"].map((item) => `<label><input type="checkbox" name="aiReviewFocus" value="${esc(item)}" checked> ${esc(item)}</label>`).join("")}
               </div></div>
-              <div class="ai-full"><button class="primary" id="aiReviewAnalyzeBtn" type="button">${aiT("analyzeReviews")}</button> ${aiDemoButton("aiReviewDemoBtn")} <button class="ghost" disabled type="button">${aiT("exportReport")} - ${aiT("comingSoon")}</button></div>
+              <div class="ai-full"><button class="ghost" id="aiReviewFetchStoreBtn" type="button">Store yorumlarını çek</button> <button class="primary" id="aiReviewAnalyzeBtn" type="button">${aiT("analyzeReviews")}</button> ${aiDemoButton("aiReviewDemoBtn")} <button class="ghost" disabled type="button">${aiT("exportReport")} - ${aiT("comingSoon")}</button></div>
               <p class="note ai-full" id="aiReviewStatus"></p>
             </div>
           `)}
           ${panel(aiT("executiveSummary"), result ? `${result.demo ? renderAiDemoNotice() : ""}${renderAiReviewResult(aiResultData(result))}` : aiEmptyState(aiT("aiReviewsSub")))}
         </div>`;
+      $("aiReviewFetchStoreBtn").addEventListener("click", async () => {
+        await fetchStoreReviewsIntoBox("aiReviewStatus");
+      });
       $("aiReviewAnalyzeBtn").addEventListener("click", async () => {
-        const reviews = $("aiReviewText").value.trim();
-        if (!reviews) { $("aiReviewStatus").textContent = aiT("emptyReviews"); return; }
+        let reviews = $("aiReviewText").value.trim();
+        if (!reviews || /^one review per line/i.test(reviews)) {
+          const fetched = await fetchStoreReviewsIntoBox("aiReviewStatus");
+          if (!fetched.ok) {
+            state.ai.review = null;
+            saveState();
+            render();
+            setTimeout(() => {
+              const node = $("aiReviewStatus");
+              if (node) node.textContent = fetched.message || aiT("emptyReviews");
+            }, 0);
+            return;
+          }
+          reviews = $("aiReviewText").value.trim();
+        }
         setAiStatus("aiReviewStatus", aiMessage("loading"));
         const inputs = {
           gameName: $("aiReviewGame").value,
@@ -5642,8 +5696,8 @@ ${labels.note}: ${labels.noteText}`;
           <div class="ai-stat">Neutral<strong>${esc(sentiment.neutral || 0)}%</strong></div>
           <div class="ai-stat">Negative<strong>${esc(sentiment.negative || 0)}%</strong></div>
         </div>
-        <div class="ai-card"><h4>${aiT("complaints")}</h4><table class="ai-table"><thead><tr><th>Category</th><th>Severity</th><th>Explanation</th><th>Example</th></tr></thead><tbody>${complaints.map((item) => `<tr><td>${esc(item.category || "")}</td><td><span class="ai-badge">${esc(item.severity || "")}</span></td><td>${esc(item.explanation || "")}</td><td>${esc(item.example || "")}</td></tr>`).join("")}</tbody></table></div>
-        <div class="ai-card"><h4>${aiT("praises")}</h4>${praises.map((item) => `<p><strong>${esc(item.category || "")}:</strong> ${esc(item.explanation || "")}<br><span class="note">${esc(item.example || "")}</span></p>`).join("")}</div>
+        <div class="ai-card"><h4>${aiT("complaints")}</h4><table class="ai-table"><thead><tr><th>Category</th><th>Severity</th><th>Explanation</th></tr></thead><tbody>${complaints.map((item) => `<tr><td>${esc(item.category || "")}</td><td><span class="ai-badge">${esc(item.severity || "")}</span></td><td>${esc(item.explanation || "")}</td></tr>`).join("")}</tbody></table></div>
+        <div class="ai-card"><h4>${aiT("praises")}</h4>${praises.map((item) => `<p><strong>${esc(item.category || "")}:</strong> ${esc(item.explanation || "")}</p>`).join("")}</div>
         <div class="ai-card"><h4>${aiT("productActions")}</h4>${aiList(productActions)}</div>
         <div class="ai-card"><h4>${aiT("marketingActions")}</h4>${aiList(marketingActions)}</div>
         <div class="ai-card"><h4>${aiT("localizationRisks")}</h4>${localizationRisks.length ? localizationRisks.map((item) => `<p><strong>${esc(item.language || "")}:</strong> ${esc(item.issue || "")} ${esc(item.suggestion || "")}</p>`).join("") : `<p class="note">No major localization risk detected.</p>`}</div>
@@ -5684,7 +5738,7 @@ ${labels.note}: ${labels.noteText}`;
           terminology: $("aiQaTerms").value,
           lengthLimit: $("aiQaLengthLimit").value
         };
-        const result = await requestAiModule("localizationQa", inputs);
+        const result = await requestAiModule("localizationQa", inputs, { language: inputs.targetLanguage });
         if (!result.ok) { setAiStatus("aiQaStatus", result.message || aiMessage("failed")); return; }
         state.ai.locQa = { fromAiBackend: true, data: result.data };
         saveState();
@@ -5712,6 +5766,12 @@ ${labels.note}: ${labels.noteText}`;
       const naturalness = result.naturalness || {};
       const uiLengthRisk = result.uiLengthRisk || {};
       const terminology = result.terminology || { issues: [] };
+      const glossarySuggestions = Array.isArray(result.glossarySuggestions) ? result.glossarySuggestions : [];
+      const terminologySuggestions = Array.isArray(terminology.suggestions) ? terminology.suggestions : [];
+      const glossaryRows = [...terminologySuggestions, ...glossarySuggestions].map((item) => {
+        if (typeof item === "string") return { source: "", recommended: item, note: "" };
+        return item || {};
+      });
       const toneStyle = result.toneStyle || {};
       const culturalRisk = result.culturalRisk || {};
       const cards = [
@@ -5726,6 +5786,7 @@ ${labels.note}: ${labels.noteText}`;
         <div class="ai-stat-grid"><div class="ai-stat">${aiT("qaScore")}<strong>${esc(result.score || 0)}/100</strong></div><div class="ai-stat">${aiT("verdict")}<strong>${esc(result.verdict || "")}</strong></div><div class="ai-stat">Risk<strong>${esc(culturalRisk.status || "")}</strong></div></div>
         ${cards.map(([title, status, explanation]) => `<div class="ai-card"><span class="ai-badge">${esc(status)}</span><h4>${esc(title)}</h4><p>${esc(explanation)}</p></div>`).join("")}
         <div class="ai-card"><h4>${aiT("suggestedTranslation")}</h4><div class="result-box">${esc(result.suggestedTranslation || "")}</div>${aiCopyButton("aiQaCopy", result.suggestedTranslation || "")}</div>
+        <div class="ai-card"><h4>Sözlük / kullanabileceğin öneriler</h4>${glossaryRows.length ? `<table class="ai-table"><thead><tr><th>Kaynak</th><th>Türkçe öneri</th><th>Not</th></tr></thead><tbody>${glossaryRows.map((item) => `<tr><td>${esc(item.source || item.term || "")}</td><td>${esc(item.recommended || item.translation || item.target || "")}</td><td>${esc(item.note || item.reason || "")}</td></tr>`).join("")}</tbody></table>` : `<p class="note">Sözlük önerisi yok.</p>`}</div>
         <div class="ai-card"><h4>${aiT("explanation")}</h4><p>${esc(result.explanation || "")}</p></div>
       </div>`;
     }
