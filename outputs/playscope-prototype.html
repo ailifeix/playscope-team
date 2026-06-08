@@ -1406,10 +1406,9 @@
           </div>
           <p class="note" id="locBatchStatus">${locUi("batchStatus")}</p>
           `, "localization-workspace")}
-          ${panel(locUi("guideTitle"), `<table><thead><tr><th>${locUi("type")}</th><th>${locUi("style")}</th><th>${locUi("avoid")}</th></tr></thead><tbody><tr><td>FPS</td><td>${locUi("fpsStyle")}</td><td>${locUi("fpsAvoid")}</td></tr><tr><td>MMO / RPG</td><td>${locUi("mmoStyle")}</td><td>${locUi("mmoAvoid")}</td></tr><tr><td>Strategy</td><td>${locUi("strategyStyle")}</td><td>${locUi("strategyAvoid")}</td></tr><tr><td>Casual</td><td>${locUi("casualStyle")}</td><td>${locUi("casualAvoid")}</td></tr><tr><td>Horror</td><td>${locUi("horrorStyle")}</td><td>${locUi("horrorAvoid")}</td></tr></tbody></table>`)}
         </div>`;
       $("locBtn").addEventListener("click", generateLocalization);
-      $("copyLocBtn").addEventListener("click", () => navigator.clipboard?.writeText($("locOutput").textContent));
+      $("copyLocBtn").addEventListener("click", () => navigator.clipboard?.writeText(document.querySelector(".localization-output-box")?.textContent || $("locOutput").textContent));
       $("locExcelBtn").addEventListener("click", handleLocalizationExcel);
       $("locPasteBtn").addEventListener("click", handleLocalizationPaste);
     }
@@ -4067,7 +4066,7 @@ ${copy}`;
     }
 
     function renderLocalizationBatch(items = []) {
-      if (!items.length) return `<div class="empty">No localization batch yet.</div>`;
+      if (!items.length) return "";
       return items.map((item, index) => `<div class="loc-batch-item"><h4>${index + 1}. ${esc(item.name || item.genreLabel || "Store copy")}</h4>${formatLocalizationOutput(item.output)}</div>`).join("");
     }
 
