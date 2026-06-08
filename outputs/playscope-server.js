@@ -174,6 +174,71 @@ async function callAiModuleModel(model, module, prompt) {
   };
 }
 
+async function callVisionJsonModel(model, systemText, promptText, imageDataUrl) {
+  const wireApi = getAiModuleWireApi();
+  const baseUrl = getAiModuleBaseUrl();
+  const headers = {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${env.OPENAI_API_KEY}`
+  };
+  if (wireApi === "responses") {
+    const baseBody = {
+      model,
+      input: [
+        { role: "system", content: [{ type: "input_text", text: systemText }] },
+        {
+          role: "user",
+          content: [
+            { type: "input_text", text: promptText },
+            { type: "input_image", image_url: imageDataUrl }
+          ]
+        }
+      ],
+      max_output_tokens: 1800,
+      store: aiModuleStoreEnabled()
+    };
+    const effort = getAiReasoningEffort();
+    const fullBody = effort ? { ...baseBody, reasoning: { effort } } : baseBody;
+    let response = await fetch(`${baseUrl}/responses`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(fullBody)
+    });
+    if (!response.ok && response.status === 400 && effort) {
+      response = await fetch(`${baseUrl}/responses`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(baseBody)
+      });
+    }
+    const data = response.ok ? await response.json().catch(() => null) : null;
+    return { response, text: responseTextFromResponsesApi(data), wireApi };
+  }
+  const response = await fetch(`${baseUrl}/chat/completions`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: systemText },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: promptText },
+            { type: "image_url", image_url: { url: imageDataUrl } }
+          ]
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0,
+      max_tokens: 1800,
+      stream: false
+    })
+  });
+  const data = response.ok ? await response.json().catch(() => null) : null;
+  return { response, text: data?.choices?.[0]?.message?.content?.trim() || "", wireApi };
+}
+
 function getTeamPassword() {
   return env.TEAM_PASSWORD || "";
 }
@@ -405,41 +470,25 @@ Rules:
 - Do not guess gender, age, or geo.`;
 
   let lastError = "";
-  for (const model of getAiModelCandidates()) {
-    const response = await fetch(`${getAiBaseUrl()}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: "You extract structured influencer marketing data from screenshots. Return strict JSON only." },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: prompt },
-              { type: "image_url", image_url: { url: input.image } }
-            ]
-          }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0
-      })
-    }).catch((error) => ({ ok: false, status: "network", error }));
+  for (const model of getAiModuleModelCandidates("vision")) {
+    const result = await callVisionJsonModel(
+      model,
+      "You extract structured influencer marketing data from screenshots. Return strict JSON only.",
+      prompt,
+      input.image
+    ).catch((error) => ({ response: { ok: false, status: "network", error }, text: "" }));
+    const response = result.response;
     if (!response.ok) {
       const detail = typeof response.text === "function" ? await response.text().catch(() => "") : "";
       lastError = response.error?.message || `${model}: HTTP ${response.status}. ${detail}`.slice(0, 220);
       continue;
     }
-    const data = await response.json().catch(() => null);
-    const parsed = parseJsonObject(data?.choices?.[0]?.message?.content || "");
+    const parsed = parseJsonObject(result.text || "");
     const item = cleanOcrInfluencer(parsed, input.current || {});
     if (item) return { ok: true, item };
-    lastError = `${model}: OpenAI did not return parseable JSON.`;
+    lastError = `${model}: GPT did not return parseable JSON.`;
   }
-  return { ok: false, error: `OpenAI screen read failed: ${lastError}` };
+  return { ok: false, error: `GPT screen read failed: ${lastError}` };
 }
 
 async function readImageData(input) {
@@ -449,41 +498,25 @@ async function readImageData(input) {
   if (!input.image || !String(input.image).startsWith("data:image/")) {
     return { ok: false, error: "No image received." };
   }
-  const modelCandidates = getAiModelCandidates();
+  const modelCandidates = getAiModuleModelCandidates("vision");
   let lastError = "";
   for (const model of modelCandidates) {
-    const response = await fetch(`${getAiBaseUrl()}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: "Extract influencer research table data from images. Return strict JSON only. Do not invent missing values." },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: `Read this image. It belongs to this creator/channel when provided: ${JSON.stringify(input.context || {})}. Extract every visible influencer/creator row as JSON. Return exactly: {\"rows\":[{\"Channel Name\":\"\",\"Link\":\"\",\"GEO\":\"\",\"Gender\":\"\",\"Age\":\"\",\"Category\":\"\",\"Subcategory\":\"\",\"Subscribers\":\"\",\"avg Views\":\"\",\"Avg Comments\":\"\",\"Format\":\"\",\"Duration\":\"\",\"Keywords\":\"\",\"Comments\":\"\"}]}. If a cell is not visible, leave it empty. Preserve YouTube links and names exactly. For Scrumball screenshots, include followers, avg engagement, avg view rate, monthly post, audience location countries, and visible age/gender analysis. If an age/gender bar chart is visible, calculate Age as total Female+Male per age group, formatted like \"13-17: 14%; 18-24: 44%; 25-34: 25%\". Calculate Gender separately as total Female vs Male, formatted like \"F52% / M48%\". Do not put gender percentages inside Age.` },
-              { type: "image_url", image_url: { url: input.image } }
-            ]
-          }
-        ],
-        temperature: 0,
-        max_tokens: 1800,
-        stream: false
-      })
-    }).catch((error) => ({ ok: false, status: "network", error }));
+    const prompt = `Read this image. It belongs to this creator/channel when provided: ${JSON.stringify(input.context || {})}. Extract every visible influencer/creator row as JSON. Return exactly: {"rows":[{"Channel Name":"","Link":"","GEO":"","Gender":"","Age":"","Category":"","Subcategory":"","Subscribers":"","avg Views":"","Avg Comments":"","Format":"","Duration":"","Keywords":"","Comments":""}]}. If a cell is not visible, leave it empty. Preserve YouTube links and names exactly. For Scrumball screenshots, include followers, avg engagement, avg view rate, monthly post, audience location countries, and visible age/gender analysis. If an age/gender bar chart is visible, calculate Age as total Female+Male per age group, formatted like "13-17: 14%; 18-24: 44%; 25-34: 25%". Calculate Gender separately as total Female vs Male, formatted like "F52% / M48%". Do not put gender percentages inside Age.`;
+    const result = await callVisionJsonModel(
+      model,
+      "Extract influencer research table data from images. Return strict JSON only. Do not invent missing values.",
+      prompt,
+      input.image
+    ).catch((error) => ({ response: { ok: false, status: "network", error }, text: "" }));
+    const response = result.response;
     if (!response.ok) {
       const detail = typeof response.text === "function" ? await response.text().catch(() => "") : "";
       lastError = response.error?.message || `HTTP ${response.status}. ${detail}`.slice(0, 220);
       continue;
     }
-    const data = await response.json();
-    const parsed = parseJsonObject(data.choices?.[0]?.message?.content || "");
+    const parsed = parseJsonObject(result.text || "");
     const rows = Array.isArray(parsed?.rows) ? parsed.rows : [];
-    if (rows.length) return { ok: true, source: "backend-gpt-vision", model, rows };
+    if (rows.length) return { ok: true, source: "backend-gpt-vision", model, wireApi: result.wireApi, rows };
     lastError = "GPT returned no usable rows.";
   }
   return { ok: false, error: `GPT image read failed: ${lastError}` };
