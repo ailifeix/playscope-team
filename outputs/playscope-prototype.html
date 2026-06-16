@@ -961,12 +961,19 @@
     }
     async function fetchTeamApi(path, options = {}) {
       let lastError = null;
+      const timeoutMs = Number(options.timeoutMs || 12000);
+      const fetchOptions = { ...options };
+      delete fetchOptions.timeoutMs;
       for (const target of backendTargets()) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), timeoutMs);
         try {
-          const response = await fetch(`${target}${path}`, options);
+          const response = await fetch(`${target}${path}`, { ...fetchOptions, signal: controller.signal });
           if (response.status !== 404) return response;
         } catch (error) {
           lastError = error;
+        } finally {
+          clearTimeout(timeout);
         }
       }
       if (lastError) throw lastError;
@@ -5791,6 +5798,7 @@ ${labels.note}: ${labels.noteText}`;
         setAiStatus("aiSocialStatus", "Apify ile postlar çekiliyor ve AI analiz ediyor...");
         let response;
         try {
+          $("aiSocialBtn").disabled = true;
           response = await fetchTeamApi("/api/social-content-analysis", {
             method: "POST",
             headers: { "Content-Type": "application/json", ...sharedHeaders() },
@@ -5799,14 +5807,17 @@ ${labels.note}: ${labels.noteText}`;
               days: Number($("aiSocialDays").value || 30),
               maxPosts: Number($("aiSocialMax").value || 50),
               skipPinnedPosts: true
-            })
+            }),
+            timeoutMs: 90000
           });
         } catch (error) {
-          setAiStatus("aiSocialStatus", aiMessage("backendUnreachable"));
+          $("aiSocialBtn").disabled = false;
+          setAiStatus("aiSocialStatus", "Analiz zaman aşımına uğradı veya backend cevap vermedi. Render yeni deploy edildiyse 1 dakika sonra tekrar dene.");
           return;
         }
         const data = await response.json().catch(() => null);
         if (!data?.ok) {
+          $("aiSocialBtn").disabled = false;
           setAiStatus("aiSocialStatus", data?.error || data?.message || aiMessage("failed"));
           return;
         }
@@ -5824,13 +5835,13 @@ ${labels.note}: ${labels.noteText}`;
       const plan = Array.isArray(analysis.sevenDayContentPlan) ? analysis.sevenDayContentPlan : [];
       const postRows = posts.slice(0, 12).map((post, index) => `<tr><td>${index + 1}</td><td>${esc(post.date || "")}</td><td>${esc(post.type || "")}</td><td>${esc(post.likes || 0)}</td><td>${esc(post.comments || 0)}</td><td class="compact-cell"><div class="cell-muted">${esc(post.caption || post.url || "")}</div></td></tr>`).join("");
       return `<div class="ai-result-stack">
-        <div class="ai-card"><span class="ai-badge">${esc(collection.username || "")}</span><h4>${aiT("executiveSummary")}</h4><p>${esc(analysis.executiveSummary || analysis.summary || result.analysis?.error || "Postlar çekildi. AI analizi için OpenAI anahtarı gerekli olabilir.")}</p><p class="note">${esc(collection.sinceDate || "")} sonrası, ${esc(posts.length)} post.</p></div>
+        <div class="ai-card"><span class="ai-badge">${esc(collection.username || "")}</span><h4>${aiT("executiveSummary")}</h4><p>${esc(analysis.executiveSummary || analysis.summary || result.analysis?.error || "Postlar çekildi ama AI raporu üretilemedi. OpenAI anahtarını ve post verisinin caption/görsel içerdiğini kontrol et.")}</p><p class="note">${esc(collection.sinceDate || "")} sonrası, ${esc(posts.length)} post.</p></div>
         <div class="ai-stat-grid">
           <div class="ai-stat">${aiT("postsFound")}<strong>${esc(posts.length)}</strong></div>
           <div class="ai-stat">Images<strong>${esc(posts.filter((post) => post.imageUrl).length)}</strong></div>
           <div class="ai-stat">Videos<strong>${esc(posts.filter((post) => String(post.type).toLowerCase().includes("video") || post.videoUrl).length)}</strong></div>
         </div>
-        <div class="ai-card"><h4>${aiT("contentMix")}</h4>${contentMix.length ? `<table class="ai-table"><thead><tr><th>Type</th><th>Count</th><th>Note</th></tr></thead><tbody>${contentMix.map((item) => `<tr><td>${esc(item.type || "")}</td><td>${esc(item.count || 0)}</td><td>${esc(item.note || "")}</td></tr>`).join("")}</tbody></table>` : `<p class="note">AI content mix not available.</p>`}</div>
+        <div class="ai-card"><h4>${aiT("contentMix")}</h4>${contentMix.length ? `<table class="ai-table"><thead><tr><th>Type</th><th>Count</th><th>Note</th></tr></thead><tbody>${contentMix.map((item) => `<tr><td>${esc(item.type || "")}</td><td>${esc(item.count || 0)}</td><td>${esc(item.note || "")}</td></tr>`).join("")}</tbody></table>` : `<p class="note">İçerik karması üretilemedi. Genelde sebep: Apify actor gerçek post caption/görsel verisi döndürmedi veya OpenAI analizi tamamlanamadı.</p>`}</div>
         <div class="ai-card"><h4>${aiT("visualThemes")}</h4>${aiList(analysis.visualThemes || [])}</div>
         <div class="ai-card"><h4>${aiT("captionTone")}</h4>${aiList(analysis.captionTone || [])}</div>
         <div class="ai-card"><h4>${aiT("bestPosts")}</h4>${bestPosts.length ? bestPosts.map((item) => `<p><strong>#${esc(item.index || "")}</strong> ${esc(item.reason || "")} <a href="${esc(item.url || "#")}" target="_blank" rel="noreferrer">open</a></p>`).join("") : `<p class="note">No best-post ranking returned.</p>`}</div>

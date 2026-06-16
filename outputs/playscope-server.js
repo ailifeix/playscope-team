@@ -1071,7 +1071,7 @@ async function fetchInstagramPostsWithApify(input = {}) {
   const maxPosts = Math.max(1, Math.min(Number(input.maxPosts || 50), 200));
   const sinceDate = input.sinceDate || isoDateDaysAgo(days);
   const directUrl = profile.includes("instagram.com") ? profile : `https://www.instagram.com/${username}/`;
-  const actorName = String(env.APIFY_ACTOR_ID || "apify/instagram-profile-scraper");
+  const actorName = String(env.APIFY_ACTOR_ID || "apify/instagram-post-scraper");
   const actorId = actorName.replace("/", "~");
   const endpoint = `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${encodeURIComponent(token)}&format=json&clean=true`;
   const isApifyPostActor = /apify[~/]instagram-post-scraper/i.test(actorName);
@@ -1096,22 +1096,54 @@ async function fetchInstagramPostsWithApify(input = {}) {
         skipPinnedPosts: Boolean(input.skipPinnedPosts ?? true),
         dataDetailLevel: input.dataDetailLevel || "basicData"
       };
-  const response = await fetchWithTimeout(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "application/json"
-    },
-    body: JSON.stringify(runInput)
-  }, 120000);
+  let response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(runInput)
+    }, 65000);
+  } catch (error) {
+    return {
+      ok: false,
+      code: "APIFY_TIMEOUT",
+      actor: actorName,
+      error: "Apify actor uzun sürdü veya cevap vermedi. Maksimum post sayısını azaltıp tekrar dene ya da Render deploy'un güncel mi kontrol et."
+    };
+  }
   const data = await responseJsonSafe(response, "Apify");
   if (!response.ok) {
-    return { ok: false, code: "APIFY_REQUEST_FAILED", error: data?.error?.message || data?.message || `Apify HTTP ${response.status}` };
+    return {
+      ok: false,
+      code: "APIFY_REQUEST_FAILED",
+      actor: actorName,
+      error: data?.error?.message || data?.message || `Apify HTTP ${response.status}`
+    };
   }
   const rawItems = Array.isArray(data) ? data : (data?.items || data?.data || []);
   const posts = filterRecentPosts(rawItems.map(normalizeInstagramPost), sinceDate)
-    .filter((post) => post.caption || post.imageUrl || post.videoUrl || post.url)
+    .filter((post) => post.caption || post.shortcode || post.imageUrl || post.videoUrl)
     .slice(0, maxPosts);
+  if (!posts.length && isApifyProfileActor && rawItems.length) {
+    return {
+      ok: false,
+      code: "PROFILE_ACTOR_NO_POSTS",
+      actor: actorName,
+      error: "Bu Apify actor profil bilgisi döndürdü ama post/caption/görsel döndürmedi. Son gönderi analizi için APIFY_ACTOR_ID değerini apify/instagram-post-scraper yap."
+    };
+  }
+  if (!posts.length || posts.every((post) => !post.caption && !post.shortcode && !post.imageUrl && !post.videoUrl)) {
+    return {
+      ok: false,
+      code: "NO_USABLE_POST_DATA",
+      actor: actorName,
+      rawCount: rawItems.length,
+      error: "Apify sonuç döndürdü ama kullanılabilir post/caption/görsel verisi yok. Render'da APIFY_ACTOR_ID değerini apify/instagram-post-scraper yapıp yeniden deploy et."
+    };
+  }
   return {
     ok: true,
     source: "apify",
