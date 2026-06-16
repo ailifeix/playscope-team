@@ -809,36 +809,42 @@
       help: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 1 1 5 2.2c-.9.5-1.4 1.1-1.4 2.1"/><path d="M12 17h.01"/></svg>',
       doc: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>',
       spark: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"/></svg>',
+      review: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path d="M8 8h8M8 12h6"/><path d="M8 16h3"/></svg>',
+      social: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="3"/><circle cx="12" cy="13" r="4"/><path d="M8 5l1.4-2h5.2L16 5"/><path d="M18 9h.01"/></svg>',
+      megaphone: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11v2a2 2 0 0 0 2 2h2l4 5v-5l8 3V6l-8 3H5a2 2 0 0 0-2 2Z"/><path d="M19 9a4 4 0 0 1 0 6"/></svg>',
       chat: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path d="M8 9h8M8 13h5"/></svg>',
       report: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5a2 2 0 0 1 2-2h10l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M14 3v5h5"/><path d="M8 13h8M8 17h6"/></svg>'
     };
 
     const aiCopy = {
       tr: {
-        aiReviews: "AI Review Analizi", aiLocQa: "AI Lokalizasyon QA", aiCampaign: "AI Kampanya", aiReport: "AI Haftalık Rapor", aiWorkspace: "AI Workspace", aiSettings: "AI Ayarları",
-        aiReviewsSub: "Oyuncu yorumlarını ürün, pazarlama, lokalizasyon ve operasyon içgörülerine çevir.", aiLocQaSub: "Oyun metninin anlam, doğallık, uzunluk ve terminoloji kalitesini kontrol et.", aiCampaignSub: "Mobil oyun kampanyası için konsept, kanal fikri, risk ve örnek reklam metni üret.", aiReportSub: "Haftalık işleri profesyonel rapora dönüştür.", aiWorkspaceSub: "Proje işleri için genel AI çalışma alanı.", aiSettingsSub: "Yeni AI modüllerinin prototip ayarları.",
+        aiReviews: "Review Analizi", aiSocial: "Sosyal Analiz", aiLocQa: "Lokalizasyon QA", aiCampaign: "Kampanya", aiReport: "Haftalık Rapor", aiWorkspace: "Workspace", aiSettings: "Modül Ayarları",
+        aiReviewsSub: "Oyuncu yorumlarını ürün, pazarlama, lokalizasyon ve operasyon içgörülerine çevir.", aiSocialSub: "Instagram profil linkinden son dönem postlarını ve görsellerini içerik stratejisi raporuna çevir.", aiLocQaSub: "Oyun metninin anlam, doğallık, uzunluk ve terminoloji kalitesini kontrol et.", aiCampaignSub: "Mobil oyun kampanyası için konsept, kanal fikri, risk ve örnek reklam metni üret.", aiReportSub: "Haftalık işleri profesyonel rapora dönüştür.", aiWorkspaceSub: "Proje işleri için genel AI çalışma alanı.", aiSettingsSub: "Yeni AI modüllerinin prototip ayarları.",
         gameName: "Oyun adı", platform: "Platform", market: "Pazar / Bölge", reviewLanguage: "Yorum dili", reviews: "Yorumlar", focus: "Analiz odağı", analyzeReviews: "Yorumları analiz et", emptyReviews: "Lütfen en az bir yorum yapıştır.", executiveSummary: "Yönetici özeti", sentiment: "Duygu dağılımı", complaints: "Ana şikayetler", praises: "Öne çıkan olumlu noktalar", productActions: "Ürün aksiyonları", marketingActions: "Pazarlama aksiyonları", localizationRisks: "Lokalizasyon riskleri", exportReport: "Raporu dışa aktar",
         sourceLang: "Kaynak dil", targetLang: "Hedef dil", contextType: "Metin bağlamı", sourceText: "Kaynak metin", currentTranslation: "Mevcut çeviri", terms: "Sabit terminoloji", lengthLimit: "UI uzunluk limiti", checkLocalization: "Lokalizasyonu kontrol et", qaScore: "QA skoru", verdict: "Sonuç", suggestedTranslation: "Önerilen çeviri", explanation: "Açıklama",
         genre: "Tür", region: "Hedef ülke / bölge", goal: "Kampanya hedefi", budget: "Bütçe seviyesi", channels: "Kanallar", notes: "Notlar", generateIdeas: "Kampanya fikirleri üret", concept: "Kampanya konsepti", audienceInsight: "Kitle içgörüsü", creativeAngle: "Yaratıcı açı", socialIdeas: "Sosyal medya fikirleri", kolIdeas: "KOL fikirleri", eventIdeas: "Oyun içi event fikirleri", adCopy: "Örnek reklam metinleri",
         completed: "Tamamlanan işler", ongoing: "Devam eden işler", blockers: "Sorunlar / blocker", nextWeek: "Gelecek hafta öncelikleri", department: "Departman", outputLanguage: "Çıktı dili", reportStyle: "Rapor stili", generateReport: "Rapor oluştur", reportPreview: "Rapor önizleme",
+        socialProfile: "Instagram profil linki", days: "Gün aralığı", maxPosts: "Maksimum post", analyzeSocial: "Sosyal içeriği analiz et", postsFound: "Bulunan postlar", contentMix: "İçerik karması", visualThemes: "Görsel temalar", captionTone: "Caption tonu", bestPosts: "En güçlü postlar", weaknesses: "Zayıf noktalar", opportunities: "Fırsatlar", contentPlan: "7 günlük içerik planı",
         send: "Gönder", projectContext: "Proje bağlamı", profile: "Profil", workspace: "Workspace", aiProvider: "AI sağlayıcı", model: "Model", theme: "Tema", saveSettings: "Ayarları kaydet", saved: "Kaydedildi", comingSoon: "Yakında"
       },
       en: {
-        aiReviews: "AI Review Analyzer", aiLocQa: "AI Localization QA", aiCampaign: "AI Campaign Ideas", aiReport: "AI Weekly Report", aiWorkspace: "AI Workspace", aiSettings: "AI Settings",
-        aiReviewsSub: "Turn player reviews into product, marketing, localization, and operations insights.", aiLocQaSub: "Check game text for meaning, naturalness, length, terminology, and cultural risk.", aiCampaignSub: "Generate campaign concepts, channel ideas, risks, and sample ad copy for mobile games.", aiReportSub: "Convert weekly notes into a professional work report.", aiWorkspaceSub: "General AI workspace for project tasks.", aiSettingsSub: "Prototype settings for the new AI modules.",
+        aiReviews: "Review Analyzer", aiSocial: "Social Analysis", aiLocQa: "Localization QA", aiCampaign: "Campaign Ideas", aiReport: "Weekly Report", aiWorkspace: "Workspace", aiSettings: "Module Settings",
+        aiReviewsSub: "Turn player reviews into product, marketing, localization, and operations insights.", aiSocialSub: "Turn recent Instagram posts and visuals into a content strategy report from a profile link.", aiLocQaSub: "Check game text for meaning, naturalness, length, terminology, and cultural risk.", aiCampaignSub: "Generate campaign concepts, channel ideas, risks, and sample ad copy for mobile games.", aiReportSub: "Convert weekly notes into a professional work report.", aiWorkspaceSub: "General AI workspace for project tasks.", aiSettingsSub: "Prototype settings for the new AI modules.",
         gameName: "Game name", platform: "Platform", market: "Market / Region", reviewLanguage: "Review language", reviews: "Reviews", focus: "Analysis focus", analyzeReviews: "Analyze reviews", emptyReviews: "Please paste at least one review.", executiveSummary: "Executive summary", sentiment: "Sentiment", complaints: "Main complaints", praises: "Main praises", productActions: "Product actions", marketingActions: "Marketing actions", localizationRisks: "Localization risks", exportReport: "Export report",
         sourceLang: "Source language", targetLang: "Target language", contextType: "Context type", sourceText: "Source text", currentTranslation: "Current translation", terms: "Established terminology", lengthLimit: "UI length limit", checkLocalization: "Check localization", qaScore: "QA score", verdict: "Verdict", suggestedTranslation: "Suggested translation", explanation: "Explanation",
         genre: "Genre", region: "Target country / region", goal: "Campaign goal", budget: "Budget level", channels: "Channels", notes: "Notes", generateIdeas: "Generate campaign ideas", concept: "Campaign concept", audienceInsight: "Audience insight", creativeAngle: "Creative angle", socialIdeas: "Social media ideas", kolIdeas: "KOL ideas", eventIdeas: "In-game event ideas", adCopy: "Example ad copy",
         completed: "Completed tasks", ongoing: "Ongoing tasks", blockers: "Problems / blockers", nextWeek: "Next week priorities", department: "Department", outputLanguage: "Output language", reportStyle: "Report style", generateReport: "Generate report", reportPreview: "Report preview",
+        socialProfile: "Instagram profile URL", days: "Date range in days", maxPosts: "Maximum posts", analyzeSocial: "Analyze social content", postsFound: "Posts found", contentMix: "Content mix", visualThemes: "Visual themes", captionTone: "Caption tone", bestPosts: "Best posts", weaknesses: "Weaknesses", opportunities: "Opportunities", contentPlan: "7-day content plan",
         send: "Send", projectContext: "Project context", profile: "Profile", workspace: "Workspace", aiProvider: "AI provider", model: "Model", theme: "Theme", saveSettings: "Save settings", saved: "Saved", comingSoon: "Coming soon"
       },
       zh: {
-        aiReviews: "AI 评论分析", aiLocQa: "AI 本地化 QA", aiCampaign: "AI 营销方案", aiReport: "AI 周报生成", aiWorkspace: "AI 工作台", aiSettings: "AI 设置",
-        aiReviewsSub: "把玩家评论整理成产品、营销、本地化和运营洞察。", aiLocQaSub: "检查游戏文本的含义、自然度、长度、术语和文化风险。", aiCampaignSub: "为手游生成营销概念、渠道创意、风险提示和广告文案。", aiReportSub: "把每周工作记录整理成专业周报。", aiWorkspaceSub: "面向项目任务的通用 AI 工作区。", aiSettingsSub: "新 AI 模块的原型设置。",
+        aiReviews: "评论分析", aiSocial: "社媒分析", aiLocQa: "本地化 QA", aiCampaign: "营销方案", aiReport: "周报生成", aiWorkspace: "工作台", aiSettings: "模块设置",
+        aiReviewsSub: "把玩家评论整理成产品、营销、本地化和运营洞察。", aiSocialSub: "根据 Instagram 主页链接，把近期帖子和视觉内容整理为内容策略报告。", aiLocQaSub: "检查游戏文本的含义、自然度、长度、术语和文化风险。", aiCampaignSub: "为手游生成营销概念、渠道创意、风险提示和广告文案。", aiReportSub: "把每周工作记录整理成专业周报。", aiWorkspaceSub: "面向项目任务的通用 AI 工作区。", aiSettingsSub: "新 AI 模块的原型设置。",
         gameName: "游戏名称", platform: "平台", market: "市场 / 地区", reviewLanguage: "评论语言", reviews: "评论", focus: "分析重点", analyzeReviews: "分析评论", emptyReviews: "请至少粘贴一条评论。", executiveSummary: "管理层摘要", sentiment: "情绪分布", complaints: "主要问题", praises: "主要好评", productActions: "产品行动", marketingActions: "营销行动", localizationRisks: "本地化风险", exportReport: "导出报告",
         sourceLang: "源语言", targetLang: "目标语言", contextType: "文本场景", sourceText: "源文本", currentTranslation: "当前翻译", terms: "固定术语", lengthLimit: "UI 长度限制", checkLocalization: "检查本地化", qaScore: "QA 分数", verdict: "结论", suggestedTranslation: "建议译文", explanation: "说明",
         genre: "类型", region: "目标国家 / 地区", goal: "营销目标", budget: "预算级别", channels: "渠道", notes: "备注", generateIdeas: "生成营销方案", concept: "营销概念", audienceInsight: "受众洞察", creativeAngle: "创意角度", socialIdeas: "社媒创意", kolIdeas: "KOL 方向", eventIdeas: "游戏内活动", adCopy: "广告文案示例",
         completed: "已完成", ongoing: "进行中", blockers: "问题 / 阻塞", nextWeek: "下周重点", department: "部门", outputLanguage: "输出语言", reportStyle: "报告风格", generateReport: "生成报告", reportPreview: "报告预览",
+        socialProfile: "Instagram 主页链接", days: "天数范围", maxPosts: "最多帖子数", analyzeSocial: "分析社媒内容", postsFound: "找到的帖子", contentMix: "内容组合", visualThemes: "视觉主题", captionTone: "文案语气", bestPosts: "最佳帖子", weaknesses: "弱点", opportunities: "机会", contentPlan: "7 天内容计划",
         send: "发送", projectContext: "项目上下文", profile: "个人资料", workspace: "工作区", aiProvider: "AI 服务商", model: "模型", theme: "主题", saveSettings: "保存设置", saved: "已保存", comingSoon: "即将上线"
       }
     };
@@ -896,6 +902,7 @@
     };
     state.ai = state.ai || {};
     state.ai.review = state.ai.review || null;
+    state.ai.social = state.ai.social || null;
     state.ai.locQa = state.ai.locQa || null;
     state.ai.campaign = state.ai.campaign || null;
     state.ai.report = state.ai.report || null;
@@ -1102,11 +1109,21 @@
       const hasLiveMeta = Boolean(video.liveStreamingDetails?.actualStartTime || video.liveStreamingDetails?.scheduledStartTime || video.liveStreamingDetails?.actualEndTime);
       const vodSignal = /\b(vod|canli|canlı|live|livestream|stream|yayın|yayin|yayını|yayini|canlı yayın|canli yayin|full yayın|full yayin|broadcast|replay|tekrar|tekrarı|tekrari)\b/i.test(titleText);
       if (seconds > 0 && seconds < 60) return "Short video";
-      if (hasLiveMeta || vodSignal || seconds >= 2700) return "Stream replay video";
+      if (hasLiveMeta || vodSignal) return "Stream replay video";
       if (seconds >= 180 && seconds <= 2400) return "Edited long video";
       if (seconds >= 60 && seconds < 180) return "Short edited video";
-      if (seconds > 2400) return "Long video";
+      if (seconds > 2400) return "Long uploaded video";
       return "Latest YouTube video";
+    }
+    function isStreamReplayVideo(video) {
+      return youtubeVideoKind(video) === "Stream replay video";
+    }
+    function isRegularMetricVideo(video) {
+      const seconds = parseYouTubeDuration(video.contentDetails?.duration);
+      if (!seconds || isStreamReplayVideo(video)) return false;
+      const titleText = String(video.snippet?.title || "").toLowerCase();
+      if (/\b(shorts?|clip|kesit|highlight|özet|ozet)\b/i.test(titleText) && seconds < 180) return false;
+      return seconds >= 60;
     }
     function dominantVideoFormat(videoItems = []) {
       const counts = new Map();
@@ -1125,13 +1142,13 @@
         .filter((item) => Number.isFinite(item.seconds) && item.seconds > 0);
       if (!rows.length) return 0;
       const normalVideos = rows
-        .filter((item) => item.seconds >= 180 && item.seconds <= 2400 && item.kind !== "Stream replay video")
+        .filter((item) => item.seconds >= 180 && item.kind !== "Stream replay video")
         .map((item) => item.seconds);
       const editedLong = rows.filter((item) => item.kind === "Edited long video").map((item) => item.seconds);
       const shortEdited = rows.filter((item) => item.kind === "Short edited video").map((item) => item.seconds);
       const shorts = rows.filter((item) => item.kind === "Short video").map((item) => item.seconds);
       const vods = rows.filter((item) => item.kind === "Stream replay video").map((item) => item.seconds);
-      const otherLong = rows.filter((item) => item.kind === "Long video").map((item) => item.seconds);
+      const otherLong = rows.filter((item) => item.kind === "Long uploaded video").map((item) => item.seconds);
       let source = normalVideos.length >= 2 ? normalVideos : editedLong.length >= 2 ? editedLong : shortEdited.length >= 3 ? shortEdited : shorts.length >= 3 ? shorts : otherLong.length >= 2 ? otherLong : rows.map((item) => item.seconds);
       if (source !== vods && source.length < 2 && vods.length && rows.length === vods.length) source = vods;
       const sorted = [...source].sort((a, b) => a - b);
@@ -1148,11 +1165,9 @@
         const bt = Date.parse(b.snippet?.publishedAt || "") || 0;
         return bt - at;
       });
-      const nonLiveVideos = ordered.filter((video) => {
-        const seconds = parseYouTubeDuration(video.contentDetails?.duration);
-        const kind = youtubeVideoKind(video);
-        return kind !== "Stream replay video" && seconds > 0;
-      });
+      const regularVideos = ordered.filter(isRegularMetricVideo);
+      if (regularVideos.length) return regularVideos.slice(0, 10);
+      const nonLiveVideos = ordered.filter((video) => !isStreamReplayVideo(video) && parseYouTubeDuration(video.contentDetails?.duration) > 0);
       if (nonLiveVideos.length) return nonLiveVideos.slice(0, 10);
       const uploadedVods = ordered.filter((video) => {
         const seconds = parseYouTubeDuration(video.contentDetails?.duration);
@@ -1160,6 +1175,30 @@
         return kind === "Stream replay video" && seconds > 0;
       });
       return uploadedVods.slice(0, 10);
+    }
+    async function fetchYouTubeVideoIdsForMetrics(channelId, apiKey) {
+      const ids = [];
+      let pageToken = "";
+      for (let page = 0; page < 3 && ids.length < 120; page++) {
+        const tokenPart = pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : "";
+        const url = `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${channelId}&order=date&type=video&maxResults=50${tokenPart}&key=${encodeURIComponent(apiKey)}`;
+        const data = await fetch(url).then((res) => res.json()).catch(() => ({ items: [] }));
+        ids.push(...(data.items || []).map((item) => item.id?.videoId).filter(Boolean));
+        pageToken = data.nextPageToken || "";
+        if (!pageToken) break;
+      }
+      return [...new Set(ids)];
+    }
+    async function fetchYouTubeVideosByIds(videoIds, apiKey) {
+      const all = [];
+      for (let i = 0; i < videoIds.length; i += 50) {
+        const chunk = videoIds.slice(i, i + 50);
+        if (!chunk.length) continue;
+        const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails,liveStreamingDetails&id=${chunk.join(",")}&key=${encodeURIComponent(apiKey)}`;
+        const data = await fetch(url).then((res) => res.json()).catch(() => ({ items: [] }));
+        all.push(...(data.items || []));
+      }
+      return all;
     }
     function averageVideoViews(videoItems = []) {
       const counts = videoItems
@@ -1234,15 +1273,15 @@
         ["list", "list", "list"],
         ["localization", "globe", "localization"],
         ["competitors", "target", "competitors"],
-        ["aiReviews", "spark", "aiReviews"],
+        ["aiReviews", "review", "aiReviews"],
+        ["aiSocial", "social", "aiSocial"],
         ["aiLocQa", "globe", "aiLocQa"],
-        ["aiCampaign", "target", "aiCampaign"],
-        ["aiReport", "report", "aiReport"],
-        ["aiWorkspace", "chat", "aiWorkspace"]
+        ["aiCampaign", "megaphone", "aiCampaign"]
       ];
+      if (state.page === "aiReport" || state.page === "aiWorkspace") state.page = "dashboard";
       $("mainNav").innerHTML = nav.map(([page, icon, label]) => `<button class="${state.page === page ? "active" : ""}" data-page="${page}" type="button">${icons[icon]}<span>${navT(label)}</span></button>`).join("");
       $("footNav").innerHTML = [
-        ["aiSettings", "spark", "aiSettings"],
+        ["aiSettings", "settings", "aiSettings"],
         ["settings", "settings", "settings"],
         ["help", "help", "help"]
       ].map(([page, icon, label]) => `<button class="${state.page === page ? "active" : ""}" data-page="${page}" type="button">${icons[icon]}<span>${navT(label)}</span></button>`).join("");
@@ -2243,18 +2282,19 @@ Return exactly this JSON shape:
     }
 
     function settingsPage() {
-      state.api = state.api || { youtube: "", openai: "", googleSecret: "", serpapi: "" };
+      state.api = state.api || { youtube: "", openai: "", googleSecret: "", serpapi: "", apify: "" };
       const apiRows = [
         ["YouTube Data API", state.api.youtube],
         ["OpenAI API", state.api.openai],
         ["SerpAPI Google Play", state.api.serpapi],
+        ["Apify Instagram", state.api.apify],
         ["Google Client Secret", state.api.googleSecret]
       ].map(([name, value]) => `<div class="task"><div><strong>${name}</strong><span>${value ? "Saved locally in this browser" : tr("notConnected")}</span></div><span class="tag ${value ? "good" : "warn"}">${value ? tr("ready") : tr("waiting")}</span></div>`).join("");
       $("page").innerHTML = `
         ${pageHead(tr("settings"), "Project and app preferences.")}
         <div class="grid half">
           ${panel(tr("brief"), `<div class="form-grid"><div><div class="field-label">${tr("projectName")}</div><input id="setName" value="${esc(state.project.name)}"></div><div><div class="field-label">${tr("genre")}</div><input id="setGenre" value="${esc(state.project.genre)}"></div><div><div class="field-label">${tr("markets")}</div><input id="setMarkets" value="${esc(state.project.markets)}"></div><div><div class="field-label">${tr("audience")}</div><input id="setAudience" value="${esc(state.project.audience)}"></div></div><div class="field-label">${tr("goal")}</div><input id="setGoal" value="${esc(state.project.goal)}"><div class="field-label" style="margin-top:12px">Keywords</div><input id="setKeywords" value="${esc(state.project.keywords)}"><button class="primary" id="saveSettingsBtn" style="margin-top:12px">${tr("save")}</button>`)}
-          ${panel(tr("apiStatus"), `<div class="form-grid"><div><div class="field-label">YouTube API Key</div><input id="apiYoutube" type="password" autocomplete="off" placeholder="${state.api.youtube ? "Saved" : "Paste key"}"></div><div><div class="field-label">GPT API Key</div><input id="apiOpenai" type="password" autocomplete="off" placeholder="${state.api.openai ? "Saved" : "Paste sk key"}"></div><div><div class="field-label">GPT API Endpoint</div><input id="apiOpenaiBaseUrl" autocomplete="off" value="${esc(state.api.openaiBaseUrl || "https://api.1475258.xyz/v1")}"></div><div><div class="field-label">GPT Model</div><input id="apiOpenaiModel" autocomplete="off" value="${esc(state.api.openaiModel || "auto")}"></div><div><div class="field-label">SerpAPI Key</div><input id="apiSerpapi" type="password" autocomplete="off" placeholder="${state.api.serpapi ? "Saved" : "Paste SerpAPI key"}"></div></div><div class="field-label">Team Password</div><input id="teamPassword" type="password" autocomplete="off" placeholder="Optional shared password"><div class="field-label" style="margin-top:12px">Google Client Secret</div><input id="apiGoogleSecret" type="password" autocomplete="off" placeholder="${state.api.googleSecret ? "Saved" : "Paste secret"}"><p class="note">Team mode: API keys and shared list can live on the server. SerpAPI is used for Google Play search.</p><button class="primary" id="saveApiBtn" style="margin-top:12px">${tr("save")}</button><button id="clearApiBtn" style="margin-top:12px;margin-left:8px">Clear API keys</button><div class="task-list" style="margin-top:14px">${apiRows}<div class="task"><div><strong>Team sharing</strong><span>Shared state is saved on the local/backend server when available.</span></div><span class="tag good">${tr("ready")}</span></div></div>`)}
+          ${panel(tr("apiStatus"), `<div class="form-grid"><div><div class="field-label">YouTube API Key</div><input id="apiYoutube" type="password" autocomplete="off" placeholder="${state.api.youtube ? "Saved" : "Paste key"}"></div><div><div class="field-label">GPT API Key</div><input id="apiOpenai" type="password" autocomplete="off" placeholder="${state.api.openai ? "Saved" : "Paste sk key"}"></div><div><div class="field-label">GPT API Endpoint</div><input id="apiOpenaiBaseUrl" autocomplete="off" value="${esc(state.api.openaiBaseUrl || "https://api.1475258.xyz/v1")}"></div><div><div class="field-label">GPT Model</div><input id="apiOpenaiModel" autocomplete="off" value="${esc(state.api.openaiModel || "auto")}"></div><div><div class="field-label">SerpAPI Key</div><input id="apiSerpapi" type="password" autocomplete="off" placeholder="${state.api.serpapi ? "Saved" : "Paste SerpAPI key"}"></div><div><div class="field-label">Apify API Token</div><input id="apiApify" type="password" autocomplete="off" placeholder="${state.api.apify ? "Saved" : "Paste Apify token"}"></div></div><div class="field-label">Team Password</div><input id="teamPassword" type="password" autocomplete="off" placeholder="Optional shared password"><div class="field-label" style="margin-top:12px">Google Client Secret</div><input id="apiGoogleSecret" type="password" autocomplete="off" placeholder="${state.api.googleSecret ? "Saved" : "Paste secret"}"><p class="note">Team mode: API keys and shared list can live on the server. Apify is used for Instagram social post analysis.</p><button class="primary" id="saveApiBtn" style="margin-top:12px">${tr("save")}</button><button id="clearApiBtn" style="margin-top:12px;margin-left:8px">Clear API keys</button><div class="task-list" style="margin-top:14px">${apiRows}<div class="task"><div><strong>Team sharing</strong><span>Shared state is saved on the local/backend server when available.</span></div><span class="tag good">${tr("ready")}</span></div></div>`)}
         </div>`;
       $("saveSettingsBtn").addEventListener("click", saveSettings);
       $("saveApiBtn").addEventListener("click", saveApiSettings);
@@ -2435,9 +2475,7 @@ Return exactly this JSON shape:
           return { ...localResearchResult(input), notes: `YouTube API error from browser: ${reason}` };
         }
         const channel = channelData.items[0];
-        const videoSearchUrl = `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${channelId}&order=date&type=video&maxResults=50&key=${encodeURIComponent(apiKey)}`;
-        const videoSearch = await fetch(videoSearchUrl).then((res) => res.json()).catch(() => ({ items: [] }));
-        const videoIds = (videoSearch.items || []).map((item) => item.id?.videoId).filter(Boolean);
+        const videoIds = await fetchYouTubeVideoIdsForMetrics(channelId, apiKey);
         let avgViews = 0;
         let avgComments = 0;
         let avgDurationSeconds = 0;
@@ -2445,9 +2483,7 @@ Return exactly this JSON shape:
         let metricVideoCount = 0;
         let metricVideos = [];
         if (videoIds.length) {
-          const videosUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails,liveStreamingDetails&id=${videoIds.join(",")}&key=${encodeURIComponent(apiKey)}`;
-          const videoData = await fetch(videosUrl).then((res) => res.json()).catch(() => ({ items: [] }));
-          videoItems = videoData.items || [];
+          videoItems = await fetchYouTubeVideosByIds(videoIds, apiKey);
           metricVideos = latestMetricVideos(videoItems);
           metricVideoCount = metricVideos.length;
           avgViews = averageVideoViews(metricVideos);
@@ -5335,12 +5371,13 @@ ${labels.note}: ${labels.noteText}`;
       saveState(); render();
     }
     async function saveApiSettings() {
-      state.api = state.api || { youtube: "", openai: "", googleSecret: "", serpapi: "", openaiBaseUrl: "https://api.1475258.xyz/v1", openaiModel: "auto" };
+      state.api = state.api || { youtube: "", openai: "", googleSecret: "", serpapi: "", apify: "", openaiBaseUrl: "https://api.1475258.xyz/v1", openaiModel: "auto" };
       const youtube = $("apiYoutube").value.trim();
       const openai = $("apiOpenai").value.trim();
       const openaiBaseUrl = normalizeGptBaseUrl($("apiOpenaiBaseUrl").value.trim());
       const openaiModel = $("apiOpenaiModel").value.trim();
       const serpapi = $("apiSerpapi")?.value.trim() || "";
+      const apify = $("apiApify")?.value.trim() || "";
       const googleSecret = $("apiGoogleSecret").value.trim();
       const teamPassword = $("teamPassword")?.value.trim() || "";
       if (youtube) state.api.youtube = youtube;
@@ -5351,6 +5388,7 @@ ${labels.note}: ${labels.noteText}`;
         state.api.serpapi = serpapi;
         localStorage.setItem("playscope-serpapi-key", serpapi);
       }
+      if (apify) state.api.apify = "saved";
       if (googleSecret) state.api.googleSecret = googleSecret;
       if (teamPassword) localStorage.setItem("playscope-team-password", teamPassword);
       saveState();
@@ -5363,6 +5401,7 @@ ${labels.note}: ${labels.noteText}`;
           openaiBaseUrl: state.api.openaiBaseUrl,
           openaiModel: state.api.openaiModel,
           serpapiKey: serpapi,
+          apifyToken: apify,
           googleSecret,
           teamPassword
         })
@@ -5370,22 +5409,49 @@ ${labels.note}: ${labels.noteText}`;
       render();
     }
     function clearApiSettings() {
-      state.api = { youtube: "", openai: "", googleSecret: "", serpapi: "", openaiBaseUrl: "https://api.1475258.xyz/v1", openaiModel: "auto" };
+      state.api = { youtube: "", openai: "", googleSecret: "", serpapi: "", apify: "", openaiBaseUrl: "https://api.1475258.xyz/v1", openaiModel: "auto" };
       localStorage.removeItem("playscope-serpapi-key");
       saveState();
       render();
     }
     function exportCsv() {
-      const header = ["Channel Name", "Link", "GEO", "Gender", "Age", "Category", "Subcategory", "Subscribers", "avg Views 30 days / 10 videos", "Format", "Duration (avg)", "Keywords"];
+      const header = ["Channel Name", "Handle", "Link", "GEO", "Gender", "Age", "Category", "Subcategory", "Subscribers", "avg Views 30 days / 10 videos", "Format", "Duration (avg)", "Keywords", "Fit", "Status", "Notes"];
       const data = state.influencers.map((item) => {
         const demographics = splitAgeGender(item.age, item.gender);
-        return [item.name, item.link || "", item.geo || item.country || "", demoValue(demographics.gender), demoValue(demographics.age), item.category || "", item.subcategory || "", item.subscribers || "", item.views || "", item.format || "", item.duration || "", item.keywords || ""];
+        const fitScore = Number(item.match || 0);
+        return [
+          item.name || "",
+          item.handle || "",
+          item.link || "",
+          item.geo || item.country || "",
+          demoValue(demographics.gender),
+          demoValue(demographics.age),
+          item.category || "",
+          item.subcategory || "",
+          item.subscribers || "",
+          item.views || "",
+          item.format || "",
+          item.duration || "",
+          item.keywords || "",
+          fitScore || "",
+          fitScore >= 80 ? "Uygun" : fitScore >= 60 ? "Değerlendir" : "Uygun Değil",
+          item.note || item.comments || item.notes || ""
+        ];
       });
-      const csv = [header, ...data].map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const cell = (value, tag = "td") => `<${tag}>${String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</${tag}>`;
+      const rows = [
+        `<tr>${header.map((value) => cell(value, "th")).join("")}</tr>`,
+        ...data.map((row) => `<tr>${row.map((value) => cell(value)).join("")}</tr>`)
+      ].join("");
+      const html = `<!doctype html><html><head><meta charset="utf-8"><style>
+        table{border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:10pt;}
+        th,td{border:1px solid #d8c8f6;padding:6px 8px;vertical-align:top;mso-number-format:"\\@";}
+        th{background:#f3eafe;font-weight:700;}
+      </style></head><body><table>${rows}</table></body></html>`;
+      const blob = new Blob(["\ufeff", html], { type: "application/vnd.ms-excel;charset=utf-8" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = "playscope-influencer-fit.csv";
+      link.download = "playscope-influencer-fit.xls";
       link.click();
       URL.revokeObjectURL(link.href);
     }
@@ -5701,6 +5767,78 @@ ${labels.note}: ${labels.noteText}`;
         <div class="ai-card"><h4>${aiT("productActions")}</h4>${aiList(productActions)}</div>
         <div class="ai-card"><h4>${aiT("marketingActions")}</h4>${aiList(marketingActions)}</div>
         <div class="ai-card"><h4>${aiT("localizationRisks")}</h4>${localizationRisks.length ? localizationRisks.map((item) => `<p><strong>${esc(item.language || "")}:</strong> ${esc(item.issue || "")} ${esc(item.suggestion || "")}</p>`).join("") : `<p class="note">No major localization risk detected.</p>`}</div>
+      </div>`;
+    }
+    function aiSocialPage() {
+      const result = state.ai.social;
+      $("page").innerHTML = `
+        ${pageHead(aiT("aiSocial"), aiT("aiSocialSub"))}
+        <div class="ai-module-grid">
+          ${panel(aiT("aiSocial"), `
+            <div class="ai-form-grid">
+              <div class="ai-full"><div class="field-label">${aiT("socialProfile")}</div><input id="aiSocialProfile" placeholder="https://www.instagram.com/sromobileturkiye/"></div>
+              <div><div class="field-label">${aiT("days")}</div><input id="aiSocialDays" type="number" min="1" max="180" value="30"></div>
+              <div><div class="field-label">${aiT("maxPosts")}</div><input id="aiSocialMax" type="number" min="1" max="200" value="50"></div>
+              <div class="ai-full"><button class="primary" id="aiSocialBtn" type="button">${aiT("analyzeSocial")}</button></div>
+              <p class="note ai-full" id="aiSocialStatus">Apify token Settings ekranında kaydedilmiş olmalı.</p>
+            </div>
+          `)}
+          ${panel(aiT("executiveSummary"), result ? renderAiSocialResult(result) : aiEmptyState(aiT("aiSocialSub")))}
+        </div>`;
+      $("aiSocialBtn").addEventListener("click", async () => {
+        const profileUrl = $("aiSocialProfile").value.trim();
+        if (!profileUrl) { $("aiSocialStatus").textContent = "Profil linki gerekli."; return; }
+        setAiStatus("aiSocialStatus", "Apify ile postlar çekiliyor ve AI analiz ediyor...");
+        let response;
+        try {
+          response = await fetchTeamApi("/api/social-content-analysis", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...sharedHeaders() },
+            body: JSON.stringify({
+              profileUrl,
+              days: Number($("aiSocialDays").value || 30),
+              maxPosts: Number($("aiSocialMax").value || 50),
+              skipPinnedPosts: true
+            })
+          });
+        } catch (error) {
+          setAiStatus("aiSocialStatus", aiMessage("backendUnreachable"));
+          return;
+        }
+        const data = await response.json().catch(() => null);
+        if (!data?.ok) {
+          setAiStatus("aiSocialStatus", data?.error || data?.message || aiMessage("failed"));
+          return;
+        }
+        state.ai.social = data;
+        saveState();
+        render();
+      });
+    }
+    function renderAiSocialResult(result) {
+      const collection = result.collection || {};
+      const analysis = result.analysis?.data || {};
+      const posts = Array.isArray(collection.posts) ? collection.posts : [];
+      const contentMix = Array.isArray(analysis.contentMix) ? analysis.contentMix : [];
+      const bestPosts = Array.isArray(analysis.bestPosts) ? analysis.bestPosts : [];
+      const plan = Array.isArray(analysis.sevenDayContentPlan) ? analysis.sevenDayContentPlan : [];
+      const postRows = posts.slice(0, 12).map((post, index) => `<tr><td>${index + 1}</td><td>${esc(post.date || "")}</td><td>${esc(post.type || "")}</td><td>${esc(post.likes || 0)}</td><td>${esc(post.comments || 0)}</td><td class="compact-cell"><div class="cell-muted">${esc(post.caption || post.url || "")}</div></td></tr>`).join("");
+      return `<div class="ai-result-stack">
+        <div class="ai-card"><span class="ai-badge">${esc(collection.username || "")}</span><h4>${aiT("executiveSummary")}</h4><p>${esc(analysis.executiveSummary || analysis.summary || result.analysis?.error || "Postlar çekildi. AI analizi için OpenAI anahtarı gerekli olabilir.")}</p><p class="note">${esc(collection.sinceDate || "")} sonrası, ${esc(posts.length)} post.</p></div>
+        <div class="ai-stat-grid">
+          <div class="ai-stat">${aiT("postsFound")}<strong>${esc(posts.length)}</strong></div>
+          <div class="ai-stat">Images<strong>${esc(posts.filter((post) => post.imageUrl).length)}</strong></div>
+          <div class="ai-stat">Videos<strong>${esc(posts.filter((post) => String(post.type).toLowerCase().includes("video") || post.videoUrl).length)}</strong></div>
+        </div>
+        <div class="ai-card"><h4>${aiT("contentMix")}</h4>${contentMix.length ? `<table class="ai-table"><thead><tr><th>Type</th><th>Count</th><th>Note</th></tr></thead><tbody>${contentMix.map((item) => `<tr><td>${esc(item.type || "")}</td><td>${esc(item.count || 0)}</td><td>${esc(item.note || "")}</td></tr>`).join("")}</tbody></table>` : `<p class="note">AI content mix not available.</p>`}</div>
+        <div class="ai-card"><h4>${aiT("visualThemes")}</h4>${aiList(analysis.visualThemes || [])}</div>
+        <div class="ai-card"><h4>${aiT("captionTone")}</h4>${aiList(analysis.captionTone || [])}</div>
+        <div class="ai-card"><h4>${aiT("bestPosts")}</h4>${bestPosts.length ? bestPosts.map((item) => `<p><strong>#${esc(item.index || "")}</strong> ${esc(item.reason || "")} <a href="${esc(item.url || "#")}" target="_blank" rel="noreferrer">open</a></p>`).join("") : `<p class="note">No best-post ranking returned.</p>`}</div>
+        <div class="ai-card"><h4>${aiT("weaknesses")}</h4>${aiList(analysis.weaknesses || [])}</div>
+        <div class="ai-card"><h4>${aiT("opportunities")}</h4>${aiList(analysis.opportunities || [])}</div>
+        <div class="ai-card"><h4>${aiT("marketingActions")}</h4>${aiList(analysis.recommendedActions || [])}</div>
+        <div class="ai-card"><h4>${aiT("contentPlan")}</h4>${plan.length ? `<table class="ai-table"><thead><tr><th>Day</th><th>Idea</th><th>Format</th><th>Why</th></tr></thead><tbody>${plan.map((item) => `<tr><td>${esc(item.day || "")}</td><td>${esc(item.idea || "")}</td><td>${esc(item.format || "")}</td><td>${esc(item.why || "")}</td></tr>`).join("")}</tbody></table>` : `<p class="note">No content plan returned.</p>`}</div>
+        <div class="ai-card"><h4>${aiT("postsFound")}</h4><table class="ai-table"><thead><tr><th>#</th><th>Date</th><th>Type</th><th>Likes</th><th>Comments</th><th>Caption</th></tr></thead><tbody>${postRows}</tbody></table></div>
       </div>`;
     }
     function aiLocQaPage() {
@@ -6045,7 +6183,7 @@ ${labels.note}: ${labels.noteText}`;
     function render() {
       document.documentElement.lang = state.lang === "zh" ? "zh" : state.lang;
       renderShell();
-      const pages = { dashboard: dashboardPage, search: searchPage, list: listPage, localization: localizationPage, competitors: competitorsPage, aiReviews: aiReviewsPage, aiLocQa: aiLocQaPage, aiCampaign: aiCampaignPage, aiReport: aiWeeklyReportPage, aiWorkspace: aiWorkspacePage, aiSettings: aiSettingsPage, settings: settingsPage, help: helpPage };
+      const pages = { dashboard: dashboardPage, search: searchPage, list: listPage, localization: localizationPage, competitors: competitorsPage, aiReviews: aiReviewsPage, aiSocial: aiSocialPage, aiLocQa: aiLocQaPage, aiCampaign: aiCampaignPage, aiReport: aiWeeklyReportPage, aiWorkspace: aiWorkspacePage, aiSettings: aiSettingsPage, settings: settingsPage, help: helpPage };
       (pages[state.page] || dashboardPage)();
       bindAiCopyButtons();
       updateTeamLoginStatus();

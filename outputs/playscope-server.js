@@ -29,7 +29,7 @@ let env = readEnv();
 
 function writeEnv(updates) {
   env = { ...env, ...updates };
-  const order = ["YOUTUBE_API_KEY", "OPENAI_API_KEY", "GPT_API_BASE_URL", "GPT_MODEL", "AI_API_BASE_URL", "AI_MODEL", "REVIEW_MODEL", "OPENAI_WIRE_API", "MODEL_REASONING_EFFORT", "DISABLE_RESPONSE_STORAGE", "SERPAPI_KEY", "GOOGLE_CLIENT_SECRET", "TEAM_PASSWORD"];
+  const order = ["YOUTUBE_API_KEY", "OPENAI_API_KEY", "GPT_API_BASE_URL", "GPT_MODEL", "AI_API_BASE_URL", "AI_MODEL", "REVIEW_MODEL", "OPENAI_WIRE_API", "MODEL_REASONING_EFFORT", "DISABLE_RESPONSE_STORAGE", "SERPAPI_KEY", "APIFY_TOKEN", "APIFY_ACTOR_ID", "GOOGLE_CLIENT_SECRET", "TEAM_PASSWORD"];
   const keys = order.filter((key) => env[key] !== undefined && env[key] !== "");
   fs.writeFileSync(envPath, keys.map((key) => `${key}=${env[key]}`).join("\n"), "utf8");
 }
@@ -992,6 +992,222 @@ async function responseJsonSafe(response, label = "API") {
   }
 }
 
+function getApifyToken() {
+  return env.APIFY_TOKEN || env.APIFY_API_TOKEN || "";
+}
+
+function instagramUsernameFromUrl(value = "") {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  const direct = text.replace(/^@/, "");
+  const match = direct.match(/instagram\.com\/([^/?#]+)/i);
+  return (match?.[1] || direct).replace(/^@/, "").replace(/\/+$/, "");
+}
+
+function isoDateDaysAgo(days) {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() - Math.max(1, Number(days || 30)));
+  return date.toISOString().slice(0, 10);
+}
+
+function postTimestamp(item = {}) {
+  const value = item.timestamp || item.takenAt || item.takenAtTimestamp || item.taken_at_timestamp || item.date || item.time || item.createdAt;
+  if (!value) return "";
+  if (typeof value === "number") return new Date(value < 10_000_000_000 ? value * 1000 : value).toISOString();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toISOString();
+}
+
+function normalizeInstagramPost(item = {}) {
+  const images = [
+    item.displayUrl,
+    item.display_url,
+    item.imageUrl,
+    item.image_url,
+    item.thumbnailUrl,
+    item.thumbnail_src,
+    item.url,
+    ...(Array.isArray(item.images) ? item.images.map((image) => image.url || image.src || image.displayUrl || image) : []),
+    ...(Array.isArray(item.childPosts) ? item.childPosts.map((post) => post.displayUrl || post.imageUrl || post.url) : [])
+  ].filter(Boolean);
+  const timestamp = postTimestamp(item);
+  return {
+    id: String(item.id || item.shortCode || item.shortcode || item.code || item.url || ""),
+    shortcode: item.shortCode || item.shortcode || item.code || "",
+    url: item.url || item.postUrl || item.permalink || (item.shortCode || item.shortcode ? `https://www.instagram.com/p/${item.shortCode || item.shortcode}/` : ""),
+    type: item.type || item.productType || item.mediaType || (item.isVideo || item.is_video ? "video" : "image"),
+    caption: item.caption || item.description || item.text || item.alt || "",
+    timestamp,
+    date: timestamp ? timestamp.slice(0, 10) : "",
+    likes: Number(item.likesCount ?? item.likes ?? item.count_like ?? item.likeCount ?? 0),
+    comments: Number(item.commentsCount ?? item.comments ?? item.count_comment ?? item.commentCount ?? 0),
+    views: Number(item.videoViewCount ?? item.videoPlayCount ?? item.viewsCount ?? item.views ?? 0),
+    imageUrl: images[0] || "",
+    images: [...new Set(images)].slice(0, 6),
+    videoUrl: item.videoUrl || item.video_url || item.video || "",
+    hashtags: item.hashtags || [],
+    mentions: item.mentions || [],
+    ownerUsername: item.ownerUsername || item.owner?.username || item.username || ""
+  };
+}
+
+function filterRecentPosts(posts, sinceDate) {
+  const since = sinceDate ? new Date(`${sinceDate}T00:00:00Z`) : null;
+  if (!since || Number.isNaN(since.getTime())) return posts;
+  return posts.filter((post) => {
+    if (!post.timestamp) return true;
+    const date = new Date(post.timestamp);
+    return Number.isNaN(date.getTime()) || date >= since;
+  });
+}
+
+async function fetchInstagramPostsWithApify(input = {}) {
+  const token = getApifyToken();
+  if (!token) return { ok: false, code: "APIFY_NOT_CONFIGURED", error: "Apify token is missing. Add APIFY_TOKEN in Settings." };
+  const profile = String(input.profileUrl || input.username || "").trim();
+  const username = instagramUsernameFromUrl(profile);
+  if (!username) return { ok: false, code: "PROFILE_REQUIRED", error: "Instagram username or profile URL is required." };
+  const days = Math.max(1, Math.min(Number(input.days || 30), 180));
+  const maxPosts = Math.max(1, Math.min(Number(input.maxPosts || 50), 200));
+  const sinceDate = input.sinceDate || isoDateDaysAgo(days);
+  const directUrl = profile.includes("instagram.com") ? profile : `https://www.instagram.com/${username}/`;
+  const actorId = String(env.APIFY_ACTOR_ID || "apify/instagram-post-scraper").replace("/", "~");
+  const endpoint = `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${encodeURIComponent(token)}&format=json&clean=true`;
+  const runInput = {
+    directUrls: [directUrl],
+    resultsLimit: maxPosts,
+    resultsType: "posts",
+    onlyPostsNewerThan: sinceDate,
+    skipPinnedPosts: Boolean(input.skipPinnedPosts ?? true)
+  };
+  const response = await fetchWithTimeout(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    body: JSON.stringify(runInput)
+  }, 120000);
+  const data = await responseJsonSafe(response, "Apify");
+  if (!response.ok) {
+    return { ok: false, code: "APIFY_REQUEST_FAILED", error: data?.error?.message || data?.message || `Apify HTTP ${response.status}` };
+  }
+  const rawItems = Array.isArray(data) ? data : (data?.items || data?.data || []);
+  const posts = filterRecentPosts(rawItems.map(normalizeInstagramPost), sinceDate)
+    .filter((post) => post.caption || post.imageUrl || post.videoUrl || post.url)
+    .slice(0, maxPosts);
+  return {
+    ok: true,
+    source: "apify",
+    username,
+    profileUrl: directUrl,
+    days,
+    sinceDate,
+    maxPosts,
+    rawCount: rawItems.length,
+    posts
+  };
+}
+
+function socialAnalysisPrompt(collection = {}) {
+  const posts = (collection.posts || []).map((post, index) => ({
+    index: index + 1,
+    date: post.date,
+    type: post.type,
+    caption: post.caption,
+    likes: post.likes,
+    comments: post.comments,
+    views: post.views,
+    url: post.url,
+    imageUrl: post.imageUrl
+  }));
+  return `Analyze this Instagram profile for mobile game marketing and competitor/content strategy.
+Profile: ${collection.username}
+Period: last ${collection.days} days, since ${collection.sinceDate}
+Posts:
+${JSON.stringify(posts, null, 2)}
+
+Return JSON only:
+{"summary":"","period":{"username":"","days":0,"postCount":0},"contentMix":[{"type":"","count":0,"note":""}],"visualThemes":[],"captionTone":[],"bestPosts":[{"index":0,"reason":"","url":""}],"weaknesses":[],"opportunities":[],"recommendedActions":[],"sevenDayContentPlan":[{"day":"","idea":"","format":"","why":""}],"executiveSummary":""}`;
+}
+
+async function analyzeSocialContent(collection = {}) {
+  if (!env.OPENAI_API_KEY || typeof fetch !== "function") {
+    return { ok: false, code: "AI_NOT_CONFIGURED", error: "OpenAI key is missing. Posts were collected but not analyzed." };
+  }
+  const prompt = socialAnalysisPrompt(collection);
+  const imageUrls = [...new Set((collection.posts || []).flatMap((post) => post.images || post.imageUrl || []).filter(Boolean))].slice(0, 8);
+  const systemText = "You are PlayScope AI for mobile game social content strategy. Analyze only provided public post data and images. Return strict JSON only.";
+  let lastError = "";
+  for (const model of getAiModuleModelCandidates("vision")) {
+    const wireApi = getAiModuleWireApi();
+    const baseUrl = getAiModuleBaseUrl();
+    const headers = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${env.OPENAI_API_KEY}`
+    };
+    let response;
+    if (wireApi === "responses") {
+      const content = [
+        { type: "input_text", text: prompt },
+        ...imageUrls.map((image_url) => ({ type: "input_image", image_url }))
+      ];
+      response = await fetch(`${baseUrl}/responses`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          model,
+          input: [
+            { role: "system", content: [{ type: "input_text", text: systemText }] },
+            { role: "user", content }
+          ],
+          max_output_tokens: 2200,
+          store: aiModuleStoreEnabled()
+        })
+      }).catch((error) => ({ ok: false, status: "network", error }));
+    } else {
+      const content = [
+        { type: "text", text: prompt },
+        ...imageUrls.map((url) => ({ type: "image_url", image_url: { url } }))
+      ];
+      response = await fetch(`${baseUrl}/chat/completions`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: systemText },
+            { role: "user", content }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.25,
+          max_tokens: 2200
+        })
+      }).catch((error) => ({ ok: false, status: "network", error }));
+    }
+    if (!response?.ok) {
+      lastError = response?.error?.message || `HTTP ${response?.status || "network"}`;
+      continue;
+    }
+    const data = await response.json().catch(() => null);
+    const text = wireApi === "responses" ? responseTextFromResponsesApi(data) : data?.choices?.[0]?.message?.content?.trim();
+    const parsed = parseJsonObject(text || "");
+    if (parsed) return { ok: true, source: "openai", model, wireApi, imageCount: imageUrls.length, data: parsed };
+    lastError = "AI returned non-JSON output.";
+  }
+  return { ok: false, code: "AI_RESPONSE_INVALID", error: lastError || "AI analysis failed." };
+}
+
+async function socialContentAnalysis(input = {}) {
+  const collection = await fetchInstagramPostsWithApify(input);
+  if (!collection.ok) return collection;
+  if (!collection.posts.length) {
+    return { ...collection, ok: false, code: "NO_POSTS_FOUND", error: "No accessible posts were returned for this period." };
+  }
+  const analysis = await analyzeSocialContent(collection).catch((error) => ({ ok: false, code: "AI_REQUEST_FAILED", error: error.message }));
+  return { ok: true, collection, analysis };
+}
+
 async function googlePlayDetails(appId, hl = "en", gl = "US") {
   const url = `https://play.google.com/store/apps/details?id=${encodeURIComponent(appId)}&hl=${encodeURIComponent(hl)}&gl=${encodeURIComponent(gl)}`;
   const response = await fetchWithTimeout(url, {
@@ -1514,6 +1730,11 @@ const server = http.createServer(async (req, res) => {
       const result = await storeReviews(body).catch((error) => ({ ok: false, error: error.message, reviews: [] }));
       return send(res, 200, result);
     }
+    if (req.method === "POST" && req.url === "/api/social-content-analysis") {
+      const body = await readJson(req);
+      const result = await socialContentAnalysis(body).catch((error) => ({ ok: false, code: "SOCIAL_ANALYSIS_FAILED", error: error.message }));
+      return send(res, 200, result);
+    }
     if (req.method === "POST" && req.url === "/api/ocr-screenshot") {
       const body = await readJson(req);
       const result = await ocrScreenshot(body).catch((error) => ({ ok: false, error: error.message }));
@@ -1532,6 +1753,7 @@ const server = http.createServer(async (req, res) => {
       if (body.openaiBaseUrl) updates.GPT_API_BASE_URL = String(body.openaiBaseUrl).trim().replace(/\/+$/, "").replace(/\/chat\/completions$/i, "");
       if (body.openaiModel) updates.GPT_MODEL = body.openaiModel;
       if (body.serpapiKey) updates.SERPAPI_KEY = body.serpapiKey;
+      if (body.apifyToken) updates.APIFY_TOKEN = body.apifyToken;
       if (body.googleSecret) updates.GOOGLE_CLIENT_SECRET = body.googleSecret;
       if (body.teamPassword) updates.TEAM_PASSWORD = body.teamPassword;
       writeEnv(updates);
@@ -1576,6 +1798,7 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, {
         youtube: Boolean(env.YOUTUBE_API_KEY),
         openai: Boolean(env.OPENAI_API_KEY),
+        apify: Boolean(getApifyToken()),
         googleSecret: Boolean(env.GOOGLE_CLIENT_SECRET)
       });
     }
@@ -1584,6 +1807,7 @@ const server = http.createServer(async (req, res) => {
         youtubeApiKey: env.YOUTUBE_API_KEY || "",
         openaiApiKey: env.OPENAI_API_KEY || "",
         serpapiKey: getSerpApiKey(),
+        apifyConfigured: Boolean(getApifyToken()),
         openaiBaseUrl: getAiBaseUrl(),
         openaiModel: getAiModel()
       });
