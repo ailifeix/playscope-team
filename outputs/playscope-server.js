@@ -1071,15 +1071,31 @@ async function fetchInstagramPostsWithApify(input = {}) {
   const maxPosts = Math.max(1, Math.min(Number(input.maxPosts || 50), 200));
   const sinceDate = input.sinceDate || isoDateDaysAgo(days);
   const directUrl = profile.includes("instagram.com") ? profile : `https://www.instagram.com/${username}/`;
-  const actorId = String(env.APIFY_ACTOR_ID || "apify/instagram-post-scraper").replace("/", "~");
+  const actorName = String(env.APIFY_ACTOR_ID || "apify/instagram-profile-scraper");
+  const actorId = actorName.replace("/", "~");
   const endpoint = `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${encodeURIComponent(token)}&format=json&clean=true`;
-  const runInput = {
-    directUrls: [directUrl],
-    resultsLimit: maxPosts,
-    resultsType: "posts",
-    onlyPostsNewerThan: sinceDate,
-    skipPinnedPosts: Boolean(input.skipPinnedPosts ?? true)
-  };
+  const isApifyPostActor = /apify[~/]instagram-post-scraper/i.test(actorName);
+  const isApifyProfileActor = /apify[~/]instagram-profile-scraper/i.test(actorName);
+  const runInput = isApifyPostActor
+    ? {
+        directUrls: [directUrl],
+        resultsLimit: maxPosts,
+        resultsType: "posts",
+        onlyPostsNewerThan: sinceDate,
+        skipPinnedPosts: Boolean(input.skipPinnedPosts ?? true)
+      }
+    : isApifyProfileActor
+      ? {
+          usernames: [username],
+          resultsLimit: maxPosts,
+          skipPinnedPosts: Boolean(input.skipPinnedPosts ?? true)
+        }
+    : {
+        username: [directUrl],
+        resultsLimit: maxPosts,
+        skipPinnedPosts: Boolean(input.skipPinnedPosts ?? true),
+        dataDetailLevel: input.dataDetailLevel || "basicData"
+      };
   const response = await fetchWithTimeout(endpoint, {
     method: "POST",
     headers: {
