@@ -23,7 +23,7 @@
   "optionalEnv": {
     "OPENAI_API_KEY": "Enables AI reports and vision analysis.",
     "APIFY_TOKEN": "Enables Instagram post collection through Apify.",
-    "APIFY_ACTOR_ID": "Optional Apify actor override. Defaults to apify/instagram-profile-scraper.",
+    "APIFY_ACTOR_ID": "Optional Apify actor override. Defaults to apify/instagram-post-scraper.",
     "YOUTUBE_API_KEY": "Enables YouTube creator lookup.",
     "SERPAPI_KEY": "Enables Google Play web search fallback.",
     "TEAM_PASSWORD": "Optional local team password."
