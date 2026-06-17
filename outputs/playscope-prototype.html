@@ -5829,15 +5829,13 @@ ${labels.note}: ${labels.noteText}`;
     function renderAiSocialResult(result) {
       const collection = result.collection || {};
       const analysis = result.analysis?.data || {};
-      const analysisError = result.analysis && result.analysis.ok === false ? (result.analysis.error || result.analysis.code || "") : "";
       const posts = Array.isArray(collection.posts) ? collection.posts : [];
       const contentMix = Array.isArray(analysis.contentMix) ? analysis.contentMix : [];
       const bestPosts = Array.isArray(analysis.bestPosts) ? analysis.bestPosts : [];
       const plan = Array.isArray(analysis.sevenDayContentPlan) ? analysis.sevenDayContentPlan : [];
       const postRows = posts.slice(0, 12).map((post, index) => `<tr><td>${index + 1}</td><td>${esc(post.date || "")}</td><td>${esc(post.type || "")}</td><td>${esc(post.likes || 0)}</td><td>${esc(post.comments || 0)}</td><td class="compact-cell"><div class="cell-muted">${esc(post.caption || post.url || "")}</div></td></tr>`).join("");
       return `<div class="ai-result-stack">
-        <div class="ai-card"><span class="ai-badge">${esc(collection.username || "")}</span><h4>${aiT("executiveSummary")}</h4><p>${esc(analysis.executiveSummary || analysis.summary || analysisError || "Postlar çekildi ama AI raporu üretilemedi. OpenAI anahtarını ve post verisinin caption/görsel içerdiğini kontrol et.")}</p><p class="note">${esc(collection.sinceDate || "")} sonrası, ${esc(posts.length)} post. ${result.analysis?.fallback ? `Analiz modu: ${esc(result.analysis.fallback)}. ` : ""}${result.version ? `Backend: ${esc(result.version)}` : ""}</p></div>
-        ${analysisError ? `<div class="ai-card"><span class="ai-badge">AI ERROR</span><h4>Analiz hatası</h4><p>${esc(analysisError)}</p></div>` : ""}
+        <div class="ai-card"><span class="ai-badge">${esc(collection.username || "")}</span><h4>${aiT("executiveSummary")}</h4><p>${esc(analysis.executiveSummary || analysis.summary || result.analysis?.error || "Postlar çekildi ama AI raporu üretilemedi. OpenAI anahtarını ve post verisinin caption/görsel içerdiğini kontrol et.")}</p><p class="note">${esc(collection.sinceDate || "")} sonrası, ${esc(posts.length)} post. ${result.version ? `Backend: ${esc(result.version)}` : ""}</p></div>
         <div class="ai-stat-grid">
           <div class="ai-stat">${aiT("postsFound")}<strong>${esc(posts.length)}</strong></div>
           <div class="ai-stat">Images<strong>${esc(posts.filter((post) => post.imageUrl).length)}</strong></div>
