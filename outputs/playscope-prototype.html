@@ -728,6 +728,333 @@
         grid-template-columns: 1fr;
       }
     }
+
+    /* Clean operator dashboard pass. Visual-only; keeps app workflows intact. */
+    :root {
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --soft: #f8fafc;
+      --ink: #111827;
+      --muted: #667085;
+      --line: #e5e7ef;
+      --teal: #6d5dfc;
+      --teal-soft: #eef2ff;
+      --coral: #e2558a;
+      --amber: #b56a22;
+      --red: #b42318;
+      --shadow: 0 12px 32px rgba(15, 23, 42, .07);
+      --radius: 8px;
+    }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+    }
+    .app {
+      grid-template-columns: 264px minmax(0, 1fr);
+    }
+    .sidebar {
+      background: #101828;
+      border-right: 1px solid rgba(255,255,255,.08);
+      padding: 22px 16px;
+    }
+    .brand {
+      padding: 2px 6px 14px;
+      color: #fff;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+    .brand span {
+      font-size: 22px;
+      color: #fff;
+    }
+    .mark {
+      border-radius: 8px;
+      background: linear-gradient(135deg, #6d5dfc, #19b7a7);
+      box-shadow: 0 12px 26px rgba(109, 93, 252, .24);
+    }
+    .nav button,
+    .sidebar-foot button {
+      color: #d0d5dd;
+      border-radius: 8px;
+      min-height: 42px;
+      padding: 10px 12px;
+      font-weight: 700;
+    }
+    .nav button:hover,
+    .sidebar-foot button:hover {
+      background: rgba(255,255,255,.06);
+      color: #fff;
+    }
+    .nav button.active,
+    .sidebar-foot button.active {
+      background: #ffffff;
+      color: #101828;
+      border: 0;
+      box-shadow: 0 10px 24px rgba(0,0,0,.16);
+    }
+    .profile {
+      border-top-color: rgba(255,255,255,.1);
+      background: rgba(255,255,255,.06);
+      border-radius: 8px;
+      color: #fff;
+      padding: 12px;
+    }
+    .profile span {
+      color: #b8c0cf;
+    }
+    main {
+      padding: 22px;
+      gap: 16px;
+    }
+    .brief,
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .brief {
+      background: #fff;
+      overflow: visible;
+    }
+    .brief:after {
+      display: none;
+    }
+    .brief-grid > div {
+      background: var(--soft);
+      border-color: var(--line);
+    }
+    .section-title {
+      font-size: 18px;
+    }
+    .page-head {
+      align-items: center;
+      margin-bottom: 2px;
+    }
+    .page-head h2 {
+      font-size: 28px;
+      color: var(--ink);
+    }
+    .page-head p {
+      color: var(--muted);
+      max-width: 720px;
+    }
+    .panel {
+      transition: none;
+    }
+    .panel:hover {
+      transform: none;
+      box-shadow: var(--shadow);
+    }
+    .panel-head {
+      background: #fff;
+      padding: 15px 16px;
+    }
+    .panel-head h3 {
+      font-size: 16px;
+    }
+    .panel-body {
+      padding: 16px;
+    }
+    .primary {
+      background: #6d5dfc;
+      border-color: #6d5dfc;
+      box-shadow: 0 10px 22px rgba(109, 93, 252, .18);
+    }
+    .coral {
+      background: #e2558a;
+      border-color: #e2558a;
+    }
+    .ghost {
+      background: #fff;
+      color: #344054;
+    }
+    .pill {
+      background: var(--teal-soft);
+      color: #4f46e5;
+    }
+    .stat {
+      background: #fff;
+      min-height: 112px;
+    }
+    .stat span,
+    .score,
+    .big-score {
+      color: var(--teal);
+    }
+    .table-wrap {
+      max-height: 560px;
+      border-top: 1px solid var(--line);
+      border-radius: 0 0 8px 8px;
+    }
+    th {
+      background: #f8fafc;
+      color: #475467;
+    }
+    tr.selected {
+      background: #f1f3ff;
+      outline-color: #c7d2fe;
+    }
+    .dashboard-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 16px;
+      align-items: start;
+    }
+    .dashboard-main {
+      display: grid;
+      gap: 16px;
+      min-width: 0;
+    }
+    .dashboard-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .project-card {
+      grid-column: 1 / -1;
+      padding: 18px;
+      min-height: 116px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      background: #111827;
+      color: #fff;
+      border-color: #111827;
+    }
+    .project-card h3 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.1;
+    }
+    .project-card p {
+      margin: 8px 0 0;
+      color: #d0d5dd;
+      line-height: 1.45;
+      font-size: 13px;
+      max-width: 620px;
+    }
+    .dashboard-kpi {
+      padding: 16px;
+      min-height: 128px;
+    }
+    .dashboard-kpi small {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 18px;
+    }
+    .dashboard-kpi strong {
+      display: block;
+      font-size: 28px;
+      color: var(--ink);
+    }
+    .dashboard-kpi span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    .quick-card {
+      padding: 15px;
+      min-height: 132px;
+      display: grid;
+      align-content: space-between;
+      gap: 14px;
+      text-align: left;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      box-shadow: none;
+    }
+    .quick-card:hover {
+      transform: translateY(-1px);
+      border-color: #c7d2fe;
+      box-shadow: 0 12px 24px rgba(15,23,42,.08);
+    }
+    .quick-card .quick-icon {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      color: #4f46e5;
+      background: var(--teal-soft);
+    }
+    .quick-card strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+    .quick-card span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .insight-panel {
+      display: grid;
+      gap: 12px;
+    }
+    .insight-item,
+    .next-action {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fff;
+    }
+    .insight-item strong,
+    .next-action strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+    .insight-item span,
+    .next-action span {
+      color: var(--muted);
+      display: block;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .mini-table .table-wrap {
+      max-height: 420px;
+    }
+    @media (max-width: 1180px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        height: auto;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+      }
+      .dashboard-layout,
+      .dashboard-summary {
+        grid-template-columns: 1fr;
+      }
+      .quick-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 760px) {
+      main {
+        padding: 12px;
+      }
+      .quick-grid {
+        grid-template-columns: 1fr;
+      }
+      .dashboard-kpi,
+      .project-card {
+        min-height: auto;
+      }
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -1417,15 +1744,57 @@
       const imported = state.influencers.filter((i) => /youtube|extension/i.test(i.source || "")).length;
       const withViews = state.influencers.filter((i) => Number(i.views || 0) > 0);
       const avgViews = withViews.length ? Math.round(withViews.reduce((sum, i) => sum + Number(i.views || 0), 0) / withViews.length) : 0;
+      const topMatches = rows("", "fit").slice(0, 3);
+      const topMatchText = topMatches.length ? topMatches.map((item) => `${item.name} ${fitScore(item)}%`).join(" / ") : "Henüz liste yok";
+      const marketCount = new Set(state.influencers.map((item) => item.geo || item.country).filter(Boolean)).size;
       $("page").innerHTML = `
-        ${pageHead(tr("dashboard"), tr("pageDashSub"))}
-        <div class="grid three">
-          <section class="panel stat"><small>Recent searches</small><strong>${total}</strong><span>Saved locally</span></section>
-          <section class="panel stat"><small>Imported records</small><strong>${imported}</strong><span>YouTube / extension</span></section>
-          <section class="panel stat"><small>Avg views</small><strong>${views(avgViews)}</strong><span>Current list</span></section>
-        </div>
-        <section class="panel">${renderTable("", "fit")}</section>`;
+        ${pageHead(tr("dashboard"), "Influencer araştırması, sosyal içerik analizi ve kampanya hazırlığını tek ekranda takip et.")}
+        <div class="dashboard-layout">
+          <div class="dashboard-main">
+            <div class="dashboard-summary">
+              <section class="panel project-card">
+                <div>
+                  <h3>${esc(state.project.name || "PlayScope")}</h3>
+                  <p>${esc(state.project.genre || "Oyun")} için ${esc(state.project.markets || "hedef pazar")} odaklı creator keşfi ve içerik değerlendirme çalışma alanı.</p>
+                </div>
+                <span class="pill">${esc(state.project.goal || "Kampanya hazırlığı")}</span>
+              </section>
+              <section class="panel dashboard-kpi"><small>Creator listesi</small><strong>${total}</strong><span>Kayıtlı profil</span></section>
+              <section class="panel dashboard-kpi"><small>İçe aktarılan</small><strong>${imported}</strong><span>YouTube / eklenti</span></section>
+              <section class="panel dashboard-kpi"><small>Ortalama izlenme</small><strong>${views(avgViews)}</strong><span>Mevcut liste</span></section>
+            </div>
+            <section class="panel">
+              <div class="panel-head"><h3>Hızlı işlemler</h3></div>
+              <div class="panel-body">
+                <div class="quick-grid">
+                  <button class="quick-card" data-dash-page="search" type="button"><span class="quick-icon">${icons.search}</span><span><strong>Creator bul</strong>Link, Excel veya ekran görüntüsünden yeni profilleri analiz et.</span></button>
+                  <button class="quick-card" data-dash-page="aiSocial" type="button"><span class="quick-icon">${icons.social}</span><span><strong>Sosyal analiz</strong>Instagram gönderilerini rapora çevir.</span></button>
+                  <button class="quick-card" data-dash-page="aiReviews" type="button"><span class="quick-icon">${icons.review}</span><span><strong>Yorumları incele</strong>Oyuncu yorumlarından risk ve fırsat çıkar.</span></button>
+                  <button class="quick-card" data-dash-page="aiLocQa" type="button"><span class="quick-icon">${icons.globe}</span><span><strong>Lokalizasyon QA</strong>Metinleri pazar uyumu ve ton açısından kontrol et.</span></button>
+                </div>
+              </div>
+            </section>
+            <section class="panel mini-table">${renderTable("", "fit")}</section>
+          </div>
+          <aside class="insight-panel">
+            ${panel("Öne çıkanlar", `
+              <div class="insight-item"><strong>En iyi eşleşmeler</strong><span>${esc(topMatchText)}</span></div>
+              <div class="insight-item"><strong>Pazar kapsamı</strong><span>${marketCount || 0} farklı GEO/pazar sinyali bulundu.</span></div>
+              <div class="insight-item"><strong>Veri kalitesi</strong><span>${withViews.length}/${total || 0} kayıtta izlenme verisi var.</span></div>
+            `)}
+            ${panel("Sıradaki aksiyonlar", `
+              <div class="next-action"><strong>1. Creator listesini temizle</strong><span>Eksik yaş, cinsiyet ve GEO alanlarını tamamla.</span></div>
+              <div class="next-action"><strong>2. Sosyal içerikleri tara</strong><span>Rakip veya creator Instagram profilini analiz et.</span></div>
+              <div class="next-action"><strong>3. Export al</strong><span>匹配度 dahil güncel tabloyu dışa aktar.</span></div>
+            `)}
+          </aside>
+        </div>`;
       bindTable();
+      document.querySelectorAll("[data-dash-page]").forEach((button) => button.addEventListener("click", () => {
+        state.page = button.dataset.dashPage;
+        saveState();
+        render();
+      }));
     }
 
     function searchPage() {
@@ -5422,7 +5791,12 @@ ${labels.note}: ${labels.noteText}`;
       render();
     }
     function exportCsv() {
-      const header = ["Channel Name", "Handle", "Link", "GEO", "Gender", "Age", "Category", "Subcategory", "Subscribers", "avg Views 30 days / 10 videos", "Format", "Duration (avg)", "Keywords", "Fit", "Status", "Notes"];
+      const exportLabels = {
+        tr: { fit: "Eşleşme / 匹配度", status: "Durum", notes: "Notlar" },
+        en: { fit: "Fit / 匹配度", status: "Status", notes: "Notes" },
+        zh: { fit: "匹配度 / Fit", status: "状态", notes: "备注" }
+      }[state.lang] || { fit: "Fit / 匹配度", status: "Status", notes: "Notes" };
+      const header = ["Channel Name", "Handle", "Link", "GEO", "Gender", "Age", "Category", "Subcategory", "Subscribers", "avg Views 30 days / 10 videos", "Format", "Duration (avg)", "Keywords", exportLabels.fit, exportLabels.status, exportLabels.notes];
       const data = state.influencers.map((item) => {
         const demographics = splitAgeGender(item.age, item.gender);
         const fitScore = Number(item.match || 0);
@@ -5440,8 +5814,8 @@ ${labels.note}: ${labels.noteText}`;
           item.format || "",
           item.duration || "",
           item.keywords || "",
-          fitScore || "",
-          fitScore >= 80 ? "Uygun" : fitScore >= 60 ? "Değerlendir" : "Uygun Değil",
+          Number.isFinite(fitScore) ? `${fitScore}%` : "",
+          fitScore >= 80 ? "推荐 / Uygun" : fitScore >= 60 ? "待评估 / Değerlendir" : "不适合 / Uygun Değil",
           item.note || item.comments || item.notes || ""
         ];
       });
@@ -5829,13 +6203,15 @@ ${labels.note}: ${labels.noteText}`;
     function renderAiSocialResult(result) {
       const collection = result.collection || {};
       const analysis = result.analysis?.data || {};
+      const analysisError = result.analysis && result.analysis.ok === false ? (result.analysis.error || result.analysis.code || "") : "";
       const posts = Array.isArray(collection.posts) ? collection.posts : [];
       const contentMix = Array.isArray(analysis.contentMix) ? analysis.contentMix : [];
       const bestPosts = Array.isArray(analysis.bestPosts) ? analysis.bestPosts : [];
       const plan = Array.isArray(analysis.sevenDayContentPlan) ? analysis.sevenDayContentPlan : [];
       const postRows = posts.slice(0, 12).map((post, index) => `<tr><td>${index + 1}</td><td>${esc(post.date || "")}</td><td>${esc(post.type || "")}</td><td>${esc(post.likes || 0)}</td><td>${esc(post.comments || 0)}</td><td class="compact-cell"><div class="cell-muted">${esc(post.caption || post.url || "")}</div></td></tr>`).join("");
       return `<div class="ai-result-stack">
-        <div class="ai-card"><span class="ai-badge">${esc(collection.username || "")}</span><h4>${aiT("executiveSummary")}</h4><p>${esc(analysis.executiveSummary || analysis.summary || result.analysis?.error || "Postlar çekildi ama AI raporu üretilemedi. OpenAI anahtarını ve post verisinin caption/görsel içerdiğini kontrol et.")}</p><p class="note">${esc(collection.sinceDate || "")} sonrası, ${esc(posts.length)} post. ${result.version ? `Backend: ${esc(result.version)}` : ""}</p></div>
+        <div class="ai-card"><span class="ai-badge">${esc(collection.username || "")}</span><h4>${aiT("executiveSummary")}</h4><p>${esc(analysis.executiveSummary || analysis.summary || analysisError || "Postlar çekildi ama AI raporu üretilemedi. OpenAI anahtarını ve post verisinin caption/görsel içerdiğini kontrol et.")}</p><p class="note">${esc(collection.sinceDate || "")} sonrası, ${esc(posts.length)} post. ${result.analysis?.fallback ? `Analiz modu: ${esc(result.analysis.fallback)}. ` : ""}${result.version ? `Backend: ${esc(result.version)}` : ""}</p></div>
+        ${analysisError ? `<div class="ai-card"><span class="ai-badge">AI ERROR</span><h4>Analiz hatası</h4><p>${esc(analysisError)}</p></div>` : ""}
         <div class="ai-stat-grid">
           <div class="ai-stat">${aiT("postsFound")}<strong>${esc(posts.length)}</strong></div>
           <div class="ai-stat">Images<strong>${esc(posts.filter((post) => post.imageUrl).length)}</strong></div>
