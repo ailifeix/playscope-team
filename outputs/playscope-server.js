@@ -14,6 +14,7 @@ const publicDir = __dirname;
 const envPath = path.join(root, ".env.local");
 const dataDir = path.join(root, "work");
 const sharedStatePath = path.join(dataDir, "playscope-shared-state.json");
+const appVersion = "social-post-fix-2026-06-17-2";
 
 function readEnv() {
   const env = { ...process.env };
@@ -1019,12 +1020,15 @@ function postTimestamp(item = {}) {
 }
 
 function normalizeInstagramPost(item = {}) {
+  const shortcode = item.shortCode || item.shortcode || item.code || "";
   const images = [
     item.displayUrl,
     item.display_url,
     item.imageUrl,
     item.image_url,
+    item.image,
     item.thumbnailUrl,
+    item.thumbnail,
     item.thumbnail_src,
     item.url,
     ...(Array.isArray(item.images) ? item.images.map((image) => image.url || image.src || image.displayUrl || image) : []),
@@ -1032,15 +1036,15 @@ function normalizeInstagramPost(item = {}) {
   ].filter(Boolean);
   const timestamp = postTimestamp(item);
   return {
-    id: String(item.id || item.shortCode || item.shortcode || item.code || item.url || ""),
-    shortcode: item.shortCode || item.shortcode || item.code || "",
+    id: String(item.id || shortcode || item.url || ""),
+    shortcode,
     url: item.url || item.postUrl || item.permalink || (item.shortCode || item.shortcode ? `https://www.instagram.com/p/${item.shortCode || item.shortcode}/` : ""),
     type: item.type || item.productType || item.mediaType || (item.isVideo || item.is_video ? "video" : "image"),
-    caption: item.caption || item.description || item.text || item.alt || "",
+    caption: item.caption || item.description || item.text || item.alt || item.title || "",
     timestamp,
     date: timestamp ? timestamp.slice(0, 10) : "",
-    likes: Number(item.likesCount ?? item.likes ?? item.count_like ?? item.likeCount ?? 0),
-    comments: Number(item.commentsCount ?? item.comments ?? item.count_comment ?? item.commentCount ?? 0),
+    likes: Number(item.likesCount ?? item.likes ?? item.count_like ?? item.likeCount ?? item.likes_count ?? 0),
+    comments: Number(item.commentsCount ?? item.comments ?? item.count_comment ?? item.commentCount ?? item.comments_count ?? 0),
     views: Number(item.videoViewCount ?? item.videoPlayCount ?? item.viewsCount ?? item.views ?? 0),
     imageUrl: images[0] || "",
     images: [...new Set(images)].slice(0, 6),
@@ -1061,6 +1065,31 @@ function filterRecentPosts(posts, sinceDate) {
   });
 }
 
+function flattenApifyPostItems(value) {
+  const found = [];
+  const visit = (item, depth = 0) => {
+    if (!item || depth > 3) return;
+    if (Array.isArray(item)) {
+      item.forEach((child) => visit(child, depth + 1));
+      return;
+    }
+    if (typeof item !== "object") return;
+    const itemUrl = String(item.url || item.postUrl || item.permalink || "");
+    const hasPostUrl = /instagram\.com\/(p|reel|tv)\//i.test(itemUrl);
+    const hasShortcode = Boolean(item.shortCode || item.shortcode || item.code);
+    const hasPostTime = Boolean(item.takenAt || item.takenAtTimestamp || item.taken_at_timestamp || item.timestamp || item.date || item.time);
+    const hasMedia = Boolean(item.displayUrl || item.display_url || item.videoUrl || item.video_url || item.thumbnailUrl);
+    const looksLikePost = hasPostUrl || hasShortcode || (hasPostTime && (item.caption || hasMedia));
+    if (looksLikePost) found.push(item);
+    ["posts", "latestPosts", "items", "data", "media", "edges"].forEach((key) => {
+      if (Array.isArray(item[key])) visit(item[key], depth + 1);
+    });
+    if (item.node && typeof item.node === "object") visit(item.node, depth + 1);
+  };
+  visit(value);
+  return found;
+}
+
 async function fetchInstagramPostsWithApify(input = {}) {
   const token = getApifyToken();
   if (!token) return { ok: false, code: "APIFY_NOT_CONFIGURED", error: "Apify token is missing. Add APIFY_TOKEN in Settings." };
@@ -1078,11 +1107,10 @@ async function fetchInstagramPostsWithApify(input = {}) {
   const isApifyProfileActor = /apify[~/]instagram-profile-scraper/i.test(actorName);
   const runInput = isApifyPostActor
     ? {
-        directUrls: [directUrl],
+        username: [directUrl],
         resultsLimit: maxPosts,
-        resultsType: "posts",
-        onlyPostsNewerThan: sinceDate,
-        skipPinnedPosts: Boolean(input.skipPinnedPosts ?? true)
+        skipPinnedPosts: Boolean(input.skipPinnedPosts ?? true),
+        dataDetailLevel: input.dataDetailLevel || "basicData"
       }
     : isApifyProfileActor
       ? {
@@ -1123,9 +1151,12 @@ async function fetchInstagramPostsWithApify(input = {}) {
       error: data?.error?.message || data?.message || `Apify HTTP ${response.status}`
     };
   }
-  const rawItems = Array.isArray(data) ? data : (data?.items || data?.data || []);
+  const rawItems = flattenApifyPostItems(Array.isArray(data) ? data : (data?.items || data?.data || data));
   const posts = filterRecentPosts(rawItems.map(normalizeInstagramPost), sinceDate)
-    .filter((post) => post.caption || post.shortcode || post.imageUrl || post.videoUrl)
+    .filter((post) => {
+      const hasPostUrl = /instagram\.com\/(p|reel|tv)\//i.test(String(post.url || ""));
+      return hasPostUrl || post.shortcode || (post.caption && (post.imageUrl || post.videoUrl));
+    })
     .slice(0, maxPosts);
   if (!posts.length && isApifyProfileActor && rawItems.length) {
     return {
@@ -1253,7 +1284,7 @@ async function socialContentAnalysis(input = {}) {
     return { ...collection, ok: false, code: "NO_POSTS_FOUND", error: "No accessible posts were returned for this period." };
   }
   const analysis = await analyzeSocialContent(collection).catch((error) => ({ ok: false, code: "AI_REQUEST_FAILED", error: error.message }));
-  return { ok: true, collection, analysis };
+  return { ok: true, version: appVersion, collection, analysis };
 }
 
 async function googlePlayDetails(appId, hl = "en", gl = "US") {
@@ -1844,6 +1875,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === "GET" && req.url === "/api/status") {
       return send(res, 200, {
+        version: appVersion,
         youtube: Boolean(env.YOUTUBE_API_KEY),
         openai: Boolean(env.OPENAI_API_KEY),
         apify: Boolean(getApifyToken()),
