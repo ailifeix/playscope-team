@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: playscope-team
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: APIFY_ACTOR_ID
+        value: apify/instagram-post-scraper
+      - key: APIFY_TOKEN
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
