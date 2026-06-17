@@ -14,7 +14,7 @@ const publicDir = __dirname;
 const envPath = path.join(root, ".env.local");
 const dataDir = path.join(root, "work");
 const sharedStatePath = path.join(dataDir, "playscope-shared-state.json");
-const appVersion = "social-post-fix-2026-06-17-2";
+const appVersion = "social-ai-text-fallback-2026-06-17-1";
 
 function readEnv() {
   const env = { ...process.env };
@@ -64,6 +64,14 @@ function getAiModuleBaseUrl() {
   base = base.replace(/\/+$/, "").replace(/\/chat\/completions$/i, "").replace(/\/responses$/i, "");
   if (/^https:\/\/api\.openai\.com$/i.test(base)) base += "/v1";
   return base;
+}
+
+function hasOpenAiKey() {
+  return Boolean(env.OPENAI_API_KEY || env.GPT_API_KEY || env.AI_API_KEY);
+}
+
+function getOpenAiKey() {
+  return env.OPENAI_API_KEY || env.GPT_API_KEY || env.AI_API_KEY || "";
 }
 
 function getAiModuleWireApi() {
@@ -1211,8 +1219,8 @@ Return JSON only:
 }
 
 async function analyzeSocialContent(collection = {}) {
-  if (!env.OPENAI_API_KEY || typeof fetch !== "function") {
-    return { ok: false, code: "AI_NOT_CONFIGURED", error: "OpenAI key is missing. Posts were collected but not analyzed." };
+  if (!hasOpenAiKey() || typeof fetch !== "function") {
+    return { ok: false, code: "AI_NOT_CONFIGURED", error: "OpenAI key is missing. Render'da OPENAI_API_KEY olarak ekli olduğundan emin ol." };
   }
   const prompt = socialAnalysisPrompt(collection);
   const imageUrls = [...new Set((collection.posts || []).flatMap((post) => post.images || post.imageUrl || []).filter(Boolean))].slice(0, 8);
@@ -1223,7 +1231,7 @@ async function analyzeSocialContent(collection = {}) {
     const baseUrl = getAiModuleBaseUrl();
     const headers = {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${env.OPENAI_API_KEY}`
+      "Authorization": `Bearer ${getOpenAiKey()}`
     };
     let response;
     if (wireApi === "responses") {
@@ -1265,7 +1273,8 @@ async function analyzeSocialContent(collection = {}) {
       }).catch((error) => ({ ok: false, status: "network", error }));
     }
     if (!response?.ok) {
-      lastError = response?.error?.message || `HTTP ${response?.status || "network"}`;
+      const detail = typeof response?.text === "function" ? await response.text().catch(() => "") : "";
+      lastError = response?.error?.message || `HTTP ${response?.status || "network"} ${detail}`.slice(0, 260);
       continue;
     }
     const data = await response.json().catch(() => null);
@@ -1273,6 +1282,59 @@ async function analyzeSocialContent(collection = {}) {
     const parsed = parseJsonObject(text || "");
     if (parsed) return { ok: true, source: "openai", model, wireApi, imageCount: imageUrls.length, data: parsed };
     lastError = "AI returned non-JSON output.";
+  }
+
+  const textOnlyPrompt = `${prompt}
+
+Image analysis failed or was unavailable. Continue using only captions, dates, links, and metrics. If fields are missing, still produce a useful strategy report from the available post text and metadata.`;
+  for (const model of getAiModuleModelCandidates("socialText")) {
+    const wireApi = getAiModuleWireApi();
+    const baseUrl = getAiModuleBaseUrl();
+    const headers = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${getOpenAiKey()}`
+    };
+    let response;
+    if (wireApi === "responses") {
+      response = await fetch(`${baseUrl}/responses`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          model,
+          input: [
+            { role: "system", content: [{ type: "input_text", text: systemText }] },
+            { role: "user", content: [{ type: "input_text", text: textOnlyPrompt }] }
+          ],
+          max_output_tokens: 2200,
+          store: aiModuleStoreEnabled()
+        })
+      }).catch((error) => ({ ok: false, status: "network", error }));
+    } else {
+      response = await fetch(`${baseUrl}/chat/completions`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: systemText },
+            { role: "user", content: textOnlyPrompt }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.25,
+          max_tokens: 2200
+        })
+      }).catch((error) => ({ ok: false, status: "network", error }));
+    }
+    if (!response?.ok) {
+      const detail = typeof response?.text === "function" ? await response.text().catch(() => "") : "";
+      lastError = response?.error?.message || `HTTP ${response?.status || "network"} ${detail}`.slice(0, 260);
+      continue;
+    }
+    const data = await response.json().catch(() => null);
+    const text = wireApi === "responses" ? responseTextFromResponsesApi(data) : data?.choices?.[0]?.message?.content?.trim();
+    const parsed = parseJsonObject(text || "");
+    if (parsed) return { ok: true, source: "openai", model, wireApi, imageCount: 0, fallback: "text-only", data: parsed };
+    lastError = "AI returned non-JSON output in text-only fallback.";
   }
   return { ok: false, code: "AI_RESPONSE_INVALID", error: lastError || "AI analysis failed." };
 }
@@ -1877,7 +1939,7 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, {
         version: appVersion,
         youtube: Boolean(env.YOUTUBE_API_KEY),
-        openai: Boolean(env.OPENAI_API_KEY),
+        openai: hasOpenAiKey(),
         apify: Boolean(getApifyToken()),
         googleSecret: Boolean(env.GOOGLE_CLIENT_SECRET)
       });
