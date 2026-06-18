@@ -881,33 +881,10 @@ Project: ${input.project?.name || "Game"}.
 Source: ${input.source || ""}`;
   const ai = await openAiText(prompt);
   if (ai) return { source: "openai", text: ai };
-  const source = String(input.source || "").trim();
-  const manual = manualLocalizationOutput({
-    source,
-    lang: input.lang || "en",
-    genre,
-    mode,
-    tone: input.tone || "Store-ready"
-  });
-  if (manual) return { source: "curated", text: manual };
-  const googleText = await googleTranslateText(source, input.lang || "en").catch(() => "");
-  if (googleText && googleText.toLowerCase() !== source.toLowerCase()) {
-    return {
-      source: "googletrans",
-      text: formatGoogleTranslateLocalization({
-        source,
-        translated: googleText,
-        lang: input.lang || "en",
-        genre,
-        mode,
-        tone: input.tone || "Store-ready"
-      })
-    };
-  }
   return {
     source: "unavailable",
     text: "",
-    error: "No translation provider available. Configure GPT or allow Google Translate fallback from the backend."
+    error: "GPT localization failed. Check OPENAI_API_KEY, model access, and API credits."
   };
 }
 

@@ -1055,6 +1055,867 @@
         min-height: auto;
       }
     }
+
+    /* Reference-faithful PlayScope dashboard. */
+    :root {
+      --bg: #f8f9fc;
+      --surface: #ffffff;
+      --soft: #fafbff;
+      --ink: #171927;
+      --muted: #697086;
+      --line: #e4e7ef;
+      --teal: #6f36f4;
+      --teal-soft: #f1ebff;
+      --shadow: 0 2px 10px rgba(30, 35, 60, .035);
+    }
+    body { background: #f8f9fc; }
+    .app { grid-template-columns: 232px minmax(0, 1fr); }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 20px 10px 14px;
+      background: #fff;
+      border-right: 1px solid #e5e7ef;
+      color: var(--ink);
+    }
+    .brand {
+      color: #171927;
+      padding: 2px 9px 18px;
+      font-size: 22px;
+    }
+    .brand span { color: #171927; font-size: 22px; }
+    .mark {
+      width: 31px;
+      height: 31px;
+      background: #6f36f4;
+      box-shadow: none;
+    }
+    .mark:before {
+      inset: 8px 5px;
+      width: 17px;
+      height: 11px;
+      border: 2px solid #fff;
+      border-radius: 6px 6px 8px 8px;
+    }
+    .mark:after {
+      content: "+  ·";
+      position: absolute;
+      left: 8px;
+      top: 7px;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 3px;
+    }
+    .nav, .sidebar-foot { gap: 3px; }
+    .nav button, .sidebar-foot button {
+      min-height: 44px;
+      padding: 10px 12px;
+      color: #42485d;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 650;
+    }
+    .nav button:hover, .sidebar-foot button:hover {
+      background: #f7f5ff;
+      color: #6f36f4;
+    }
+    .nav button.active, .sidebar-foot button.active {
+      color: #6f36f4;
+      background: #f0eaff;
+      box-shadow: none;
+    }
+    .sidebar-foot {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+    }
+    .profile {
+      margin-top: auto;
+      padding: 12px 8px 0;
+      background: transparent;
+      border: 0;
+      border-top: 1px solid var(--line);
+      border-radius: 0;
+      color: var(--ink);
+    }
+    .profile span { color: var(--muted); }
+    .profile button { color: var(--ink); }
+    main {
+      padding: 16px 18px 18px;
+      gap: 12px;
+      background: #fbfcfe;
+    }
+    .brief {
+      min-height: 56px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 0;
+      box-shadow: none;
+      background: transparent;
+    }
+    .brief > div:first-child { min-width: 0; }
+    .brief-grid { display: none; }
+    .section-title {
+      min-height: 42px;
+      margin: 0;
+      padding: 6px 12px 6px 7px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      font-size: 14px;
+      box-shadow: var(--shadow);
+    }
+    .project-avatar {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #4f2ad9, #d85aa7);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 850;
+    }
+    .active-badge {
+      display: inline-flex;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: #e8f7ed;
+      color: #24924a;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .top-actions { gap: 8px; }
+    .top-actions button, .top-actions select, .date-chip {
+      width: auto;
+      min-height: 40px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      color: #25283a;
+      box-shadow: var(--shadow);
+      font-size: 12px;
+    }
+    .top-actions .primary {
+      color: #fff;
+      background: #6f36f4;
+      border-color: #6f36f4;
+    }
+    .language-select { width: 106px; }
+    #page { display: grid; gap: 10px; }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      box-shadow: var(--shadow);
+      background: #fff;
+    }
+    .panel-head { min-height: 43px; padding: 11px 14px; }
+    .panel-head h3 { font-size: 13px; }
+    .panel-body { padding: 12px 14px; }
+    .text-action {
+      min-height: auto;
+      padding: 2px 4px;
+      border: 0;
+      background: transparent;
+      color: #6f36f4;
+      box-shadow: none;
+      font-size: 9px;
+      font-weight: 800;
+    }
+    .text-action:hover { transform: none; border: 0; box-shadow: none; }
+    .overview-panel .panel-body { padding: 12px 18px 14px; }
+    .overview-row {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 0;
+    }
+    .overview-item {
+      min-width: 0;
+      padding: 2px 18px;
+      display: grid;
+      grid-template-columns: 32px minmax(0, 1fr);
+      gap: 9px;
+      align-items: center;
+      border-right: 1px solid var(--line);
+    }
+    .overview-item:first-child { padding-left: 0; }
+    .overview-item:last-child { border-right: 0; padding-right: 0; }
+    .overview-icon { color: #6f36f4; }
+    .overview-icon .icon { width: 24px; height: 24px; }
+    .overview-item small { display: block; color: #34384c; font-size: 10px; }
+    .overview-item strong { display: block; margin: 3px 0; color: #6f36f4; font-size: 20px; line-height: 1; }
+    .overview-item span { display: block; color: var(--muted); font-size: 9px; line-height: 1.35; }
+    .reference-actions .panel-body { padding: 10px; }
+    .reference-actions .quick-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .reference-actions .quick-card {
+      min-height: 70px;
+      padding: 10px;
+      grid-template-columns: 44px minmax(0, 1fr) 18px;
+      align-items: center;
+      align-content: center;
+      gap: 10px;
+      border-radius: 7px;
+    }
+    .reference-actions .quick-card .quick-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 7px;
+    }
+    .reference-actions .quick-card strong { margin-bottom: 3px; font-size: 12px; }
+    .reference-actions .quick-card span { font-size: 10px; }
+    .quick-arrow { color: #555d72; font-size: 18px; text-align: center; }
+    .reference-content {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 350px;
+      gap: 10px;
+      align-items: stretch;
+    }
+    .dashboard-table-wrap { overflow: auto; }
+    .dashboard-table { min-width: 760px; }
+    .dashboard-table th { padding: 9px 10px; font-size: 9px; background: #fff; }
+    .dashboard-table td { padding: 8px 10px; font-size: 10px; }
+    .dashboard-table .person { width: 26px; height: 26px; font-size: 9px; }
+    .dashboard-table .name-cell { min-width: 150px; gap: 8px; }
+    .dashboard-table .name-cell strong { font-size: 10px; }
+    .dashboard-table .name-cell span { font-size: 9px; }
+    .platform-badge, .country-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 4px;
+      color: #fff;
+      background: #ff3040;
+      font-size: 8px;
+      font-weight: 800;
+    }
+    .platform-badge.twitch { background: #8447f5; }
+    .trend-up { color: #199653; font-weight: 750; }
+    .trend-down { color: #e24555; font-weight: 750; }
+    .rail-panel .panel-body { padding: 8px; }
+    .alert-list, .action-list { display: grid; gap: 5px; }
+    .rail-item {
+      min-height: 56px;
+      padding: 8px 9px;
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+    }
+    .rail-item strong { display: block; margin-bottom: 3px; font-size: 10px; }
+    .rail-item span { display: block; color: var(--muted); font-size: 9px; line-height: 1.35; }
+    .rail-symbol { color: #6f36f4; font-size: 17px; text-align: center; }
+    .rail-time { color: var(--muted); font-size: 8px; white-space: nowrap; }
+    .rail-section-title {
+      margin: 12px 2px 7px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+    }
+    .action-row {
+      min-height: 45px;
+      padding: 7px 6px;
+      display: grid;
+      grid-template-columns: 16px minmax(0, 1fr) auto;
+      gap: 7px;
+      align-items: center;
+      border-bottom: 1px solid #eef0f5;
+    }
+    .action-row:last-child { border-bottom: 0; }
+    .action-row input { width: 13px; height: 13px; }
+    .action-row strong { display: block; font-size: 10px; }
+    .action-row span { display: block; margin-top: 2px; color: var(--muted); font-size: 9px; }
+    .dashboard-footer-metrics {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 0;
+      padding: 10px 12px;
+    }
+    .footer-metric {
+      padding: 0 14px;
+      border-right: 1px solid var(--line);
+      font-size: 9px;
+    }
+    .footer-metric:first-child { padding-left: 0; }
+    .footer-metric:last-child { border-right: 0; }
+    .footer-metric small { display: block; color: var(--muted); }
+    .footer-metric strong { display: block; margin-top: 3px; font-size: 11px; }
+    @media (max-width: 1200px) {
+      .overview-row { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 14px; }
+      .overview-item:nth-child(3) { border-right: 0; }
+      .reference-actions .quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .reference-content { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 760px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { height: auto; }
+      .brief { align-items: stretch; flex-direction: column; gap: 8px; }
+      .top-actions { overflow-x: auto; flex-wrap: nowrap; }
+      .overview-row, .dashboard-footer-metrics { grid-template-columns: 1fr 1fr; }
+      .overview-item { border-right: 0; border-bottom: 1px solid var(--line); padding: 10px; }
+      .reference-actions .quick-grid { grid-template-columns: 1fr; }
+    }
+    /* Shared workbench styling for all non-dashboard modules. */
+    body:not([data-page="dashboard"]) #page { gap: 12px; }
+    body:not([data-page="dashboard"]) .page-head {
+      min-height: 54px;
+      padding: 3px 2px 5px;
+      align-items: center;
+    }
+    body:not([data-page="dashboard"]) .page-head h2 {
+      font-size: 21px;
+      line-height: 1.15;
+    }
+    body:not([data-page="dashboard"]) .page-head p {
+      margin-top: 4px;
+      font-size: 11px;
+    }
+    body:not([data-page="dashboard"]) .grid { gap: 10px; }
+    body:not([data-page="dashboard"]) .panel {
+      box-shadow: 0 2px 10px rgba(30,35,60,.035);
+    }
+    body:not([data-page="dashboard"]) .panel-head {
+      min-height: 44px;
+      padding: 11px 14px;
+    }
+    body:not([data-page="dashboard"]) .panel-head h3 { font-size: 13px; }
+    body:not([data-page="dashboard"]) .panel-body { padding: 14px; }
+    body:not([data-page="dashboard"]) .field-label {
+      margin-bottom: 5px;
+      color: #60677a;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    body:not([data-page="dashboard"]) input,
+    body:not([data-page="dashboard"]) select,
+    body:not([data-page="dashboard"]) textarea {
+      border-color: #dfe3ec;
+      border-radius: 6px;
+      background: #fff;
+      font-size: 12px;
+    }
+    body:not([data-page="dashboard"]) input,
+    body:not([data-page="dashboard"]) select { min-height: 38px; padding: 8px 10px; }
+    body:not([data-page="dashboard"]) textarea { min-height: 100px; padding: 10px; line-height: 1.5; }
+    body:not([data-page="dashboard"]) button {
+      min-height: 36px;
+      padding: 8px 11px;
+      border-radius: 6px;
+      font-size: 11px;
+    }
+    body:not([data-page="dashboard"]) .primary {
+      background: #6f36f4;
+      border-color: #6f36f4;
+      box-shadow: none;
+    }
+    body:not([data-page="dashboard"]) .coral {
+      color: #6f36f4;
+      background: #f2ecff;
+      border-color: #ded0ff;
+    }
+    body:not([data-page="dashboard"]) .ghost {
+      color: #4b5267;
+      background: #f8f9fc;
+      border-color: #e1e4ed;
+    }
+    body:not([data-page="dashboard"]) .note {
+      color: #747b8e;
+      font-size: 10px;
+      line-height: 1.45;
+    }
+    body:not([data-page="dashboard"]) .form-grid {
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    body:not([data-page="dashboard"]) .controls { gap: 6px; }
+    body:not([data-page="dashboard"]) .controls input,
+    body:not([data-page="dashboard"]) .controls select { width: 145px; }
+    body:not([data-page="dashboard"]) .table-wrap {
+      max-height: 560px;
+      border-top: 0;
+      border-radius: 0 0 7px 7px;
+    }
+    body:not([data-page="dashboard"]) table { font-size: 11px; }
+    body:not([data-page="dashboard"]) th { padding: 9px 10px; font-size: 9px; }
+    body:not([data-page="dashboard"]) td { padding: 9px 10px; font-size: 10px; }
+    body:not([data-page="dashboard"]) .person { width: 29px; height: 29px; font-size: 9px; }
+    body:not([data-page="dashboard"]) .name-cell strong { font-size: 11px; }
+    body:not([data-page="dashboard"]) .name-cell span,
+    body:not([data-page="dashboard"]) .cell-muted { font-size: 9px; }
+    body:not([data-page="dashboard"]) .score { font-size: 17px; }
+    body:not([data-page="dashboard"]) .score small { font-size: 8px; }
+    body:not([data-page="dashboard"]) .result-box {
+      min-height: 92px;
+      padding: 12px;
+      border-color: #e1e4ed;
+      background: #fafbff;
+      font-size: 11px;
+    }
+    body[data-page="search"] .grid.half {
+      grid-template-columns: minmax(300px, .72fr) minmax(520px, 1.28fr);
+      align-items: start;
+    }
+    body[data-page="search"] .grid.half > .panel:first-child { position: sticky; top: 12px; }
+    body[data-page="search"] #imagePasteZone {
+      min-height: 64px !important;
+      background: #fafbff !important;
+      font-size: 10px !important;
+    }
+    body[data-page="list"] .grid.two {
+      grid-template-columns: minmax(0, 1fr) 350px;
+      align-items: start;
+    }
+    body[data-page="list"] .detail {
+      top: 12px;
+      padding: 14px;
+      max-height: calc(100vh - 92px);
+    }
+    body[data-page="list"] .detail .person { width: 50px; height: 50px; }
+    body[data-page="list"] .analysis-list { font-size: 10px; line-height: 1.55; }
+    body[data-page="list"] .big-score { font-size: 30px; }
+    body[data-page="localization"] .localization-workspace .loc-main-grid {
+      grid-template-columns: minmax(0, 1.35fr) minmax(250px, .65fr);
+      gap: 14px;
+    }
+    body[data-page="localization"] .localization-workspace textarea { min-height: 180px; }
+    body[data-page="localization"] .localization-output-box { min-height: 160px; }
+    body[data-page="localization"] .loc-import-grid {
+      grid-template-columns: minmax(280px, 520px);
+      padding-top: 12px;
+      margin-top: 12px;
+    }
+    body[data-page="competitors"] .grid.two {
+      grid-template-columns: minmax(0, 1.35fr) minmax(330px, .65fr);
+      align-items: start;
+    }
+    body[data-page="competitors"] .detail { top: 12px; max-height: calc(100vh - 92px); }
+    body[data-page="competitors"] .form-grid { padding: 12px 14px 0; }
+    body[data-page="aiReviews"] .ai-module-grid,
+    body[data-page="aiSocial"] .ai-module-grid,
+    body[data-page="aiLocQa"] .ai-module-grid,
+    body[data-page="aiCampaign"] .ai-module-grid {
+      grid-template-columns: minmax(360px, .78fr) minmax(0, 1.22fr);
+      gap: 10px;
+      align-items: start;
+    }
+    body[data-page^="ai"] .ai-form-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+    }
+    body[data-page^="ai"] .ai-full { grid-column: 1 / -1; }
+    body[data-page^="ai"] .ai-checks {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 5px;
+    }
+    body[data-page^="ai"] .ai-checks label {
+      padding: 7px 8px;
+      border: 1px solid #e4e7ef;
+      border-radius: 6px;
+      background: #fafbff;
+      font-size: 9px;
+    }
+    body[data-page^="ai"] .ai-checks input { min-height: 0; }
+    body[data-page^="ai"] .ai-card {
+      padding: 11px 0;
+      border: 0;
+      border-bottom: 1px solid #eceef4;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      font-size: 10px;
+    }
+    body[data-page^="ai"] .ai-card:last-child { border-bottom: 0; }
+    body[data-page^="ai"] .ai-card h3,
+    body[data-page^="ai"] .ai-card h4 { margin-top: 0; font-size: 12px; }
+    body[data-page^="ai"] .ai-result-stack { gap: 0; }
+    body[data-page^="ai"] .ai-stat-grid { gap: 7px; }
+    body[data-page^="ai"] .ai-stat {
+      padding: 10px;
+      border-color: #e4e7ef;
+      background: #fafbff;
+      font-size: 9px;
+    }
+    body[data-page^="ai"] .ai-stat strong { font-size: 18px; }
+    body[data-page="aiSocial"] .ai-table-wrap { max-height: 360px; overflow: auto; }
+    body[data-page="aiSocial"] .ai-table th,
+    body[data-page="aiSocial"] .ai-table td { padding: 7px; font-size: 9px; }
+    body[data-page="aiSettings"] .grid.two,
+    body[data-page="settings"] .grid.half { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+    body[data-page="settings"] .task { padding: 9px; }
+    body[data-page="settings"] .task strong { font-size: 10px; }
+    body[data-page="settings"] .task span { font-size: 9px; }
+    body[data-page="help"] .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    @media (max-width: 1100px) {
+      body[data-page="search"] .grid.half,
+      body[data-page="list"] .grid.two,
+      body[data-page="competitors"] .grid.two,
+      body[data-page="aiReviews"] .ai-module-grid,
+      body[data-page="aiSocial"] .ai-module-grid,
+      body[data-page="aiLocQa"] .ai-module-grid,
+      body[data-page="aiCampaign"] .ai-module-grid,
+      body[data-page="aiSettings"] .grid.two,
+      body[data-page="settings"] .grid.half { grid-template-columns: 1fr; }
+      body[data-page="search"] .grid.half > .panel:first-child,
+      body[data-page="list"] .detail,
+      body[data-page="competitors"] .detail { position: static; max-height: none; }
+    }
+    @media (max-width: 760px) {
+      body:not([data-page="dashboard"]) .page-head { align-items: stretch; }
+      body[data-page^="ai"] .ai-form-grid,
+      body[data-page^="ai"] .ai-checks,
+      body[data-page="localization"] .localization-workspace .loc-main-grid,
+      body[data-page="help"] .grid.three { grid-template-columns: 1fr; }
+    }
+    body,
+    main {
+      background: #ffffff;
+    }
+    .unified-import {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(260px, .75fr);
+      gap: 14px 16px;
+      align-items: start;
+    }
+    .unified-import-main,
+    .unified-import-files {
+      min-width: 0;
+    }
+    .unified-import-main textarea {
+      min-height: 132px;
+    }
+    .unified-import-files {
+      display: grid;
+      gap: 8px;
+    }
+    .unified-import-files input[type="file"] {
+      min-height: 42px;
+      padding: 6px;
+      background: #fff;
+    }
+    .unified-import #imagePasteZone {
+      min-height: 76px !important;
+      margin: 0 !important;
+      padding: 12px !important;
+      display: flex;
+      align-items: center;
+      border: 1px dashed #d9ddea !important;
+      border-radius: 6px !important;
+      background: #fff !important;
+      color: #747b8e !important;
+      font-size: 10px !important;
+      cursor: text;
+    }
+    .unified-actions {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-top: 12px;
+      border-top: 1px solid #eceef4;
+    }
+    .unified-status {
+      grid-column: 1 / -1;
+      min-height: 18px;
+    }
+    .unified-status .note:empty { display: none; }
+    .unified-status .note { margin: 2px 0; }
+    @media (max-width: 900px) {
+      .unified-import { grid-template-columns: 1fr; }
+      .unified-actions,
+      .unified-status { grid-column: 1; }
+    }
+
+    /* Growth command dashboard reference pass. */
+    .app { grid-template-columns: 252px minmax(0, 1fr); }
+    .sidebar {
+      padding: 16px 10px 14px;
+      background: #17181d;
+      border-right: 0;
+      color: #fff;
+    }
+    .brand { color: #fff; padding: 0 8px 16px; }
+    .brand span { color: #fff; font-size: 20px; }
+    .mark { background: #5b47ff; box-shadow: 0 8px 22px rgba(91,71,255,.35); }
+    .nav { gap: 2px; overflow-y: auto; }
+    .nav-group-label {
+      margin: 12px 12px 5px;
+      color: #73798a;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+    }
+    .nav button, .sidebar-foot button {
+      min-height: 38px;
+      padding: 8px 12px;
+      color: #aeb4c3;
+      font-size: 12px;
+      border-radius: 8px;
+    }
+    .nav button:hover, .sidebar-foot button:hover {
+      color: #fff;
+      background: #22242b;
+    }
+    .nav button.active, .sidebar-foot button.active {
+      color: #fff;
+      background: #292b32;
+      box-shadow: none;
+    }
+    .nav button.active .icon { color: #7869ff; }
+    .sidebar-foot { border-top-color: #2b2d34; }
+    .profile {
+      border-top-color: #2b2d34;
+      color: #fff;
+    }
+    .profile button { color: #fff; }
+    .profile span { color: #8e95a6; }
+    .avatar { background: #5b47ff; }
+    body[data-page="dashboard"] main {
+      padding: 0 28px 28px;
+      gap: 0;
+      background: #fff;
+    }
+    body[data-page="dashboard"] .brief { display: none; }
+    body[data-page="dashboard"] #page { display: grid; gap: 18px; }
+    .command-header {
+      min-height: 64px;
+      margin: 0 -28px;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      border-bottom: 1px solid #e8e7e4;
+      background: #fff;
+    }
+    .command-header h2 { margin: 0; font-size: 20px; letter-spacing: 0; }
+    .command-header p { margin: 3px 0 0; color: #818797; font-size: 11px; }
+    .command-header-actions { display: flex; align-items: center; gap: 10px; }
+    .command-search {
+      width: 280px;
+      min-height: 40px;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #e4e3df;
+      border-radius: 9px;
+      background: #fafaf9;
+      color: #8c92a0;
+    }
+    .command-search input {
+      min-height: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      font-size: 11px;
+    }
+    .command-icon-btn,
+    .command-primary {
+      min-height: 40px;
+      border-radius: 9px;
+    }
+    .command-icon-btn { width: 40px; padding: 0; background: #fff; }
+    .command-primary {
+      padding: 0 17px;
+      color: #fff;
+      border-color: #5b47ff;
+      background: #5b47ff;
+      font-weight: 800;
+      box-shadow: 0 8px 20px rgba(91,71,255,.2);
+    }
+    .command-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 26px;
+    }
+    .command-kpi,
+    .command-panel {
+      border: 1px solid #e6e4df;
+      border-radius: 14px;
+      background: #fff;
+      box-shadow: none;
+    }
+    .command-kpi {
+      min-height: 145px;
+      padding: 18px 20px 14px;
+      overflow: hidden;
+    }
+    .command-kpi > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .command-kpi span { color: #747b8d; font-size: 11px; }
+    .command-kpi em {
+      padding: 4px 7px;
+      border-radius: 6px;
+      color: #159a64;
+      background: #eaf8f1;
+      font-size: 9px;
+      font-style: normal;
+      font-weight: 800;
+    }
+    .command-kpi em.neutral { color: #6c7280; background: #f1f2f4; }
+    .command-kpi > strong { display: block; margin-top: 12px; font-size: 30px; line-height: 1; }
+    .command-spark { width: 100%; height: 42px; margin-top: 15px; }
+    .command-main-grid,
+    .command-bottom-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.68fr) minmax(300px, .98fr);
+      gap: 16px;
+    }
+    .command-panel { min-width: 0; overflow: hidden; }
+    .command-panel-head {
+      min-height: 66px;
+      padding: 18px 22px 12px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .command-panel-head h3 { margin: 0; font-size: 15px; }
+    .command-panel-head p { margin: 3px 0 0; color: #8a90a0; font-size: 10px; }
+    .command-tabs { display: flex; padding: 3px; border-radius: 9px; background: #f2f1ee; }
+    .command-tabs button {
+      min-height: 28px;
+      padding: 5px 11px;
+      border: 0;
+      background: transparent;
+      color: #777d8b;
+      font-size: 10px;
+      box-shadow: none;
+    }
+    .command-tabs button.active { color: #fff; background: #1b1c20; }
+    .command-chart { padding: 2px 22px 0; }
+    .command-chart svg { width: 100%; height: 250px; overflow: visible; }
+    .chart-gridline { fill: none; stroke: #efeee9; stroke-width: 1; }
+    .chart-area { fill: url(#reachFill); }
+    .chart-reach { fill: none; stroke: #5b47ff; stroke-width: 3; }
+    .chart-fit { fill: none; stroke: #159bb5; stroke-width: 2; stroke-dasharray: 5 6; }
+    .command-months { display: flex; justify-content: space-between; color: #9a9fad; font-size: 9px; }
+    .command-legend {
+      margin: 10px 22px 0;
+      padding: 12px 0 17px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      border-top: 1px solid #efeee9;
+      color: #777d8b;
+      font-size: 10px;
+    }
+    .command-legend span, .coverage-list span { display: flex; align-items: center; gap: 7px; }
+    .command-legend i, .coverage-list i { width: 8px; height: 8px; border-radius: 3px; }
+    i.purple { background: #5b47ff; }
+    i.cyan { background: #159bb5; }
+    i.lavender { background: #9b8cff; }
+    i.gray { background: #deddd8; }
+    .command-legend strong { margin-left: auto; color: #4e5463; font-size: 10px; }
+    .coverage-ring {
+      width: 150px;
+      aspect-ratio: 1;
+      margin: 10px auto 16px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: conic-gradient(#5b47ff 0 var(--coverage), #9b8cff var(--coverage) calc(var(--coverage) + 38deg), #e4e3df 0);
+      position: relative;
+    }
+    .coverage-ring:after { content: ""; position: absolute; inset: 28px; border-radius: 50%; background: #fff; }
+    .coverage-ring > div { position: relative; z-index: 1; text-align: center; }
+    .coverage-ring strong { display: block; font-size: 28px; }
+    .coverage-ring span { display: block; margin-top: 2px; color: #8b91a0; font-size: 9px; }
+    .coverage-list { display: grid; gap: 12px; padding: 0 24px 22px; }
+    .coverage-list > div { display: flex; justify-content: space-between; color: #73798a; font-size: 10px; }
+    .coverage-list strong { color: #272a33; }
+    .command-link {
+      min-height: auto;
+      padding: 2px;
+      border: 0;
+      background: transparent;
+      color: #5b47ff;
+      box-shadow: none;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .command-table-head,
+    .command-creator-row {
+      display: grid;
+      grid-template-columns: minmax(210px, 1.5fr) .8fr .7fr 50px;
+      align-items: center;
+      gap: 12px;
+      padding: 0 22px;
+    }
+    .command-table-head { min-height: 30px; color: #9a9fad; font-size: 9px; font-weight: 800; }
+    .command-creator-row {
+      width: 100%;
+      min-height: 56px;
+      border: 0;
+      border-top: 1px solid #efeee9;
+      border-radius: 0;
+      background: #fff;
+      text-align: left;
+      box-shadow: none;
+      font-size: 10px;
+    }
+    .command-creator-row:hover { transform: none; background: #fafafa; }
+    .command-creator { display: flex; align-items: center; gap: 10px; }
+    .command-creator > i {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      background: #5b47ff;
+      font-size: 9px;
+      font-style: normal;
+      font-weight: 850;
+    }
+    .command-creator strong, .command-creator small { display: block; }
+    .command-creator small { margin-top: 2px; color: #969baa; font-size: 9px; }
+    .command-platform { width: max-content; padding: 4px 7px; border-radius: 5px; background: #f0efec; color: #686e7d; }
+    .positive { color: #169b66; }
+    .command-activity { padding-bottom: 8px; }
+    .activity-item {
+      position: relative;
+      margin: 0 22px;
+      padding: 12px 0 12px 19px;
+      border-bottom: 1px solid #efeee9;
+      color: #6d7382;
+      font-size: 10px;
+      line-height: 1.45;
+    }
+    .activity-item:before { content: ""; position: absolute; left: 0; top: 17px; width: 8px; height: 8px; border-radius: 50%; }
+    .activity-item.purple:before { background: #5b47ff; }
+    .activity-item.green:before { background: #20a874; }
+    .activity-item.orange:before { background: #df8615; }
+    .activity-item strong { color: #363a45; }
+    .activity-item small { display: block; margin-top: 3px; color: #a0a5b1; }
+    @media (max-width: 1180px) {
+      .command-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .command-main-grid, .command-bottom-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 760px) {
+      body[data-page="dashboard"] main { padding: 0 12px 18px; }
+      .command-header { margin: 0 -12px; padding: 10px 12px; align-items: stretch; flex-direction: column; }
+      .command-header-actions { overflow-x: auto; }
+      .command-search { min-width: 230px; }
+      .command-kpis { grid-template-columns: 1fr; margin-top: 16px; }
+      .command-table-head, .command-creator-row { grid-template-columns: minmax(180px,1fr) 80px 70px 42px; min-width: 500px; }
+      .command-top-list { overflow-x: auto; }
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -1087,6 +1948,7 @@
           </select>
           <button type="button" id="editBriefBtn"></button>
           <button type="button" id="exportBtn"></button>
+          <button type="button" class="primary" id="quickActionBtn">+ Hızlı İşlem</button>
         </div>
       </section>
       <div id="page"></div>
@@ -1601,21 +2463,17 @@
     function pageHead(title, subtitle, action = "") { return `<div class="page-head"><div><h2>${title}</h2><p>${subtitle}</p></div>${action}</div>`; }
 
     function renderShell() {
-      const nav = [
-        ["dashboard", "dashboard", "dashboard"],
-        ["search", "search", "search"],
-        ["list", "list", "list"],
-        ["localization", "globe", "localization"],
-        ["competitors", "target", "competitors"],
-        ["aiReviews", "review", "aiReviews"],
-        ["aiSocial", "social", "aiSocial"],
-        ["aiLocQa", "globe", "aiLocQa"],
-        ["aiCampaign", "megaphone", "aiCampaign"]
+      const navGroups = [
+        ["", [["dashboard", "dashboard", "dashboard"]]],
+        ["DISCOVERY", [["search", "search", "search"], ["list", "list", "list"]]],
+        ["INTELLIGENCE", [["competitors", "target", "competitors"], ["aiReviews", "review", "aiReviews"], ["aiSocial", "social", "aiSocial"]]],
+        ["LOCALIZATION", [["localization", "globe", "localization"], ["aiLocQa", "globe", "aiLocQa"]]],
+        ["CREATIVE", [["aiCampaign", "megaphone", "aiCampaign"]]],
+        ["SYSTEM", [["aiSettings", "settings", "aiSettings"]]]
       ];
       if (state.page === "aiReport" || state.page === "aiWorkspace") state.page = "dashboard";
-      $("mainNav").innerHTML = nav.map(([page, icon, label]) => `<button class="${state.page === page ? "active" : ""}" data-page="${page}" type="button">${icons[icon]}<span>${navT(label)}</span></button>`).join("");
+      $("mainNav").innerHTML = navGroups.map(([group, items]) => `${group ? `<div class="nav-group-label">${group}</div>` : ""}${items.map(([page, icon, label]) => `<button class="${state.page === page ? "active" : ""}" data-page="${page}" type="button">${icons[icon]}<span>${navT(label)}</span></button>`).join("")}`).join("");
       $("footNav").innerHTML = [
-        ["aiSettings", "settings", "aiSettings"],
         ["settings", "settings", "settings"],
         ["help", "help", "help"]
       ].map(([page, icon, label]) => `<button class="${state.page === page ? "active" : ""}" data-page="${page}" type="button">${icons[icon]}<span>${navT(label)}</span></button>`).join("");
@@ -1624,7 +2482,7 @@
         saveState();
         render();
       }));
-      $("briefTitle").innerHTML = `${icons.doc}<span>${tr("brief")}</span>`;
+      $("briefTitle").innerHTML = `<span class="project-avatar">${initials(state.project.name || "PS")}</span><span>${esc(state.project.name || "PlayScope")}</span><span class="active-badge">Active</span>`;
       $("briefGrid").innerHTML = [
         [tr("projectName"), state.project.name],
         [tr("genre"), state.project.genre],
@@ -1635,6 +2493,11 @@
       $("languageSelect").value = state.lang;
       $("editBriefBtn").innerHTML = `${icons.doc}<span>${tr("editBrief")}</span>`;
       $("exportBtn").innerHTML = `${icons.list}<span>${tr("export")}</span>`;
+      $("quickActionBtn").onclick = () => {
+        state.page = "search";
+        saveState();
+        render();
+      };
     }
 
     function rows(filter = "", sort = "fit") {
@@ -1741,57 +2604,73 @@
 
     function dashboardPage() {
       const total = state.influencers.length;
-      const imported = state.influencers.filter((i) => /youtube|extension/i.test(i.source || "")).length;
       const withViews = state.influencers.filter((i) => Number(i.views || 0) > 0);
       const avgViews = withViews.length ? Math.round(withViews.reduce((sum, i) => sum + Number(i.views || 0), 0) / withViews.length) : 0;
-      const topMatches = rows("", "fit").slice(0, 3);
-      const topMatchText = topMatches.length ? topMatches.map((item) => `${item.name} ${fitScore(item)}%`).join(" / ") : "Henüz liste yok";
+      const totalReach = withViews.reduce((sum, item) => sum + Number(item.views || 0), 0);
+      const topMatches = rows("", "fit").slice(0, 5);
+      const avgFit = total ? Math.round(state.influencers.reduce((sum, item) => sum + fitScore(item), 0) / total) : 0;
       const marketCount = new Set(state.influencers.map((item) => item.geo || item.country).filter(Boolean)).size;
+      const shortlisted = state.influencers.filter((item) => item.shortlisted).length;
+      const targetMarketCount = Math.max(1, String(state.project.markets || "").split(",").map((item) => item.trim()).filter(Boolean).length);
+      const localizationCoverage = Math.min(100, Math.round((marketCount / targetMarketCount) * 100));
+      const sparkline = (color, path) => `<svg class="command-spark" viewBox="0 0 220 44" preserveAspectRatio="none" aria-hidden="true"><path d="${path}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
       $("page").innerHTML = `
-        ${pageHead(tr("dashboard"), "Influencer araştırması, sosyal içerik analizi ve kampanya hazırlığını tek ekranda takip et.")}
-        <div class="dashboard-layout">
-          <div class="dashboard-main">
-            <div class="dashboard-summary">
-              <section class="panel project-card">
-                <div>
-                  <h3>${esc(state.project.name || "PlayScope")}</h3>
-                  <p>${esc(state.project.genre || "Oyun")} için ${esc(state.project.markets || "hedef pazar")} odaklı creator keşfi ve içerik değerlendirme çalışma alanı.</p>
-                </div>
-                <span class="pill">${esc(state.project.goal || "Kampanya hazırlığı")}</span>
-              </section>
-              <section class="panel dashboard-kpi"><small>Creator listesi</small><strong>${total}</strong><span>Kayıtlı profil</span></section>
-              <section class="panel dashboard-kpi"><small>İçe aktarılan</small><strong>${imported}</strong><span>YouTube / eklenti</span></section>
-              <section class="panel dashboard-kpi"><small>Ortalama izlenme</small><strong>${views(avgViews)}</strong><span>Mevcut liste</span></section>
-            </div>
-            <section class="panel">
-              <div class="panel-head"><h3>Hızlı işlemler</h3></div>
-              <div class="panel-body">
-                <div class="quick-grid">
-                  <button class="quick-card" data-dash-page="search" type="button"><span class="quick-icon">${icons.search}</span><span><strong>Creator bul</strong>Link, Excel veya ekran görüntüsünden yeni profilleri analiz et.</span></button>
-                  <button class="quick-card" data-dash-page="aiSocial" type="button"><span class="quick-icon">${icons.social}</span><span><strong>Sosyal analiz</strong>Instagram gönderilerini rapora çevir.</span></button>
-                  <button class="quick-card" data-dash-page="aiReviews" type="button"><span class="quick-icon">${icons.review}</span><span><strong>Yorumları incele</strong>Oyuncu yorumlarından risk ve fırsat çıkar.</span></button>
-                  <button class="quick-card" data-dash-page="aiLocQa" type="button"><span class="quick-icon">${icons.globe}</span><span><strong>Lokalizasyon QA</strong>Metinleri pazar uyumu ve ton açısından kontrol et.</span></button>
-                </div>
-              </div>
-            </section>
-            <section class="panel mini-table">${renderTable("", "fit")}</section>
+        <header class="command-header">
+          <div><h2>Dashboard</h2><p>Growth command center · ${esc(state.project.name)}</p></div>
+          <div class="command-header-actions">
+            <label class="command-search">${icons.search}<input type="search" placeholder="Search influencers, apps..."></label>
+            <button class="command-icon-btn" type="button" title="Notifications">${icons.review}</button>
+            <button class="command-primary" data-dash-page="aiCampaign" type="button">+ New Campaign</button>
           </div>
-          <aside class="insight-panel">
-            ${panel("Öne çıkanlar", `
-              <div class="insight-item"><strong>En iyi eşleşmeler</strong><span>${esc(topMatchText)}</span></div>
-              <div class="insight-item"><strong>Pazar kapsamı</strong><span>${marketCount || 0} farklı GEO/pazar sinyali bulundu.</span></div>
-              <div class="insight-item"><strong>Veri kalitesi</strong><span>${withViews.length}/${total || 0} kayıtta izlenme verisi var.</span></div>
-            `)}
-            ${panel("Sıradaki aksiyonlar", `
-              <div class="next-action"><strong>1. Creator listesini temizle</strong><span>Eksik yaş, cinsiyet ve GEO alanlarını tamamla.</span></div>
-              <div class="next-action"><strong>2. Sosyal içerikleri tara</strong><span>Rakip veya creator Instagram profilini analiz et.</span></div>
-              <div class="next-action"><strong>3. Export al</strong><span>匹配度 dahil güncel tabloyu dışa aktar.</span></div>
-            `)}
-          </aside>
+        </header>
+        <div class="command-kpis">
+          <section class="command-kpi"><div><span>Tracked Influencers</span><em>+${Math.max(total, 1)}</em></div><strong>${total.toLocaleString()}</strong>${sparkline("#5b47ff", "M2 34 L30 29 L58 32 L87 21 L116 24 L145 14 L174 17 L218 7")}</section>
+          <section class="command-kpi"><div><span>Est. Reach (30d)</span><em>+8.1%</em></div><strong>${views(totalReach)}</strong>${sparkline("#159bb5", "M2 25 L31 28 L60 18 L89 22 L118 13 L147 17 L176 10 L218 4")}</section>
+          <section class="command-kpi"><div><span>Average Fit</span><em class="neutral">Current</em></div><strong>${avgFit}%</strong>${sparkline("#dd8415", "M2 10 L32 7 L62 20 L92 16 L122 28 L152 22 L182 31 L218 25")}</section>
+          <section class="command-kpi"><div><span>Active Shortlist</span><em>+${shortlisted}</em></div><strong>${shortlisted}</strong>${sparkline("#5b47ff", "M2 31 L32 28 L62 22 L92 24 L122 17 L152 10 L182 12 L218 6")}</section>
+        </div>
+        <div class="command-main-grid">
+          <section class="command-panel command-chart-panel">
+            <div class="command-panel-head"><div><h3>Reach & Performance</h3><p>Current creator portfolio</p></div><div class="command-tabs"><button class="active" type="button">6M</button><button type="button">3M</button><button type="button">30D</button></div></div>
+            <div class="command-chart">
+              <svg viewBox="0 0 760 250" preserveAspectRatio="none" aria-label="Reach and performance chart">
+                <defs><linearGradient id="reachFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5b47ff" stop-opacity=".22"/><stop offset="100%" stop-color="#5b47ff" stop-opacity="0"/></linearGradient></defs>
+                <path class="chart-gridline" d="M0 45H760 M0 105H760 M0 165H760 M0 225H760"/>
+                <path class="chart-area" d="M0 196 C80 184 112 148 175 157 S282 117 350 125 S448 78 515 88 S640 73 760 36 L760 250 L0 250 Z"/>
+                <path class="chart-reach" d="M0 196 C80 184 112 148 175 157 S282 117 350 125 S448 78 515 88 S640 73 760 36"/>
+                <path class="chart-fit" d="M0 226 C90 220 120 204 190 210 S290 187 360 194 S470 165 530 172 S650 150 760 126"/>
+              </svg>
+              <div class="command-months"><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span></div>
+            </div>
+            <div class="command-legend"><span><i class="purple"></i>Reach</span><span><i class="cyan"></i>Average Fit</span><strong>${views(avgViews)} avg. views</strong></div>
+          </section>
+          <section class="command-panel command-coverage-panel">
+            <div class="command-panel-head"><div><h3>Localization Coverage</h3><p>${targetMarketCount} target markets</p></div></div>
+            <div class="coverage-ring" style="--coverage:${localizationCoverage * 3.6}deg"><div><strong>${localizationCoverage}%</strong><span>localized</span></div></div>
+            <div class="coverage-list"><div><span><i class="purple"></i>Covered</span><strong>${marketCount}</strong></div><div><span><i class="lavender"></i>In review</span><strong>${Math.max(0, targetMarketCount - marketCount)}</strong></div><div><span><i class="gray"></i>Total markets</span><strong>${targetMarketCount}</strong></div></div>
+          </section>
+        </div>
+        <div class="command-bottom-grid">
+          <section class="command-panel command-top-list">
+            <div class="command-panel-head"><div><h3>Top Performing Influencers</h3></div><button class="command-link" data-dash-page="list" type="button">View all →</button></div>
+            <div class="command-table-head"><span>CREATOR</span><span>PLATFORM</span><span>FOLLOWERS</span><span>FIT</span></div>
+            ${topMatches.length ? topMatches.map((item) => `<button class="command-creator-row" data-dashboard-index="${item.index}" type="button"><span class="command-creator"><i>${initials(item.name)}</i><span><strong>${esc(item.name)}</strong><small>${esc(item.handle || "")}</small></span></span><span class="command-platform">${esc(item.channel || "YouTube")}</span><span>${esc(item.subscribers || "-")}</span><strong class="positive">${item.fit}%</strong></button>`).join("") : `<div class="empty">Henüz influencer kaydı yok.</div>`}
+          </section>
+          <section class="command-panel command-activity">
+            <div class="command-panel-head"><div><h3>Recent Activity</h3></div></div>
+            <div class="activity-item purple"><strong>${esc(topMatches[0]?.name || "Influencer list")}</strong><span> leads the current fit ranking</span><small>4 min ago</small></div>
+            <div class="activity-item green"><strong>Social Analysis</strong><span> is ready for Instagram profile review</span><small>1 hr ago</small></div>
+            <div class="activity-item orange"><strong>Localization QA</strong><span> covers ${marketCount} market signals</span><small>Today</small></div>
+          </section>
         </div>`;
-      bindTable();
       document.querySelectorAll("[data-dash-page]").forEach((button) => button.addEventListener("click", () => {
         state.page = button.dataset.dashPage;
+        saveState();
+        render();
+      }));
+      document.querySelectorAll("[data-dashboard-index]").forEach((row) => row.addEventListener("click", () => {
+        state.selected = Number(row.dataset.dashboardIndex || 0);
+        state.page = "list";
         saveState();
         render();
       }));
@@ -1807,36 +2686,29 @@
             <div><div class="field-label">${tr("channel")}</div><select id="researchChannel"><option>YouTube</option><option>Twitch</option><option>TikTok</option></select></div>
             <div><div class="field-label">${tr("avgViews")}</div><input id="researchViews" type="number" value="88000"></div>
           </div><div class="field-label">Genres</div><input id="researchGenres" value="strategy mobile space"><button class="primary" id="addResearchBtn" type="button" style="margin-top:12px">${tr("analyze")}</button><button class="coral" id="importExtensionBtn" type="button" style="margin-top:12px;margin-left:8px">Import Extension Data</button><p class="note" id="researchStatus">${tr("apiSafe")}</p><p class="note">For extension import, open a YouTube channel or video page. Public stats are calculated from YouTube API.</p>`)}
-          ${panel("Excel / Copy-paste import", `<div class="form-grid">
-            <div>
-              <div class="field-label">Excel / CSV file</div>
-              <input id="excelFile" type="file" accept=".xlsx,.xls,.csv,.tsv,text/csv">
-              <button class="primary" id="excelUploadBtn" type="button" style="margin-top:12px">Upload and analyze</button>
-              <p class="note" id="excelStatus">Upload a file with a Link, URL, YouTube, Channel Name, or Name column.</p>
+          ${panel("Veri içe aktar", `<div class="unified-import">
+            <div class="unified-import-files">
+              <div class="field-label">Excel / CSV veya ekran görüntüsü seç</div>
+              <input id="importDataFile" type="file" accept=".xlsx,.xls,.csv,.tsv,.txt,text/csv,image/png,image/jpeg,image/webp">
+              <div class="field-label" style="margin-top:4px">Görsel kullanıyorsan YouTube kanal linki</div>
+              <input id="imageChannelLink" placeholder="YouTube channel link or @handle">
             </div>
-            <div>
-              <div class="field-label">Copy-paste rows</div>
-              <textarea id="bulkInput" placeholder="Channel Name, Link, GEO&#10;RRaenee, https://www.youtube.com/@RRaenee, TR&#10;Elraenn, https://www.youtube.com/@Elraenn, TR"></textarea>
-              <button class="primary" id="bulkAddBtn" type="button" style="margin-top:12px">Analyze pasted links</button>
-              <button id="resetBtn" type="button" style="margin-top:12px;margin-left:8px">${tr("reset")}</button>
+            <div id="imagePasteZone" tabindex="0">Ya da ekran görüntüsünü buraya Ctrl+V ile yapıştır.</div>
+            <div class="unified-actions">
+              <button class="primary" id="importDataBtn" type="button">Seçilen dosyayı analiz et</button>
+              <button class="ghost" id="resetBtn" type="button">${tr("reset")}</button>
             </div>
-            <div>
-              <div class="field-label">Image data import</div>
-              <input id="imageChannelLink" placeholder="YouTube channel link or @handle for this screenshot">
-              <input id="imageDataFile" type="file" accept="image/png,image/jpeg,image/webp">
-              <div id="imagePasteZone" tabindex="0" style="margin-top:10px;border:1px dashed var(--line);border-radius:6px;padding:12px;min-height:76px;background:var(--soft);color:var(--muted);font-size:13px">Click here, then paste a screenshot with Ctrl+V.</div>
-              <button class="primary" id="imageImportBtn" type="button" style="margin-top:12px">Read image data</button>
-              <p class="note" id="imageStatus">Paste/select a screenshot, enter the channel link, then press Read image data. Nothing is read automatically.</p>
+            <div class="unified-status">
+              <p class="note" id="excelStatus">Excel, CSV veya ekran görüntüsü aynı dosya alanından otomatik olarak işlenir.</p>
+              <p class="note" id="imageStatus"></p>
             </div>
-          </div><p class="note" id="bulkStatus">All methods use the same flow: extract rows, fetch each YouTube link from YouTube API, then add any extra imported data as notes.</p>`)}
+          </div>`)}
         </div>
         <section class="panel">${renderTable("", "fit")}</section>`;
       bindTable();
       $("addResearchBtn").addEventListener("click", addResearchInfluencer);
       $("importExtensionBtn").addEventListener("click", importExtensionData);
-      $("excelUploadBtn").addEventListener("click", uploadExcelFile);
-      $("bulkAddBtn").addEventListener("click", addBulkInfluencers);
-      $("imageImportBtn").addEventListener("click", uploadImageData);
+      $("importDataBtn").addEventListener("click", uploadUnifiedImportFile);
       $("imagePasteZone").addEventListener("paste", handleImagePaste);
       $("imagePasteZone").addEventListener("click", () => $("imagePasteZone").focus());
       $("resetBtn").addEventListener("click", () => { state.influencers = defaultInfluencers; state.selected = 0; saveState(); render(); });
@@ -3840,14 +4712,25 @@ Return exactly this JSON shape:
       }
     }
 
-    async function addBulkInfluencers() {
-      const rows = rowsToObjects(parseDelimitedRows($("bulkInput").value));
-      await analyzeInfluencerRows(rows, "bulkStatus");
+    async function uploadUnifiedImportFile() {
+      const file = $("importDataFile")?.files?.[0];
+      if (!file && state.pendingImageDataUrl) {
+        await uploadImageData();
+        return;
+      }
+      if (!file) {
+        const status = $("excelStatus");
+        if (status) status.textContent = "Önce Excel, CSV veya ekran görüntüsü seç.";
+        return;
+      }
+      const isImage = /^image\//i.test(file.type || "") || /\.(png|jpe?g|webp)$/i.test(file.name || "");
+      if (isImage) await uploadImageData();
+      else await uploadExcelFile();
     }
 
     async function uploadExcelFile() {
       const status = $("excelStatus");
-      const file = $("excelFile").files?.[0];
+      const file = $("importDataFile")?.files?.[0];
       if (!file) {
         if (status) status.textContent = "Choose an Excel or CSV file first.";
         return;
@@ -4416,7 +5299,7 @@ Return exactly this JSON shape:
 
     async function uploadImageData() {
       const status = $("imageStatus");
-      const file = $("imageDataFile").files?.[0];
+      const file = $("importDataFile")?.files?.[0];
       const channelLink = $("imageChannelLink")?.value?.trim() || "";
       if (!channelLink) {
         if (status) status.textContent = "A channel link or @handle is required before reading the image.";
@@ -4507,14 +5390,14 @@ Return exactly this JSON shape:
         state.pendingImageName = `Pasted image (${Math.round(file.size / 1024)} KB)`;
         saveState();
         $("imagePasteZone").textContent = `Pasted image: ${file.type || "image"} (${Math.round(file.size / 1024)} KB)`;
-        if (status) status.textContent = "Screenshot is ready. Enter the channel link, then press Read image data.";
+        if (status) status.textContent = "Görsel hazır. Kanal linkini girip Seçilen dosyayı analiz et düğmesine bas.";
         return;
       }
       if (textItem) {
         event.preventDefault();
         textItem.getAsString(async (textValue) => {
           $("imageChannelLink").value = textValue.trim();
-          if (status) status.textContent = "Pasted text added as channel link. Press Read image data when ready.";
+          if (status) status.textContent = "Yapıştırılan metin kanal linkine eklendi. Görseli ekleyip analiz düğmesine bas.";
         });
         return;
       }
@@ -5359,25 +6242,18 @@ ${copy}`;
             output = "";
           }
         }
-        if (!output) {
-          try {
-            $("locBatchStatus").textContent = `Localizing ${outputs.length + 1}/${items.length} with Google Translate...`;
-            output = await localizeWithBrowserGoogleTranslate({ source: item.source, lang, tone, genre, mode });
-          } catch (error) {
-            output = "";
-          }
-        }
         outputs.push({
           name: item.name || shortText(item.source, 42),
           genreLabel: localizationProfile(genre).label,
-          output: output ? improveLocalizationOutput(output, { source: item.source, lang, genre, tone, mode }) : localizationUnavailableMessage(item.source, lang)
+          output: output ? improveLocalizationOutput(output, { source: item.source, lang, genre, tone, mode }) : "GPT çevirisi başarısız. API anahtarını, modeli ve krediyi kontrol et."
         });
       }
       state.localizationBatch = outputs;
       state.localizationBatchSource = sourceType;
       saveState();
       $("locBatchOutput").innerHTML = renderLocalizationBatch(outputs);
-      $("locBatchStatus").textContent = outputs.length ? `${outputs.length} row(s) localized.` : "No usable source text found.";
+      const failedCount = outputs.filter((item) => /^GPT çevirisi başarısız/.test(item.output)).length;
+      $("locBatchStatus").textContent = outputs.length ? `${outputs.length - failedCount}/${outputs.length} satır GPT ile çevrildi.${failedCount ? ` ${failedCount} satır başarısız.` : ""}` : "No usable source text found.";
     }
 
     async function handleLocalizationExcel() {
@@ -5477,9 +6353,8 @@ ${source}`;
         body: JSON.stringify({ source, lang, tone, genre, mode, project: state.project })
       });
       const result = await response.json();
-      if (!result?.text) return "";
-      if (["googletrans", "google-translate"].includes(result.source)) return "";
-      return ["openai", "curated"].includes(result.source) ? result.text : "";
+      if (result?.source === "openai" && result?.text) return result.text;
+      throw new Error(result?.error || "Backend GPT çevirisi sonuç döndürmedi.");
     }
 
     async function localizeWithBrowserGoogleTranslate({ source, lang, tone, genre, mode }) {
@@ -5724,23 +6599,14 @@ ${labels.note}: ${labels.noteText}`;
           return;
         }
       } catch (directError) {
-        if (status) status.textContent = `GPT direct failed: ${directError.message}. Trying Google Translate fallback...`;
+        if (status) status.textContent = `GPT çevirisi başarısız: ${directError.message}`;
       }
-      try {
-        const googleText = await localizeWithBrowserGoogleTranslate({ source, lang, tone, genre, mode });
-        if (googleText) {
-          state.localizationOutput = improveLocalizationOutput(googleText, { source, lang, genre, tone, mode });
-          saveState();
-          $("locOutput").innerHTML = formatLocalizationOutput(state.localizationOutput);
-          if (status) status.textContent = "Generated with Google Translate fallback.";
-          return;
-        }
-      } catch (googleError) {
-        if (status) status.textContent = `Translation failed: ${googleError.message}`;
+      if (status && !/başarısız/i.test(status.textContent || "")) {
+        status.textContent = "GPT çevirisi alınamadı. Ayarlar bölümündeki GPT API anahtarını ve modeli kontrol et.";
       }
-      state.localizationOutput = localizationUnavailableMessage(source, lang);
+      state.localizationOutput = "";
       saveState();
-      $("locOutput").innerHTML = formatLocalizationOutput(state.localizationOutput || "Output will appear here.");
+      $("locOutput").innerHTML = `<div class="ai-empty">GPT çevirisi alınamadı. OPENAI_API_KEY, model erişimi ve API kredilerini kontrol et.</div>`;
     }
     function saveSettings() {
       state.project = { name: $("setName").value, genre: $("setGenre").value, markets: $("setMarkets").value, audience: $("setAudience").value, goal: $("setGoal").value, keywords: $("setKeywords").value };
@@ -6569,6 +7435,7 @@ ${labels.note}: ${labels.noteText}`;
 
     function render() {
       document.documentElement.lang = state.lang === "zh" ? "zh" : state.lang;
+      document.body.dataset.page = state.page;
       renderShell();
       const pages = { dashboard: dashboardPage, search: searchPage, list: listPage, localization: localizationPage, competitors: competitorsPage, aiReviews: aiReviewsPage, aiSocial: aiSocialPage, aiLocQa: aiLocQaPage, aiCampaign: aiCampaignPage, aiReport: aiWeeklyReportPage, aiWorkspace: aiWorkspacePage, aiSettings: aiSettingsPage, settings: settingsPage, help: helpPage };
       (pages[state.page] || dashboardPage)();
