@@ -2155,6 +2155,7 @@
     };
     state.importFileName = state.importFileName || "";
     state.importStatus = state.importStatus || "Excel/CSV seç veya ekran görüntüsünü yapıştır; analiz otomatik başlar.";
+    state.importEngine = state.importEngine || "";
     let pendingImportFile = null;
 
     const competitors = {
@@ -4743,7 +4744,8 @@ Return exactly this JSON shape:
       });
       state.selected = lastIndex;
       const fallbackText = skipped.length ? ` ${skipped.length} kanal canlı YouTube verisi olmadan eklendi.` : "";
-      state.importStatus = `Tamamlandı: ${addedCount} kanal eklendi, ${updatedCount} kanal güncellendi.${fallbackText}`;
+      const engineText = state.importEngine ? ` Motor: ${state.importEngine}.` : "";
+      state.importStatus = `Tamamlandı: ${addedCount} kanal eklendi, ${updatedCount} kanal güncellendi.${fallbackText}${engineText}`;
       saveState();
       render();
       const nextStatus = statusId ? $(statusId) : null;
@@ -4794,6 +4796,7 @@ Return exactly this JSON shape:
       }
       pendingImportFile = file;
       state.importFileName = file.name;
+      state.importEngine = "";
       const size = file.size >= 1024 * 1024
         ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
         : `${Math.max(1, Math.round(file.size / 1024))} KB`;
@@ -4802,6 +4805,25 @@ Return exactly this JSON shape:
       updateImportStatus(`Seçildi: ${file.name} (${size}). Otomatik analiz ve YouTube araması başlıyor...`);
       if (imageStatus) imageStatus.textContent = "";
       await uploadUnifiedImportFile();
+    }
+
+    async function readExcelImagePair(files, context = {}) {
+      try {
+        const images = await Promise.all(files.map(fileToDataUrl));
+        const response = await fetch("/api/read-image-data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...sharedHeaders() },
+          body: JSON.stringify({ images, context })
+        });
+        const result = await response.json();
+        if (response.ok && result.ok && Array.isArray(result.rows)) {
+          state.importEngine = "GPT Vision";
+          return result.rows;
+        }
+        return [];
+      } catch (error) {
+        return [];
+      }
     }
 
     async function uploadExcelFile() {
@@ -4845,40 +4867,36 @@ Return exactly this JSON shape:
           }
           rows = rowsToObjects(sheetRows);
         }
-        await analyzeInfluencerRows(rows, "excelStatus");
-        if (xlsxBuffer) {
+        const explicitRows = rows.filter((row) => {
+          const directName = fieldFromRow(row, ["channel name", "name", "creator", "influencer", "kanal", "influencer name"]);
+          const directLink = fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url"]);
+          return Boolean(directName || cleanYouTubeSeedLink(directLink) || Object.values(row).some((value) => cleanYouTubeSeedLink(value)));
+        });
+        if (explicitRows.length) {
+          await analyzeInfluencerRows(explicitRows, "excelStatus");
+        } else if (xlsxBuffer) {
           const imageFiles = await extractImagesFromXlsxBuffer(xlsxBuffer);
           if (imageFiles.length) {
-            const anchored = imageFiles.filter((imageFile) => imageFile.__excelRow).map((imageFile) => `row ${imageFile.__excelRow}`).join(", ");
-            if (status) status.textContent = `Excel image found. Reading ${imageFiles.length} embedded image(s)${anchored ? ` (${anchored})` : ""}...`;
+            const pairs = [];
+            for (let index = 0; index < imageFiles.length; index += 2) pairs.push(imageFiles.slice(index, index + 2));
             const imageRows = [];
-            for (const imageFile of imageFiles.slice(0, 3)) {
-              try {
-                const linkedRow = closestExcelRow(rows, imageFile.__excelRow);
-                const imageContext = imageContextFromExcelRow(linkedRow, {
-                  source: "excel-embedded-image",
-                  fileName: file.name,
-                  excelRow: imageFile.__excelRow || ""
-                });
-                let rowsFromImage = [];
-                try {
-                  rowsFromImage = await readImageRowsWithGPT(imageFile, status, imageContext);
-                } catch (gptError) {
-                  if (status) status.textContent = `Excel image GPT failed, trying OCR: ${gptError.message}`;
-                  rowsFromImage = await readImageRowsWithOcr(imageFile, status, imageContext);
-                }
-                imageRows.push(...rowsFromImage);
-              } catch (imageError) {
-                if (status) status.textContent = `Excel image OCR failed: ${imageError.message}`;
-              }
+            for (let offset = 0; offset < pairs.length; offset += 3) {
+              const batch = pairs.slice(offset, offset + 3);
+              updateImportStatus(`Excel görselleri okunuyor: ${offset + 1}-${Math.min(offset + batch.length, pairs.length)} / ${pairs.length} influencer...`);
+              const batchRows = await Promise.all(batch.map((pair, pairIndex) => readExcelImagePair(pair, {
+                source: "excel-embedded-images",
+                fileName: file.name,
+                influencerIndex: offset + pairIndex + 1
+              })));
+              batchRows.forEach((foundRows) => imageRows.push(...foundRows));
             }
             if (imageRows.length) await analyzeInfluencerRows(imageRows, "excelStatus");
-            else if (status) status.textContent = `Excel image found, but OCR could not find usable channel rows.`;
-          } else if (status) {
-            status.textContent = rows.length
-              ? `Excel rows were read, but no embedded image was found in this file.`
-              : `No table rows or embedded images found in this Excel file.`;
+            else updateImportStatus("Excel içindeki görseller okundu ancak kanal bilgisi çıkarılamadı.", true);
+          } else {
+            updateImportStatus("Excel içinde aranabilir kanal adı, YouTube bağlantısı veya gömülü görsel bulunamadı.", true);
           }
+        } else {
+          await analyzeInfluencerRows(rows, "excelStatus");
         }
       } catch (error) {
         updateImportStatus("Excel/CSV okunamadı: " + error.message, true);
@@ -5152,6 +5170,7 @@ Return exactly this JSON shape:
     }
 
     async function readImageRowsWithGPT(file, status, context = {}) {
+      if (new URLSearchParams(location.search).get("engine") === "ocr") throw new Error("OCR diagnostic mode");
       let config = getSavedGptConfig();
       try {
         const response = await fetch("/api/client-config");
@@ -5181,7 +5200,10 @@ Return exactly this JSON shape:
             body: JSON.stringify({ image: dataUrl, context })
           });
           const result = await response.json();
-          if (result.ok && Array.isArray(result.rows) && result.rows.length) return result.rows;
+          if (result.ok && Array.isArray(result.rows) && result.rows.length) {
+            state.importEngine = "GPT Vision (backend)";
+            return result.rows;
+          }
         } catch (error) {
           // Backend may be unavailable; direct GPT request is tried below.
         }
@@ -5226,6 +5248,7 @@ Return exactly this JSON shape:
         const parsed = parseJsonObject(data.choices?.[0]?.message?.content || "");
         const rows = Array.isArray(parsed?.rows) ? parsed.rows : [];
         if (!rows.length) throw new Error("Gorselden kullanilabilir satir bulunamadi.");
+        state.importEngine = "GPT Vision (browser)";
         return rows;
       }
       throw new Error(`GPT image read failed: ${lastError}`);
@@ -5390,6 +5413,17 @@ Return exactly this JSON shape:
       } : {};
     }
 
+    function cleanOcrCreatorCandidate(value) {
+      const original = String(value || "").trim();
+      const normalized = original.replace(/[~|¦]+/g, " ").replace(/[^\p{L}\p{N}._' -]+/gu, " ").replace(/\s+/g, " ").trim();
+      if (!normalized) return original;
+      if (/[~|¦]/.test(original)) {
+        const latin = normalized.split(/\s+/).filter((token) => /^[A-Za-z][A-Za-z0-9._'-]{3,}$/.test(token));
+        if (latin.length) return latin.sort((a, b) => b.length - a.length)[0];
+      }
+      return normalized.replace(/^(?:[A-Za-z]\s+)(?=[A-Z][a-z])/u, "").trim();
+    }
+
     function rowsFromOcrText(textValue, context = {}, visualMetrics = {}) {
       const lines = String(textValue || "").replace(/\r/g, "\n").split("\n").map((line) => line.trim()).filter(Boolean);
       const rows = [];
@@ -5403,8 +5437,9 @@ Return exactly this JSON shape:
         const hasMetrics = /\b\d+(?:[.,]\d+)?\s*[KMB]?\b/i.test(line) && /(views?|followers?|subscribers?|avg|yorum|comment|takip)/i.test(line);
         if (link || handle || hasMetrics) {
           const cleaned = line.replace(link, "").replace(handle, "").replace(/\s{2,}/g, " ").trim();
+          const creatorName = cleanOcrCreatorCandidate(cleaned.split(/[|,\t]/)[0] || cleaned || handle || link);
           rows.push({
-            "Channel Name": contextName || cleaned.split(/[|,\t]/)[0] || cleaned || handle || link || `Image row ${rows.length + 1}`,
+            "Channel Name": contextName || creatorName || `Image row ${rows.length + 1}`,
             "Link": contextLink || link || (handle.startsWith("@") ? `https://www.youtube.com/${handle}` : ""),
             "GEO": scrumball.geo || "",
             "Gender": scrumball.genderApprox || "",
@@ -5433,7 +5468,7 @@ Return exactly this JSON shape:
         });
         if (candidateName) {
           rows.push({
-            "Channel Name": candidateName,
+            "Channel Name": cleanOcrCreatorCandidate(candidateName),
             "Link": "",
             "GEO": scrumball.geo || "",
             "Gender": scrumball.genderApprox || "",
@@ -5473,6 +5508,7 @@ Return exactly this JSON shape:
       const combinedText = [enhanced.data?.text || "", original.data?.text || ""].join("\n");
       const rows = rowsFromOcrText(combinedText, context, visualMetrics);
       if (!rows.length) throw new Error("OCR read text but no usable creator rows or YouTube links were found.");
+      state.importEngine = "OCR (Tesseract)";
       return rows;
     }
 
@@ -5520,6 +5556,7 @@ Return exactly this JSON shape:
         channelName: ""
       };
       try {
+        state.importEngine = "";
         if (status) status.textContent = `Reading ${sourceLabel} data...`;
         let rows = [];
         let readError = "";

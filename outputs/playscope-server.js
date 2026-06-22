@@ -12,16 +12,19 @@ try {
 const root = path.resolve(__dirname, "..");
 const publicDir = __dirname;
 const envPath = path.join(root, ".env.local");
+const parentEnvPath = path.resolve(root, "..", ".env.local");
 const dataDir = path.join(root, "work");
 const sharedStatePath = path.join(dataDir, "playscope-shared-state.json");
 const appVersion = "social-ai-text-fallback-2026-06-17-1";
 
 function readEnv() {
   const env = { ...process.env };
-  if (!fs.existsSync(envPath)) return env;
-  for (const line of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
-    const match = line.match(/^([A-Z0-9_]+)=(.*)$/);
-    if (match) env[match[1]] = match[2];
+  for (const candidate of [parentEnvPath, envPath]) {
+    if (!fs.existsSync(candidate)) continue;
+    for (const line of fs.readFileSync(candidate, "utf8").split(/\r?\n/)) {
+      const match = line.match(/^\uFEFF?([A-Z0-9_]+)=(.*)$/);
+      if (match) env[match[1]] = match[2];
+    }
   }
   return env;
 }
@@ -184,6 +187,7 @@ async function callAiModuleModel(model, module, prompt) {
 }
 
 async function callVisionJsonModel(model, systemText, promptText, imageDataUrl) {
+  const imageDataUrls = (Array.isArray(imageDataUrl) ? imageDataUrl : [imageDataUrl]).filter(Boolean);
   const wireApi = getAiModuleWireApi();
   const baseUrl = getAiModuleBaseUrl();
   const headers = {
@@ -199,7 +203,7 @@ async function callVisionJsonModel(model, systemText, promptText, imageDataUrl) 
           role: "user",
           content: [
             { type: "input_text", text: promptText },
-            { type: "input_image", image_url: imageDataUrl }
+            ...imageDataUrls.map((url) => ({ type: "input_image", image_url: url }))
           ]
         }
       ],
@@ -234,7 +238,7 @@ async function callVisionJsonModel(model, systemText, promptText, imageDataUrl) 
           role: "user",
           content: [
             { type: "text", text: promptText },
-            { type: "image_url", image_url: { url: imageDataUrl } }
+            ...imageDataUrls.map((url) => ({ type: "image_url", image_url: { url } }))
           ]
         }
       ],
@@ -289,6 +293,84 @@ function readJson(req) {
   });
 }
 
+function xmlText(value) {
+  return String(value || "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
+}
+
+function xlsxColumnIndex(reference) {
+  const letters = String(reference || "A").match(/^[A-Z]+/i)?.[0]?.toUpperCase() || "A";
+  let value = 0;
+  for (const letter of letters) value = value * 26 + letter.charCodeAt(0) - 64;
+  return Math.max(0, value - 1);
+}
+
+function readZipEntries(buffer) {
+  let eocd = -1;
+  for (let offset = buffer.length - 22; offset >= 0 && offset > buffer.length - 66000; offset -= 1) {
+    if (buffer.readUInt32LE(offset) === 0x06054b50) { eocd = offset; break; }
+  }
+  if (eocd < 0) throw new Error("Invalid XLSX file.");
+  const count = buffer.readUInt16LE(eocd + 10);
+  let cdOffset = buffer.readUInt32LE(eocd + 16);
+  const entries = new Map();
+  for (let index = 0; index < count; index += 1) {
+    if (buffer.readUInt32LE(cdOffset) !== 0x02014b50) break;
+    const method = buffer.readUInt16LE(cdOffset + 10);
+    const compressedSize = buffer.readUInt32LE(cdOffset + 20);
+    const nameLength = buffer.readUInt16LE(cdOffset + 28);
+    const extraLength = buffer.readUInt16LE(cdOffset + 30);
+    const commentLength = buffer.readUInt16LE(cdOffset + 32);
+    const localOffset = buffer.readUInt32LE(cdOffset + 42);
+    const name = buffer.subarray(cdOffset + 46, cdOffset + 46 + nameLength).toString("utf8").replace(/\\/g, "/");
+    cdOffset += 46 + nameLength + extraLength + commentLength;
+    if (buffer.readUInt32LE(localOffset) !== 0x04034b50) continue;
+    const localNameLength = buffer.readUInt16LE(localOffset + 26);
+    const localExtraLength = buffer.readUInt16LE(localOffset + 28);
+    const dataOffset = localOffset + 30 + localNameLength + localExtraLength;
+    const compressed = buffer.subarray(dataOffset, dataOffset + compressedSize);
+    const raw = method === 0 ? compressed : method === 8 ? zlib.inflateRawSync(compressed) : null;
+    if (raw) entries.set(name, raw);
+  }
+  return entries;
+}
+
+function parseXlsxRows(buffer) {
+  const entries = readZipEntries(buffer);
+  const sharedXml = entries.get("xl/sharedStrings.xml")?.toString("utf8") || "";
+  const shared = [...sharedXml.matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>/gi)]
+    .map((match) => [...match[1].matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/gi)].map((part) => xmlText(part[1])).join(""));
+  const sheetName = [...entries.keys()].filter((name) => /^xl\/worksheets\/sheet\d+\.xml$/i.test(name)).sort()[0];
+  if (!sheetName) throw new Error("Excel worksheet not found.");
+  const sheet = entries.get(sheetName).toString("utf8");
+  return [...sheet.matchAll(/<row\b[^>]*>([\s\S]*?)<\/row>/gi)].map((rowMatch) => {
+    const row = [];
+    for (const cellMatch of rowMatch[1].matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/gi)) {
+      const attrs = cellMatch[1];
+      const body = cellMatch[2];
+      const reference = attrs.match(/\br="([^"]+)"/i)?.[1] || "A";
+      const type = attrs.match(/\bt="([^"]+)"/i)?.[1] || "";
+      const raw = body.match(/<v\b[^>]*>([\s\S]*?)<\/v>/i)?.[1] || "";
+      const inline = [...body.matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/gi)].map((part) => xmlText(part[1])).join("");
+      row[xlsxColumnIndex(reference)] = type === "s" ? (shared[Number(raw)] || "") : type === "inlineStr" ? inline : xmlText(raw);
+    }
+    return row.map((value) => value ?? "");
+  }).filter((row) => row.some((value) => String(value || "").trim()));
+}
+
+function parseDelimitedRowsServer(raw) {
+  const text = String(raw || "").replace(/^\uFEFF/, "").replace(/\r/g, "").trim();
+  if (!text) return [];
+  const separator = text.includes("\t") ? "\t" : (text.includes(";") && !text.includes(",") ? ";" : ",");
+  return text.split("\n").map((line) => line.split(separator).map((cell) => cell.trim().replace(/^"|"$/g, ""))).filter((row) => row.some(Boolean));
+}
+
 function readSharedState() {
   if (!fs.existsSync(sharedStatePath)) return {};
   try {
@@ -328,20 +410,39 @@ function demoInfluencer(input, reason = "Real API was unavailable or the API req
 
 async function youtubeResearch(input) {
   if (!env.YOUTUBE_API_KEY || typeof fetch !== "function") return demoInfluencer(input, "YouTube API key is missing or the runtime cannot make external requests.");
-  const query = encodeURIComponent(input.name || "");
-  const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&maxResults=1&q=${query}&key=${env.YOUTUBE_API_KEY}`;
+  const lookupValue = String(input.name || "").trim();
+  const channelMatch = lookupValue.match(/youtube\.com\/channel\/(UC[\w-]{20,})/i) || lookupValue.match(/\b(UC[\w-]{20,})\b/);
+  const handleMatch = lookupValue.match(/youtube\.com\/@([A-Za-z0-9._-]+)/i) || lookupValue.match(/^@([A-Za-z0-9._-]+)$/);
+  const videoMatch = lookupValue.match(/[?&]v=([A-Za-z0-9_-]{6,})/i) || lookupValue.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/i);
+  let channelId = channelMatch?.[1] || "";
+  if (!channelId && handleMatch) {
+    const handleUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${encodeURIComponent(handleMatch[1])}&key=${env.YOUTUBE_API_KEY}`;
+    const handleResponse = await fetch(handleUrl).catch(() => null);
+    const handleData = handleResponse ? await handleResponse.json().catch(() => ({})) : {};
+    channelId = handleData.items?.[0]?.id || "";
+  }
+  if (!channelId && videoMatch) {
+    const videoUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${encodeURIComponent(videoMatch[1])}&key=${env.YOUTUBE_API_KEY}`;
+    const videoResponse = await fetch(videoUrl).catch(() => null);
+    const videoData = videoResponse ? await videoResponse.json().catch(() => ({})) : {};
+    channelId = videoData.items?.[0]?.snippet?.channelId || "";
+  }
+  const query = encodeURIComponent(input.fallbackName || lookupValue.replace(/^@/, ""));
+  const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&maxResults=3&q=${query}&key=${env.YOUTUBE_API_KEY}`;
   let searchResponse;
-  try {
-    searchResponse = await fetch(searchUrl);
-  } catch (error) {
-    return demoInfluencer(input, `Could not connect to YouTube Data API: ${error.message}. Check network/VPN/proxy access to www.googleapis.com.`);
+  if (!channelId) {
+    try {
+      searchResponse = await fetch(searchUrl);
+    } catch (error) {
+      return demoInfluencer(input, `Could not connect to YouTube Data API: ${error.message}. Check network/VPN/proxy access to www.googleapis.com.`);
+    }
+    const search = await searchResponse.json();
+    if (!searchResponse.ok) {
+      const reason = search.error?.errors?.[0]?.reason || search.error?.message || `YouTube returned HTTP ${searchResponse.status}.`;
+      return demoInfluencer(input, `YouTube API error: ${reason}`);
+    }
+    channelId = search.items?.[0]?.snippet?.channelId || "";
   }
-  const search = await searchResponse.json();
-  if (!searchResponse.ok) {
-    const reason = search.error?.errors?.[0]?.reason || search.error?.message || `YouTube returned HTTP ${searchResponse.status}.`;
-    return demoInfluencer(input, `YouTube API error: ${reason}`);
-  }
-  const channelId = search.items?.[0]?.snippet?.channelId;
   if (!channelId) return demoInfluencer(input, "No matching YouTube channel was found. Try the exact YouTube channel name or channel URL.");
 
   const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${env.YOUTUBE_API_KEY}`;
@@ -368,6 +469,7 @@ async function youtubeResearch(input) {
     country: input.country || "Unknown",
     flag: input.country === "Germany" ? "DE" : input.country === "USA" ? "US" : "TR",
     channel: "YouTube",
+    link: `https://www.youtube.com/channel/${channelId}`,
     views: avgViews || Number(channel.statistics?.viewCount || 0),
     match: genres.includes("strategy") || genres.includes("space") ? 88 : 70,
     genres,
@@ -504,7 +606,8 @@ async function readImageData(input) {
   if (!env.OPENAI_API_KEY || typeof fetch !== "function") {
     return { ok: false, error: "GPT API key is missing or backend cannot make external requests." };
   }
-  if (!input.image || !String(input.image).startsWith("data:image/")) {
+  const images = (Array.isArray(input.images) ? input.images : [input.image]).filter((value) => String(value || "").startsWith("data:image/"));
+  if (!images.length) {
     return { ok: false, error: "No image received." };
   }
   const modelCandidates = getAiModuleModelCandidates("vision");
@@ -515,7 +618,7 @@ async function readImageData(input) {
       model,
       "Extract influencer research table data from images. Return strict JSON only. Do not invent missing values.",
       prompt,
-      input.image
+      images
     ).catch((error) => ({ response: { ok: false, status: "network", error }, text: "" }));
     const response = result.response;
     if (!response.ok) {
@@ -1899,6 +2002,17 @@ const server = http.createServer(async (req, res) => {
       const body = await readJson(req);
       writeSharedState(body.state || {});
       return send(res, 200, { ok: true });
+    }
+    if (req.method === "POST" && req.url === "/api/import-file") {
+      const body = await readJson(req);
+      const name = String(body.name || "");
+      const encoded = String(body.data || "").replace(/^data:[^,]+,/, "");
+      if (!encoded) return send(res, 400, { ok: false, error: "File data is required." });
+      const fileBuffer = Buffer.from(encoded, "base64");
+      const rows = /\.xlsx?$/i.test(name)
+        ? parseXlsxRows(fileBuffer)
+        : parseDelimitedRowsServer(fileBuffer.toString("utf8"));
+      return send(res, 200, { ok: true, rows });
     }
     if (req.method === "POST" && req.url === "/api/extension-import") {
       const body = await readJson(req);
