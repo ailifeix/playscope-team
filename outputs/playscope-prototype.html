@@ -2153,6 +2153,9 @@
       backendStatus: "unknown",
       ...state.ai.settings
     };
+    state.importFileName = state.importFileName || "";
+    state.importStatus = state.importStatus || "Excel/CSV seç veya ekran görüntüsünü yapıştır; analiz otomatik başlar.";
+    let pendingImportFile = null;
 
     const competitors = {
       strategy: [
@@ -2712,21 +2715,20 @@
             <div><div class="field-label">${tr("country")}</div><input id="researchCountry" value="Turkey"></div>
             <div><div class="field-label">${tr("channel")}</div><select id="researchChannel"><option>YouTube</option><option>Twitch</option><option>TikTok</option></select></div>
             <div><div class="field-label">${tr("avgViews")}</div><input id="researchViews" type="number" value="88000"></div>
-          </div><div class="field-label">Genres</div><input id="researchGenres" value="strategy mobile space"><button class="primary" id="addResearchBtn" type="button" style="margin-top:12px">YouTube'da Ara</button><button class="coral" id="importExtensionBtn" type="button" style="margin-top:12px;margin-left:8px">Import Extension Data</button><p class="note" id="researchStatus">Kanal adını, @handle veya YouTube bağlantısını yazıp Enter'a bas.</p><p class="note">For extension import, open a YouTube channel or video page. Public stats are calculated from YouTube API.</p>`)}
+          </div><div class="field-label">Genres</div><input id="researchGenres" value="strategy mobile space"><button class="primary" id="addResearchBtn" type="button" style="margin-top:12px">${tr("analyze")}</button><button class="coral" id="importExtensionBtn" type="button" style="margin-top:12px;margin-left:8px">Import Extension Data</button><p class="note" id="researchStatus">${tr("apiSafe")}</p><p class="note">For extension import, open a YouTube channel or video page. Public stats are calculated from YouTube API.</p>`)}
           ${panel("Veri içe aktar", `<div class="unified-import">
             <div class="unified-import-files">
               <div class="field-label">Excel / CSV veya ekran görüntüsü seç</div>
               <input id="importDataFile" type="file" accept=".xlsx,.xls,.csv,.tsv,.txt,text/csv,image/png,image/jpeg,image/webp">
-              <div class="field-label" style="margin-top:4px">Görsel kullanıyorsan YouTube kanal linki</div>
-              <input id="imageChannelLink" placeholder="YouTube channel link or @handle">
+              <input id="imageChannelLink" type="hidden" value="">
+              <p class="note" id="selectedImportFile">${state.importFileName ? `Seçili dosya: ${esc(state.importFileName)}` : "Henüz dosya seçilmedi."}</p>
             </div>
             <div id="imagePasteZone" tabindex="0">Ya da ekran görüntüsünü buraya Ctrl+V ile yapıştır.</div>
             <div class="unified-actions">
-              <button class="primary" id="importDataBtn" type="button">Dosyayı tekrar analiz et</button>
-              <button class="ghost" id="resetBtn" type="button">${tr("reset")}</button>
+              <button class="primary" id="importDataBtn" type="button">Tekrar analiz et</button>
             </div>
             <div class="unified-status">
-              <p class="note" id="excelStatus">Excel, CSV veya ekran görüntüsü aynı dosya alanından otomatik olarak işlenir.</p>
+              <p class="note" id="excelStatus">${esc(state.importStatus)}</p>
               <p class="note" id="imageStatus"></p>
             </div>
           </div>`)}
@@ -2734,19 +2736,16 @@
         <section class="panel">${renderTable("", "fit")}</section>`;
       bindTable();
       $("addResearchBtn").addEventListener("click", addResearchInfluencer);
-      ["researchName", "researchCountry", "researchViews", "researchGenres"].forEach((id) => {
-        $(id)?.addEventListener("keydown", (event) => {
-          if (event.key !== "Enter") return;
-          event.preventDefault();
-          addResearchInfluencer();
-        });
-      });
       $("importExtensionBtn").addEventListener("click", importExtensionData);
       $("importDataBtn").addEventListener("click", uploadUnifiedImportFile);
       $("importDataFile").addEventListener("change", handleImportFileSelection);
       $("imagePasteZone").addEventListener("paste", handleImagePaste);
       $("imagePasteZone").addEventListener("click", () => $("imagePasteZone").focus());
-      $("resetBtn").addEventListener("click", () => { state.influencers = defaultInfluencers; state.selected = 0; saveState(); render(); });
+      $("imagePasteZone").addEventListener("dragover", (event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "copy";
+      });
+      $("imagePasteZone").addEventListener("drop", handleImportDrop);
     }
 
     function listPage() {
@@ -4675,7 +4674,7 @@ Return exactly this JSON shape:
       const status = statusId ? $(statusId) : null;
       const seeds = rows.map(findYouTubeSeedFromRow).filter((seed) => seed.link || seed.name);
       if (!seeds.length) {
-        if (status) status.textContent = "No usable Channel Name or YouTube Link found.";
+        updateImportStatus("Dosyada aranabilir kanal adı veya YouTube bağlantısı bulunamadı.");
         return;
       }
       await ensureBrowserYouTubeKey();
@@ -4743,19 +4742,29 @@ Return exactly this JSON shape:
         lastIndex = result.index;
       });
       state.selected = lastIndex;
+      const fallbackText = skipped.length ? ` ${skipped.length} kanal canlı YouTube verisi olmadan eklendi.` : "";
+      state.importStatus = `Tamamlandı: ${addedCount} kanal eklendi, ${updatedCount} kanal güncellendi.${fallbackText}`;
       saveState();
       render();
       const nextStatus = statusId ? $(statusId) : null;
       if (nextStatus) {
-        const fallbackText = skipped.length ? ` ${skipped.length} row imported without live YouTube data.` : "";
-        nextStatus.textContent = `Done. ${addedCount} added, ${updatedCount} updated.${fallbackText}`;
+        nextStatus.textContent = state.importStatus;
       }
+    }
+
+    function updateImportStatus(message, persist = false) {
+      state.importStatus = String(message || "");
+      const excelStatus = $("excelStatus");
+      const imageStatus = $("imageStatus");
+      if (excelStatus) excelStatus.textContent = state.importStatus;
+      if (imageStatus && imageStatus.textContent) imageStatus.textContent = "";
+      if (persist) saveState();
     }
 
     async function uploadUnifiedImportFile() {
       const status = $("excelStatus");
       try {
-        const file = $("importDataFile")?.files?.[0];
+        const file = $("importDataFile")?.files?.[0] || pendingImportFile;
         if (!file && state.pendingImageDataUrl) {
           await uploadImageData();
           return;
@@ -4765,11 +4774,11 @@ Return exactly this JSON shape:
           return;
         }
         const isImage = /^image\//i.test(file.type || "") || /\.(png|jpe?g|webp)$/i.test(file.name || "");
-        if (status) status.textContent = `${file.name} okunuyor...`;
+        updateImportStatus(`${file.name} okunuyor...`);
         if (isImage) await uploadImageData();
         else await uploadExcelFile();
       } catch (error) {
-        if (status) status.textContent = "Dosya yüklenemedi: " + (error?.message || String(error));
+        updateImportStatus("Dosya işlenemedi: " + (error?.message || String(error)), true);
       }
     }
 
@@ -4780,20 +4789,24 @@ Return exactly this JSON shape:
       state.pendingImageDataUrl = "";
       state.pendingImageName = "";
       if (!file) {
-        if (status) status.textContent = "Dosya seçilmedi.";
+        updateImportStatus("Dosya seçilmedi.");
         return;
       }
+      pendingImportFile = file;
+      state.importFileName = file.name;
       const size = file.size >= 1024 * 1024
         ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
         : `${Math.max(1, Math.round(file.size / 1024))} KB`;
-      if (status) status.textContent = `Seçildi: ${file.name} (${size}). Otomatik analiz ve YouTube araması başlıyor...`;
+      const selectedLabel = $("selectedImportFile");
+      if (selectedLabel) selectedLabel.textContent = `Seçili dosya: ${file.name}`;
+      updateImportStatus(`Seçildi: ${file.name} (${size}). Otomatik analiz ve YouTube araması başlıyor...`);
       if (imageStatus) imageStatus.textContent = "";
       await uploadUnifiedImportFile();
     }
 
     async function uploadExcelFile() {
       const status = $("excelStatus");
-      const file = $("importDataFile")?.files?.[0];
+      const file = $("importDataFile")?.files?.[0] || pendingImportFile;
       if (!file) {
         if (status) status.textContent = "Choose an Excel or CSV file first.";
         return;
@@ -4801,17 +4814,35 @@ Return exactly this JSON shape:
       try {
         let rows = [];
         let xlsxBuffer = null;
-        if (/\.csv$|\.tsv$|\.txt$/i.test(file.name)) {
+        let serverRows = null;
+        try {
+          updateImportStatus(`${file.name} sunucuda okunuyor...`);
+          const response = await fetch("/api/import-file", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...sharedHeaders() },
+            body: JSON.stringify({ name: file.name, data: await fileToDataUrl(file) })
+          });
+          const result = await response.json();
+          if (response.ok && result.ok && Array.isArray(result.rows)) serverRows = result.rows;
+        } catch (error) {
+          serverRows = null;
+        }
+        if (serverRows) {
+          rows = rowsToObjects(serverRows);
+          if (/\.xlsx?$/i.test(file.name)) xlsxBuffer = await file.arrayBuffer();
+        } else if (/\.csv$|\.tsv$|\.txt$/i.test(file.name)) {
           rows = rowsToObjects(parseDelimitedRows(await file.text()));
         } else {
-          if (!window.XLSX) {
-            if (status) status.textContent = "Excel parser could not load. Save the file as CSV or use copy-paste.";
-            return;
-          }
           xlsxBuffer = await file.arrayBuffer();
-          const workbook = XLSX.read(xlsxBuffer, { type: "array" });
-          const firstSheet = workbook.SheetNames[0];
-          const sheetRows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { header: 1, defval: "" });
+          let sheetRows = [];
+          if (window.XLSX) {
+            const workbook = XLSX.read(xlsxBuffer, { type: "array" });
+            const firstSheet = workbook.SheetNames[0];
+            sheetRows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { header: 1, defval: "" });
+          } else {
+            updateImportStatus("Excel kütüphanesi yüklenmedi; yerleşik okuyucu kullanılıyor...");
+            sheetRows = await readBasicXlsxRows(xlsxBuffer);
+          }
           rows = rowsToObjects(sheetRows);
         }
         await analyzeInfluencerRows(rows, "excelStatus");
@@ -4850,13 +4881,80 @@ Return exactly this JSON shape:
           }
         }
       } catch (error) {
-        if (status) status.textContent = "File could not be read: " + error.message;
+        updateImportStatus("Excel/CSV okunamadı: " + error.message, true);
       }
     }
 
     function zipReadString(view, offset, length) {
       const bytes = new Uint8Array(view.buffer, view.byteOffset + offset, length);
       return new TextDecoder().decode(bytes);
+    }
+
+    async function readXlsxZipEntries(buffer) {
+      const view = new DataView(buffer);
+      let eocd = -1;
+      for (let offset = view.byteLength - 22; offset >= 0 && offset > view.byteLength - 66000; offset -= 1) {
+        if (view.getUint32(offset, true) === 0x06054b50) {
+          eocd = offset;
+          break;
+        }
+      }
+      if (eocd < 0) throw new Error("Geçerli bir XLSX dosyası değil.");
+      const entries = view.getUint16(eocd + 10, true);
+      let cdOffset = view.getUint32(eocd + 16, true);
+      const result = new Map();
+      for (let index = 0; index < entries; index += 1) {
+        if (view.getUint32(cdOffset, true) !== 0x02014b50) break;
+        const method = view.getUint16(cdOffset + 10, true);
+        const compressedSize = view.getUint32(cdOffset + 20, true);
+        const fileNameLength = view.getUint16(cdOffset + 28, true);
+        const extraLength = view.getUint16(cdOffset + 30, true);
+        const commentLength = view.getUint16(cdOffset + 32, true);
+        const localOffset = view.getUint32(cdOffset + 42, true);
+        const fileName = normalizeZipPath(zipReadString(view, cdOffset + 46, fileNameLength));
+        cdOffset += 46 + fileNameLength + extraLength + commentLength;
+        if (view.getUint32(localOffset, true) !== 0x04034b50) continue;
+        const localNameLength = view.getUint16(localOffset + 26, true);
+        const localExtraLength = view.getUint16(localOffset + 28, true);
+        const dataOffset = localOffset + 30 + localNameLength + localExtraLength;
+        const compressed = new Uint8Array(buffer.slice(dataOffset, dataOffset + compressedSize));
+        const raw = method === 0 ? compressed : method === 8 ? await inflateZipBytes(compressed) : null;
+        if (raw) result.set(fileName, raw);
+      }
+      return result;
+    }
+
+    function excelColumnIndex(reference) {
+      const letters = String(reference || "A").match(/^[A-Z]+/i)?.[0]?.toUpperCase() || "A";
+      let value = 0;
+      for (const letter of letters) value = value * 26 + letter.charCodeAt(0) - 64;
+      return Math.max(0, value - 1);
+    }
+
+    async function readBasicXlsxRows(buffer) {
+      const entries = await readXlsxZipEntries(buffer);
+      const decode = (name) => entries.has(name) ? new TextDecoder().decode(entries.get(name)) : "";
+      const parser = new DOMParser();
+      const sharedXml = decode("xl/sharedStrings.xml");
+      const shared = sharedXml
+        ? Array.from(parser.parseFromString(sharedXml, "application/xml").getElementsByTagName("si"))
+          .map((node) => Array.from(node.getElementsByTagName("t")).map((part) => part.textContent || "").join(""))
+        : [];
+      const sheetName = [...entries.keys()].filter((name) => /^xl\/worksheets\/sheet\d+\.xml$/i.test(name)).sort()[0];
+      if (!sheetName) throw new Error("Excel çalışma sayfası bulunamadı.");
+      const documentNode = parser.parseFromString(decode(sheetName), "application/xml");
+      if (documentNode.getElementsByTagName("parsererror").length) throw new Error("Excel çalışma sayfası okunamadı.");
+      return Array.from(documentNode.getElementsByTagName("row")).map((rowNode) => {
+        const row = [];
+        Array.from(rowNode.getElementsByTagName("c")).forEach((cell) => {
+          const index = excelColumnIndex(cell.getAttribute("r"));
+          const type = cell.getAttribute("t") || "";
+          const inline = Array.from(cell.getElementsByTagName("t")).map((node) => node.textContent || "").join("");
+          const raw = cell.getElementsByTagName("v")[0]?.textContent || "";
+          row[index] = type === "s" ? (shared[Number(raw)] || "") : type === "inlineStr" ? inline : raw;
+        });
+        return row.map((value) => value ?? "");
+      }).filter((row) => row.some((value) => String(value || "").trim()));
     }
 
     async function inflateZipBytes(bytes) {
@@ -5327,6 +5425,24 @@ Return exactly this JSON shape:
           "Comments": [scrumball.avgEngagement ? `Avg engagement: ${scrumball.avgEngagement}` : "", scrumball.avgViewRate ? `Avg view rate: ${scrumball.avgViewRate}` : "", scrumball.monthlyPost ? `Monthly post: ${scrumball.monthlyPost}` : "", scrumball.audienceLocation ? `Audience location: ${scrumball.audienceLocation}` : "", scrumball.ageGenderApprox ? `Age/gender approx: ${scrumball.ageGenderApprox}` : "", scrumball.demographicsSource ? `Demographics source: ${scrumball.demographicsSource}` : ""].filter(Boolean).join("; ")
         });
       }
+      if (!rows.length) {
+        const ignored = /^(youtube|studio|dashboard|analytics|content|audience|overview|channel|home|search|views?|subscribers?|followers?|comments?|likes?|settings|customization|copyright|earn|monetization|translations?)$/i;
+        const candidateName = lines.find((line) => {
+          const clean = line.replace(/[|•·]/g, " ").replace(/\s+/g, " ").trim();
+          return clean.length >= 2 && clean.length <= 80 && /[\p{L}]/u.test(clean) && !ignored.test(clean) && !/^\d/.test(clean) && !/%/.test(clean);
+        });
+        if (candidateName) {
+          rows.push({
+            "Channel Name": candidateName,
+            "Link": "",
+            "GEO": scrumball.geo || "",
+            "Gender": scrumball.genderApprox || "",
+            "Age": scrumball.ageGenderApprox || "",
+            "Subscribers": scrumball.subscribers || "",
+            "Comments": "Channel name inferred from screenshot OCR; searched automatically on YouTube."
+          });
+        }
+      }
       if (rows.length) return rows;
       const joined = lines.join("\n");
       const parsed = rowsToObjects(parseDelimitedRows(joined));
@@ -5362,7 +5478,7 @@ Return exactly this JSON shape:
 
     async function uploadImageData() {
       const status = $("imageStatus");
-      const file = $("importDataFile")?.files?.[0];
+      const file = $("importDataFile")?.files?.[0] || pendingImportFile;
       const channelLink = $("imageChannelLink")?.value?.trim() || "";
       if (!file) {
         if (state.pendingImageDataUrl) {
@@ -5429,7 +5545,7 @@ Return exactly this JSON shape:
         if (status) status.textContent = `${sourceLabel} read: ${rows.length} row(s). Now checking YouTube API...`;
         await analyzeInfluencerRows(rows, "imageStatus");
       } catch (error) {
-        if (status) status.textContent = error.message;
+        updateImportStatus("Ekran görüntüsü işlenemedi: " + error.message, true);
       }
     }
 
@@ -5447,9 +5563,14 @@ Return exactly this JSON shape:
         }
         state.pendingImageDataUrl = await fileToDataUrl(file);
         state.pendingImageName = `Pasted image (${Math.round(file.size / 1024)} KB)`;
+        state.importFileName = file.name || "Yapıştırılan ekran görüntüsü";
+        pendingImportFile = file;
         saveState();
         $("imagePasteZone").textContent = `Pasted image: ${file.type || "image"} (${Math.round(file.size / 1024)} KB)`;
-        if (status) status.textContent = "Görsel hazır. Kanal linkini girip Seçilen dosyayı analiz et düğmesine bas.";
+        const selectedLabel = $("selectedImportFile");
+        if (selectedLabel) selectedLabel.textContent = `Seçili dosya: ${state.importFileName}`;
+        updateImportStatus("Görsel hazır. Kanal bilgileri okunup YouTube'da otomatik aranıyor...");
+        await processImageDataFile(file, "pasted image");
         return;
       }
       if (textItem) {
@@ -5461,6 +5582,21 @@ Return exactly this JSON shape:
         return;
       }
       if (status) status.textContent = "Paste a screenshot image or text rows.";
+    }
+
+    async function handleImportDrop(event) {
+      event.preventDefault();
+      const file = Array.from(event.dataTransfer?.files || [])[0];
+      if (!file) {
+        updateImportStatus("Bırakılan içerikte dosya bulunamadı.");
+        return;
+      }
+      pendingImportFile = file;
+      state.importFileName = file.name || "Sürüklenen dosya";
+      const selectedLabel = $("selectedImportFile");
+      if (selectedLabel) selectedLabel.textContent = `Seçili dosya: ${state.importFileName}`;
+      updateImportStatus(`${state.importFileName} alındı. Otomatik analiz başlıyor...`);
+      await uploadUnifiedImportFile();
     }
     function inferLocalizationGenre(source, selectedGenre) {
       if (selectedGenre && selectedGenre !== "auto") return selectedGenre;
@@ -7511,6 +7647,11 @@ ${labels.note}: ${labels.noteText}`;
     $("accountLogoutBtn").addEventListener("click", logoutAccount);
     $("accountModal").addEventListener("click", (event) => {
       if (event.target.id === "accountModal") closeAccountModal();
+    });
+    document.addEventListener("paste", (event) => {
+      if (state.page !== "search" || event.defaultPrevented) return;
+      const hasImage = Array.from(event.clipboardData?.items || []).some((item) => item.type.startsWith("image/"));
+      if (hasImage) handleImagePaste(event);
     });
     render();
     loadSharedState();
