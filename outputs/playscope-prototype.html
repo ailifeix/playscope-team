@@ -2712,7 +2712,7 @@
             <div><div class="field-label">${tr("country")}</div><input id="researchCountry" value="Turkey"></div>
             <div><div class="field-label">${tr("channel")}</div><select id="researchChannel"><option>YouTube</option><option>Twitch</option><option>TikTok</option></select></div>
             <div><div class="field-label">${tr("avgViews")}</div><input id="researchViews" type="number" value="88000"></div>
-          </div><div class="field-label">Genres</div><input id="researchGenres" value="strategy mobile space"><button class="primary" id="addResearchBtn" type="button" style="margin-top:12px">${tr("analyze")}</button><button class="coral" id="importExtensionBtn" type="button" style="margin-top:12px;margin-left:8px">Import Extension Data</button><p class="note" id="researchStatus">${tr("apiSafe")}</p><p class="note">For extension import, open a YouTube channel or video page. Public stats are calculated from YouTube API.</p>`)}
+          </div><div class="field-label">Genres</div><input id="researchGenres" value="strategy mobile space"><button class="primary" id="addResearchBtn" type="button" style="margin-top:12px">YouTube'da Ara</button><button class="coral" id="importExtensionBtn" type="button" style="margin-top:12px;margin-left:8px">Import Extension Data</button><p class="note" id="researchStatus">Kanal adını, @handle veya YouTube bağlantısını yazıp Enter'a bas.</p><p class="note">For extension import, open a YouTube channel or video page. Public stats are calculated from YouTube API.</p>`)}
           ${panel("Veri içe aktar", `<div class="unified-import">
             <div class="unified-import-files">
               <div class="field-label">Excel / CSV veya ekran görüntüsü seç</div>
@@ -2722,7 +2722,7 @@
             </div>
             <div id="imagePasteZone" tabindex="0">Ya da ekran görüntüsünü buraya Ctrl+V ile yapıştır.</div>
             <div class="unified-actions">
-              <button class="primary" id="importDataBtn" type="button">Seçilen dosyayı analiz et</button>
+              <button class="primary" id="importDataBtn" type="button">Dosyayı tekrar analiz et</button>
               <button class="ghost" id="resetBtn" type="button">${tr("reset")}</button>
             </div>
             <div class="unified-status">
@@ -2734,6 +2734,13 @@
         <section class="panel">${renderTable("", "fit")}</section>`;
       bindTable();
       $("addResearchBtn").addEventListener("click", addResearchInfluencer);
+      ["researchName", "researchCountry", "researchViews", "researchGenres"].forEach((id) => {
+        $(id)?.addEventListener("keydown", (event) => {
+          if (event.key !== "Enter") return;
+          event.preventDefault();
+          addResearchInfluencer();
+        });
+      });
       $("importExtensionBtn").addEventListener("click", importExtensionData);
       $("importDataBtn").addEventListener("click", uploadUnifiedImportFile);
       $("importDataFile").addEventListener("change", handleImportFileSelection);
@@ -3655,32 +3662,22 @@ Return exactly this JSON shape:
       await ensureBrowserYouTubeKey();
       if (state.api?.youtube) {
         result = await youtubeFromBrowser(input, state.api.youtube);
-        if (status && result) status.textContent = result.source === "youtube-live" ? "Loaded live YouTube data from browser." : result.notes;
-      }
-      if (result && result.source !== "youtube-live") {
-        state.influencers.unshift(result);
-        state.selected = 0; saveState(); render();
-        return;
-      }
-      if (!state.api?.youtube) {
-        const noKey = localResearchResult(input);
-        noKey.notes = "No browser YouTube API key found. Go to Settings, paste the YouTube API key, press Save, then Analyze again.";
-        state.influencers.unshift(noKey);
-        state.selected = 0; saveState(); render();
-        return;
+        if (status && result) status.textContent = isLiveYouTubeResult(result) ? "Loaded live YouTube data." : result.notes;
       }
       try {
-        if (!result || result.source !== "youtube-live") {
+        if (!isLiveYouTubeResult(result)) {
+          if (status) status.textContent = "Searching through PlayScope server...";
           const response = await fetch("/api/research", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
-          result = await response.json();
+          if (response.ok) result = await response.json();
           if (result?.source === "demo" && !state.api?.youtube) {
-            result.notes += " Browser YouTube key is not saved yet. Go to Settings > API Status and save your YouTube API key, then try again.";
+            result.notes += " Live YouTube data is unavailable; the search was saved with available information.";
           }
         }
       } catch (error) {
         result = result || null;
       }
-      state.influencers.unshift(result || { name, link: "", handle: "@" + name.toLowerCase().replace(/[^a-z0-9]/g, ""), country: input.country, geo: input.country, category: "Unclear", subcategory: "Needs YouTube API analysis", subscribers: "-", gender: "Missing", age: "Missing", avgComments: 0, flag: "TR", channel: input.channel, views: input.views, match: genres.includes("strategy") ? 86 : 68, format: "-", duration: "-", keywords: genres.join(", "), comments: "Created locally because backend was unavailable.", genres, tone: "research", audience: "estimated players", notes: "Created locally because backend was unavailable.", shortlisted: false, note: "" });
+      result = result || localResearchResult(input);
+      state.influencers.unshift(result);
       state.selected = 0; saveState(); render();
     }
 
@@ -3832,6 +3829,10 @@ Return exactly this JSON shape:
       const videoMatch = value.match(/[?&]v=([A-Za-z0-9_-]{6,})/i) || value.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/i);
       if (videoMatch) return { videoId: videoMatch[1], query: value };
       return { query: value };
+    }
+
+    function isLiveYouTubeResult(result) {
+      return result?.source === "youtube-live" || result?.source === "youtube";
     }
 
     function chooseBestChannelSearchResult(items = [], query = "", fallbackName = "") {
@@ -4678,16 +4679,12 @@ Return exactly this JSON shape:
         return;
       }
       await ensureBrowserYouTubeKey();
-      if (!state.api?.youtube) {
-        if (status) status.textContent = "YouTube API key gerekli. Settings sayfasina key'i kaydet.";
-        return;
-      }
       const imported = [];
       const skipped = [];
       for (let index = 0; index < seeds.length; index += 1) {
         const seed = seeds[index];
         if (status) status.textContent = `Analyzing ${index + 1}/${seeds.length}: ${seed.name || seed.link}`;
-        const live = await youtubeFromBrowser({
+        const researchInput = {
           name: seed.link || seed.name,
           fallbackName: seed.name,
           country: seed.country || "Turkey",
@@ -4695,17 +4692,32 @@ Return exactly this JSON shape:
           views: 0,
           genres: "",
           project: state.project
-        }, state.api.youtube);
-        const hints = getImportedRowHints(seed.raw || {});
-        if (live.source !== "youtube-live" && !hasUsefulImportedMetrics(hints)) {
-          skipped.push(seed.name || seed.link);
-          continue;
+        };
+        let live = null;
+        if (state.api?.youtube) live = await youtubeFromBrowser(researchInput, state.api.youtube);
+        if (!isLiveYouTubeResult(live)) {
+          try {
+            const response = await fetch("/api/research", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(researchInput)
+            });
+            if (response.ok) {
+              const backendResult = await response.json();
+              if (backendResult) live = backendResult;
+            }
+          } catch (error) {
+            // The selected row is still imported below when live research is unavailable.
+          }
         }
+        live = live || localResearchResult(researchInput);
+        const hints = getImportedRowHints(seed.raw || {});
+        if (!isLiveYouTubeResult(live)) skipped.push(seed.name || seed.link);
         const extraNotes = Object.entries(hints).filter(([, value]) => value).map(([key, value]) => `${key}: ${value}`).join("; ");
         const importedComment = fieldFromRow(seed.raw || {}, ["comments", "notes", "comment"]) || "";
         imported.push(normalizeInfluencer({
           ...live,
-          name: live.name || seed.name,
+          name: seed.name || live.name,
           link: live.link || seed.link,
           country: live.country || seed.country,
           geo: hints.geo || live.geo || seed.country,
@@ -4717,8 +4729,8 @@ Return exactly this JSON shape:
           format: live.format || hints.format || "-",
           duration: live.duration || hints.duration || "-",
           keywords: live.keywords || hints.keywords,
-          comments: `${live.comments || "Imported and checked with YouTube API."}${extraNotes || importedComment ? " Imported visual/list data: " + [extraNotes, importedComment].filter(Boolean).join("; ") : ""}`,
-          notes: `${live.notes || "Imported and checked with YouTube API."}${extraNotes || importedComment ? " Imported visual/list data: " + [extraNotes, importedComment].filter(Boolean).join("; ") : ""}`
+          comments: `${live.comments || (isLiveYouTubeResult(live) ? "Imported and checked with YouTube API." : "Imported; live YouTube search was unavailable.")}${extraNotes || importedComment ? " Imported visual/list data: " + [extraNotes, importedComment].filter(Boolean).join("; ") : ""}`,
+          notes: `${live.notes || (isLiveYouTubeResult(live) ? "Imported and checked with YouTube API." : "Imported; live YouTube search was unavailable.")}${extraNotes || importedComment ? " Imported visual/list data: " + [extraNotes, importedComment].filter(Boolean).join("; ") : ""}`
         }));
       }
       let addedCount = 0;
@@ -4735,8 +4747,8 @@ Return exactly this JSON shape:
       render();
       const nextStatus = statusId ? $(statusId) : null;
       if (nextStatus) {
-        const skippedText = skipped.length ? ` ${skipped.length} row could not be matched, so it was not added.` : "";
-        nextStatus.textContent = `Done. ${addedCount} added, ${updatedCount} updated.${skippedText}`;
+        const fallbackText = skipped.length ? ` ${skipped.length} row imported without live YouTube data.` : "";
+        nextStatus.textContent = `Done. ${addedCount} added, ${updatedCount} updated.${fallbackText}`;
       }
     }
 
@@ -4761,7 +4773,7 @@ Return exactly this JSON shape:
       }
     }
 
-    function handleImportFileSelection(event) {
+    async function handleImportFileSelection(event) {
       const file = event.target?.files?.[0];
       const status = $("excelStatus");
       const imageStatus = $("imageStatus");
@@ -4774,8 +4786,9 @@ Return exactly this JSON shape:
       const size = file.size >= 1024 * 1024
         ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
         : `${Math.max(1, Math.round(file.size / 1024))} KB`;
-      if (status) status.textContent = `Seçildi: ${file.name} (${size}). Analiz düğmesine bas.`;
+      if (status) status.textContent = `Seçildi: ${file.name} (${size}). Otomatik analiz ve YouTube araması başlıyor...`;
       if (imageStatus) imageStatus.textContent = "";
+      await uploadUnifiedImportFile();
     }
 
     async function uploadExcelFile() {
