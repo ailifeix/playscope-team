@@ -1752,7 +1752,7 @@
       box-shadow: none;
     }
     .command-kpi {
-      min-height: 145px;
+      min-height: 122px;
       padding: 18px 20px 14px;
       overflow: hidden;
     }
@@ -1769,6 +1769,7 @@
     }
     .command-kpi em.neutral { color: #6c7280; background: #f1f2f4; }
     .command-kpi > strong { display: block; margin-top: 12px; font-size: 30px; line-height: 1; }
+    .command-kpi p { margin: 12px 0 0; color: #9197a5; font-size: 10px; }
     .command-spark { width: 100%; height: 42px; margin-top: 15px; }
     .command-main-grid,
     .command-bottom-grid {
@@ -1888,6 +1889,40 @@
     .command-platform { width: max-content; padding: 4px 7px; border-radius: 5px; background: #f0efec; color: #686e7d; }
     .positive { color: #169b66; }
     .command-activity { padding-bottom: 8px; }
+    .command-project-list { margin: 0; padding: 0 22px 18px; }
+    .command-project-list > div {
+      padding: 10px 0;
+      display: grid;
+      grid-template-columns: 115px minmax(0, 1fr);
+      gap: 12px;
+      border-bottom: 1px solid #efeee9;
+    }
+    .command-project-list > div:last-child { border-bottom: 0; }
+    .command-project-list dt { color: #8e94a3; font-size: 9px; }
+    .command-project-list dd { margin: 0; color: #343843; font-size: 10px; font-weight: 750; overflow-wrap: anywhere; }
+    .command-tools { overflow: visible; }
+    .command-tool-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      padding: 0 22px 20px;
+    }
+    .command-tool-grid button {
+      min-height: 72px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      border-color: #e6e4df;
+      background: #fff;
+      text-align: left;
+      box-shadow: none;
+    }
+    .command-tool-grid button:hover { border-color: #bdb5ff; background: #faf9ff; }
+    .command-tool-grid .icon { width: 20px; height: 20px; color: #5b47ff; }
+    .command-tool-grid strong, .command-tool-grid small { display: block; }
+    .command-tool-grid strong { font-size: 11px; }
+    .command-tool-grid small { margin-top: 4px; color: #8c92a0; font-size: 9px; line-height: 1.35; }
     .activity-item {
       position: relative;
       margin: 0 22px;
@@ -1906,6 +1941,7 @@
     @media (max-width: 1180px) {
       .command-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .command-main-grid, .command-bottom-grid { grid-template-columns: 1fr; }
+      .command-tool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 760px) {
       body[data-page="dashboard"] main { padding: 0 12px 18px; }
@@ -1913,6 +1949,7 @@
       .command-header-actions { overflow-x: auto; }
       .command-search { min-width: 230px; }
       .command-kpis { grid-template-columns: 1fr; margin-top: 16px; }
+      .command-tool-grid { grid-template-columns: 1fr; }
       .command-table-head, .command-creator-row { grid-template-columns: minmax(180px,1fr) 80px 70px 42px; min-width: 500px; }
       .command-top-list { overflow-x: auto; }
     }
@@ -2606,63 +2643,52 @@
       const total = state.influencers.length;
       const withViews = state.influencers.filter((i) => Number(i.views || 0) > 0);
       const avgViews = withViews.length ? Math.round(withViews.reduce((sum, i) => sum + Number(i.views || 0), 0) / withViews.length) : 0;
-      const totalReach = withViews.reduce((sum, item) => sum + Number(item.views || 0), 0);
       const topMatches = rows("", "fit").slice(0, 5);
       const avgFit = total ? Math.round(state.influencers.reduce((sum, item) => sum + fitScore(item), 0) / total) : 0;
-      const marketCount = new Set(state.influencers.map((item) => item.geo || item.country).filter(Boolean)).size;
+      const imported = state.influencers.filter((item) => /youtube|extension|excel|image/i.test(item.source || "")).length;
       const shortlisted = state.influencers.filter((item) => item.shortlisted).length;
-      const targetMarketCount = Math.max(1, String(state.project.markets || "").split(",").map((item) => item.trim()).filter(Boolean).length);
-      const localizationCoverage = Math.min(100, Math.round((marketCount / targetMarketCount) * 100));
-      const sparkline = (color, path) => `<svg class="command-spark" viewBox="0 0 220 44" preserveAspectRatio="none" aria-hidden="true"><path d="${path}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
       $("page").innerHTML = `
         <header class="command-header">
-          <div><h2>Dashboard</h2><p>Growth command center · ${esc(state.project.name)}</p></div>
+          <div><h2>Dashboard</h2><p>${esc(state.project.name)} · ${esc(state.project.genre)}</p></div>
           <div class="command-header-actions">
-            <label class="command-search">${icons.search}<input type="search" placeholder="Search influencers, apps..."></label>
-            <button class="command-icon-btn" type="button" title="Notifications">${icons.review}</button>
-            <button class="command-primary" data-dash-page="aiCampaign" type="button">+ New Campaign</button>
+            <button type="button" id="dashboardExportBtn">${icons.list}<span>Dışa Aktar</span></button>
+            <button type="button" data-dash-page="settings">${icons.doc}<span>Brifi Düzenle</span></button>
+            <button class="command-primary" data-dash-page="search" type="button">+ Influencer Ekle</button>
           </div>
         </header>
         <div class="command-kpis">
-          <section class="command-kpi"><div><span>Tracked Influencers</span><em>+${Math.max(total, 1)}</em></div><strong>${total.toLocaleString()}</strong>${sparkline("#5b47ff", "M2 34 L30 29 L58 32 L87 21 L116 24 L145 14 L174 17 L218 7")}</section>
-          <section class="command-kpi"><div><span>Est. Reach (30d)</span><em>+8.1%</em></div><strong>${views(totalReach)}</strong>${sparkline("#159bb5", "M2 25 L31 28 L60 18 L89 22 L118 13 L147 17 L176 10 L218 4")}</section>
-          <section class="command-kpi"><div><span>Average Fit</span><em class="neutral">Current</em></div><strong>${avgFit}%</strong>${sparkline("#dd8415", "M2 10 L32 7 L62 20 L92 16 L122 28 L152 22 L182 31 L218 25")}</section>
-          <section class="command-kpi"><div><span>Active Shortlist</span><em>+${shortlisted}</em></div><strong>${shortlisted}</strong>${sparkline("#5b47ff", "M2 31 L32 28 L62 22 L92 24 L122 17 L152 10 L182 12 L218 6")}</section>
-        </div>
-        <div class="command-main-grid">
-          <section class="command-panel command-chart-panel">
-            <div class="command-panel-head"><div><h3>Reach & Performance</h3><p>Current creator portfolio</p></div><div class="command-tabs"><button class="active" type="button">6M</button><button type="button">3M</button><button type="button">30D</button></div></div>
-            <div class="command-chart">
-              <svg viewBox="0 0 760 250" preserveAspectRatio="none" aria-label="Reach and performance chart">
-                <defs><linearGradient id="reachFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5b47ff" stop-opacity=".22"/><stop offset="100%" stop-color="#5b47ff" stop-opacity="0"/></linearGradient></defs>
-                <path class="chart-gridline" d="M0 45H760 M0 105H760 M0 165H760 M0 225H760"/>
-                <path class="chart-area" d="M0 196 C80 184 112 148 175 157 S282 117 350 125 S448 78 515 88 S640 73 760 36 L760 250 L0 250 Z"/>
-                <path class="chart-reach" d="M0 196 C80 184 112 148 175 157 S282 117 350 125 S448 78 515 88 S640 73 760 36"/>
-                <path class="chart-fit" d="M0 226 C90 220 120 204 190 210 S290 187 360 194 S470 165 530 172 S650 150 760 126"/>
-              </svg>
-              <div class="command-months"><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span></div>
-            </div>
-            <div class="command-legend"><span><i class="purple"></i>Reach</span><span><i class="cyan"></i>Average Fit</span><strong>${views(avgViews)} avg. views</strong></div>
-          </section>
-          <section class="command-panel command-coverage-panel">
-            <div class="command-panel-head"><div><h3>Localization Coverage</h3><p>${targetMarketCount} target markets</p></div></div>
-            <div class="coverage-ring" style="--coverage:${localizationCoverage * 3.6}deg"><div><strong>${localizationCoverage}%</strong><span>localized</span></div></div>
-            <div class="coverage-list"><div><span><i class="purple"></i>Covered</span><strong>${marketCount}</strong></div><div><span><i class="lavender"></i>In review</span><strong>${Math.max(0, targetMarketCount - marketCount)}</strong></div><div><span><i class="gray"></i>Total markets</span><strong>${targetMarketCount}</strong></div></div>
-          </section>
+          <section class="command-kpi"><div><span>Influencer Listesi</span></div><strong>${total.toLocaleString()}</strong><p>Kayıtlı creator profili</p></section>
+          <section class="command-kpi"><div><span>İçe Aktarılan</span></div><strong>${imported}</strong><p>YouTube, Excel veya görsel</p></section>
+          <section class="command-kpi"><div><span>Ortalama İzlenme</span></div><strong>${views(avgViews)}</strong><p>Mevcut profil listesi</p></section>
+          <section class="command-kpi"><div><span>Shortlist</span></div><strong>${shortlisted}</strong><p>Kampanya için işaretlenen</p></section>
         </div>
         <div class="command-bottom-grid">
           <section class="command-panel command-top-list">
-            <div class="command-panel-head"><div><h3>Top Performing Influencers</h3></div><button class="command-link" data-dash-page="list" type="button">View all →</button></div>
-            <div class="command-table-head"><span>CREATOR</span><span>PLATFORM</span><span>FOLLOWERS</span><span>FIT</span></div>
+            <div class="command-panel-head"><div><h3>Influencer Listesi</h3><p>Uygunluk puanına göre sıralandı</p></div><button class="command-link" data-dash-page="list" type="button">Tümünü gör →</button></div>
+            <div class="command-table-head"><span>CREATOR</span><span>PLATFORM</span><span>TAKİPÇİ</span><span>UYGUNLUK</span></div>
             ${topMatches.length ? topMatches.map((item) => `<button class="command-creator-row" data-dashboard-index="${item.index}" type="button"><span class="command-creator"><i>${initials(item.name)}</i><span><strong>${esc(item.name)}</strong><small>${esc(item.handle || "")}</small></span></span><span class="command-platform">${esc(item.channel || "YouTube")}</span><span>${esc(item.subscribers || "-")}</span><strong class="positive">${item.fit}%</strong></button>`).join("") : `<div class="empty">Henüz influencer kaydı yok.</div>`}
           </section>
-          <section class="command-panel command-activity">
-            <div class="command-panel-head"><div><h3>Recent Activity</h3></div></div>
-            <div class="activity-item purple"><strong>${esc(topMatches[0]?.name || "Influencer list")}</strong><span> leads the current fit ranking</span><small>4 min ago</small></div>
-            <div class="activity-item green"><strong>Social Analysis</strong><span> is ready for Instagram profile review</span><small>1 hr ago</small></div>
-            <div class="activity-item orange"><strong>Localization QA</strong><span> covers ${marketCount} market signals</span><small>Today</small></div>
+          <section class="command-panel command-project">
+            <div class="command-panel-head"><div><h3>Proje Brifi</h3><p>Aktif proje bilgileri</p></div></div>
+            <dl class="command-project-list">
+              <div><dt>Proje</dt><dd>${esc(state.project.name)}</dd></div>
+              <div><dt>Tür</dt><dd>${esc(state.project.genre)}</dd></div>
+              <div><dt>Hedef Pazarlar</dt><dd>${esc(state.project.markets)}</dd></div>
+              <div><dt>Hedef Kitle</dt><dd>${esc(state.project.audience)}</dd></div>
+              <div><dt>Kampanya Hedefi</dt><dd>${esc(state.project.goal)}</dd></div>
+              <div><dt>Ortalama Uygunluk</dt><dd>${avgFit}%</dd></div>
+            </dl>
           </section>
-        </div>`;
+        </div>
+        <section class="command-panel command-tools">
+          <div class="command-panel-head"><div><h3>Hızlı İşlemler</h3><p>PlayScope modüllerine geç</p></div></div>
+          <div class="command-tool-grid">
+            <button data-dash-page="search" type="button">${icons.search}<span><strong>Influencer Ara</strong><small>Yeni creator ekle ve analiz et</small></span></button>
+            <button data-dash-page="aiSocial" type="button">${icons.social}<span><strong>Sosyal Analiz</strong><small>Instagram içeriklerini incele</small></span></button>
+            <button data-dash-page="aiReviews" type="button">${icons.review}<span><strong>Review Analizi</strong><small>Oyuncu yorumlarını analiz et</small></span></button>
+            <button data-dash-page="localization" type="button">${icons.globe}<span><strong>Lokalizasyon</strong><small>GPT ile oyun metni çevir</small></span></button>
+          </div>
+        </section>`;
       document.querySelectorAll("[data-dash-page]").forEach((button) => button.addEventListener("click", () => {
         state.page = button.dataset.dashPage;
         saveState();
@@ -2674,6 +2700,7 @@
         saveState();
         render();
       }));
+      $("dashboardExportBtn")?.addEventListener("click", exportCsv);
     }
 
     function searchPage() {
@@ -2709,6 +2736,7 @@
       $("addResearchBtn").addEventListener("click", addResearchInfluencer);
       $("importExtensionBtn").addEventListener("click", importExtensionData);
       $("importDataBtn").addEventListener("click", uploadUnifiedImportFile);
+      $("importDataFile").addEventListener("change", handleImportFileSelection);
       $("imagePasteZone").addEventListener("paste", handleImagePaste);
       $("imagePasteZone").addEventListener("click", () => $("imagePasteZone").focus());
       $("resetBtn").addEventListener("click", () => { state.influencers = defaultInfluencers; state.selected = 0; saveState(); render(); });
@@ -4713,19 +4741,41 @@ Return exactly this JSON shape:
     }
 
     async function uploadUnifiedImportFile() {
-      const file = $("importDataFile")?.files?.[0];
-      if (!file && state.pendingImageDataUrl) {
-        await uploadImageData();
-        return;
+      const status = $("excelStatus");
+      try {
+        const file = $("importDataFile")?.files?.[0];
+        if (!file && state.pendingImageDataUrl) {
+          await uploadImageData();
+          return;
+        }
+        if (!file) {
+          if (status) status.textContent = "Önce Excel, CSV veya ekran görüntüsü seç.";
+          return;
+        }
+        const isImage = /^image\//i.test(file.type || "") || /\.(png|jpe?g|webp)$/i.test(file.name || "");
+        if (status) status.textContent = `${file.name} okunuyor...`;
+        if (isImage) await uploadImageData();
+        else await uploadExcelFile();
+      } catch (error) {
+        if (status) status.textContent = "Dosya yüklenemedi: " + (error?.message || String(error));
       }
+    }
+
+    function handleImportFileSelection(event) {
+      const file = event.target?.files?.[0];
+      const status = $("excelStatus");
+      const imageStatus = $("imageStatus");
+      state.pendingImageDataUrl = "";
+      state.pendingImageName = "";
       if (!file) {
-        const status = $("excelStatus");
-        if (status) status.textContent = "Önce Excel, CSV veya ekran görüntüsü seç.";
+        if (status) status.textContent = "Dosya seçilmedi.";
         return;
       }
-      const isImage = /^image\//i.test(file.type || "") || /\.(png|jpe?g|webp)$/i.test(file.name || "");
-      if (isImage) await uploadImageData();
-      else await uploadExcelFile();
+      const size = file.size >= 1024 * 1024
+        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+        : `${Math.max(1, Math.round(file.size / 1024))} KB`;
+      if (status) status.textContent = `Seçildi: ${file.name} (${size}). Analiz düğmesine bas.`;
+      if (imageStatus) imageStatus.textContent = "";
     }
 
     async function uploadExcelFile() {
@@ -5301,10 +5351,6 @@ Return exactly this JSON shape:
       const status = $("imageStatus");
       const file = $("importDataFile")?.files?.[0];
       const channelLink = $("imageChannelLink")?.value?.trim() || "";
-      if (!channelLink) {
-        if (status) status.textContent = "A channel link or @handle is required before reading the image.";
-        return;
-      }
       if (!file) {
         if (state.pendingImageDataUrl) {
           const pastedFile = dataUrlToFile(state.pendingImageDataUrl, "pasted-screenshot.png");
@@ -5342,7 +5388,7 @@ Return exactly this JSON shape:
       const channelLink = $("imageChannelLink")?.value?.trim() || "";
       const context = {
         channelLink,
-        channelName: channelLink ? "" : ""
+        channelName: ""
       };
       try {
         if (status) status.textContent = `Reading ${sourceLabel} data...`;
