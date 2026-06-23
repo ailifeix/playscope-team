@@ -349,6 +349,25 @@ function parseXlsxRows(buffer) {
   const sheetName = [...entries.keys()].filter((name) => /^xl\/worksheets\/sheet\d+\.xml$/i.test(name)).sort()[0];
   if (!sheetName) throw new Error("Excel worksheet not found.");
   const sheet = entries.get(sheetName).toString("utf8");
+  const relName = sheetName.replace(/^xl\/worksheets\//i, "xl/worksheets/_rels/") + ".rels";
+  const relXml = entries.get(relName)?.toString("utf8") || "";
+  const rels = new Map();
+  for (const rel of relXml.matchAll(/<Relationship\b([^>]*)\/?>/gi)) {
+    const attrs = rel[1] || "";
+    const id = attrs.match(/\bId="([^"]+)"/i)?.[1] || "";
+    const target = attrs.match(/\bTarget="([^"]+)"/i)?.[1] || "";
+    const type = attrs.match(/\bType="([^"]+)"/i)?.[1] || "";
+    if (id && target && /hyperlink/i.test(type)) rels.set(id, xmlText(target));
+  }
+  const hyperlinks = new Map();
+  for (const link of sheet.matchAll(/<hyperlink\b([^>]*)\/?>/gi)) {
+    const attrs = link[1] || "";
+    const ref = attrs.match(/\bref="([^"]+)"/i)?.[1] || "";
+    const rid = attrs.match(/\br:id="([^"]+)"/i)?.[1] || "";
+    const location = attrs.match(/\blocation="([^"]+)"/i)?.[1] || "";
+    const target = rels.get(rid) || xmlText(location);
+    if (ref && target) hyperlinks.set(ref, target);
+  }
   return [...sheet.matchAll(/<row\b[^>]*>([\s\S]*?)<\/row>/gi)].map((rowMatch) => {
     const row = [];
     for (const cellMatch of rowMatch[1].matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/gi)) {
@@ -358,7 +377,9 @@ function parseXlsxRows(buffer) {
       const type = attrs.match(/\bt="([^"]+)"/i)?.[1] || "";
       const raw = body.match(/<v\b[^>]*>([\s\S]*?)<\/v>/i)?.[1] || "";
       const inline = [...body.matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/gi)].map((part) => xmlText(part[1])).join("");
-      row[xlsxColumnIndex(reference)] = type === "s" ? (shared[Number(raw)] || "") : type === "inlineStr" ? inline : xmlText(raw);
+      const display = type === "s" ? (shared[Number(raw)] || "") : type === "inlineStr" ? inline : xmlText(raw);
+      const link = hyperlinks.get(reference);
+      row[xlsxColumnIndex(reference)] = link ? [display, link].filter(Boolean).join(" ") : display;
     }
     return row.map((value) => value ?? "");
   }).filter((row) => row.some((value) => String(value || "").trim()));
@@ -408,6 +429,51 @@ function demoInfluencer(input, reason = "Real API was unavailable or the API req
   };
 }
 
+function parseYouTubeDurationSeconds(value) {
+  const match = String(value || "").match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
+  if (!match) return 0;
+  return Number(match[1] || 0) * 3600 + Number(match[2] || 0) * 60 + Number(match[3] || 0);
+}
+
+function formatDurationSeconds(seconds) {
+  const total = Math.round(Number(seconds || 0));
+  if (!total) return "-";
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  if (hours) return `${hours}h${String(minutes).padStart(2, "0")}m`;
+  if (minutes) return `${minutes}m${String(secs).padStart(2, "0")}s`;
+  return `${secs}s`;
+}
+
+function serverVideoKind(video) {
+  const seconds = parseYouTubeDurationSeconds(video.contentDetails?.duration);
+  const title = String(video.snippet?.title || "").toLowerCase();
+  if (seconds > 0 && seconds < 60) return "Short video";
+  if (video.liveStreamingDetails?.actualStartTime || /\b(vod|live|stream|yayın|yayin|replay|tekrar)\b/i.test(title)) return "Stream replay video";
+  if (seconds >= 180 && seconds <= 2400) return "Edited long video";
+  if (seconds >= 60 && seconds < 180) return "Short edited video";
+  if (seconds > 2400) return "Long uploaded video";
+  return "Latest YouTube video";
+}
+
+function averageServerDuration(videoItems = []) {
+  const durations = videoItems
+    .map((video) => parseYouTubeDurationSeconds(video.contentDetails?.duration))
+    .filter((seconds) => seconds >= 60);
+  if (!durations.length) return 0;
+  return Math.round(durations.reduce((sum, seconds) => sum + seconds, 0) / durations.length);
+}
+
+function dominantServerFormat(videoItems = []) {
+  const counts = new Map();
+  videoItems.forEach((video) => {
+    const kind = serverVideoKind(video);
+    counts.set(kind, (counts.get(kind) || 0) + 1);
+  });
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || "Latest YouTube videos";
+}
+
 async function youtubeResearch(input) {
   if (!env.YOUTUBE_API_KEY || typeof fetch !== "function") return demoInfluencer(input, "YouTube API key is missing or the runtime cannot make external requests.");
   const lookupValue = String(input.name || "").trim();
@@ -454,11 +520,19 @@ async function youtubeResearch(input) {
   const videoSearch = await fetch(videoSearchUrl).then((res) => res.json());
   const ids = (videoSearch.items || []).map((item) => item.id?.videoId).filter(Boolean);
   let avgViews = Number(input.views) || 0;
+  let avgComments = 0;
+  let duration = "-";
+  let format = "-";
   if (ids.length) {
-    const videosUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${ids.join(",")}&key=${env.YOUTUBE_API_KEY}`;
+    const videosUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails,liveStreamingDetails&id=${ids.join(",")}&key=${env.YOUTUBE_API_KEY}`;
     const videoData = await fetch(videosUrl).then((res) => res.json());
-    const counts = (videoData.items || []).map((item) => Number(item.statistics?.viewCount || 0)).filter(Boolean);
+    const videos = videoData.items || [];
+    const counts = videos.map((item) => Number(item.statistics?.viewCount || 0)).filter(Boolean);
+    const commentCounts = videos.map((item) => Number(item.statistics?.commentCount || 0)).filter((value) => Number.isFinite(value));
     if (counts.length) avgViews = Math.round(counts.reduce((sum, value) => sum + value, 0) / counts.length);
+    if (commentCounts.length) avgComments = Math.round(commentCounts.reduce((sum, value) => sum + value, 0) / commentCounts.length);
+    duration = formatDurationSeconds(averageServerDuration(videos));
+    format = dominantServerFormat(videos);
   }
 
   const genres = String(input.genres || "game mobile").split(/[,\s]+/).filter(Boolean);
@@ -471,6 +545,10 @@ async function youtubeResearch(input) {
     channel: "YouTube",
     link: `https://www.youtube.com/channel/${channelId}`,
     views: avgViews || Number(channel.statistics?.viewCount || 0),
+    avgComments,
+    subscribers: channel.statistics?.hiddenSubscriberCount ? "hidden" : channel.statistics?.subscriberCount || "",
+    format,
+    duration,
     match: genres.includes("strategy") || genres.includes("space") ? 88 : 70,
     genres,
     tone: "youtube researched",

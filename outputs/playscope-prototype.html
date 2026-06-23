@@ -2354,7 +2354,7 @@
       const seconds = parseYouTubeDuration(video.contentDetails?.duration);
       if (!seconds || isStreamReplayVideo(video)) return false;
       const titleText = String(video.snippet?.title || "").toLowerCase();
-      if (/\b(shorts?|clip|kesit|highlight|özet|ozet)\b/i.test(titleText) && seconds < 180) return false;
+      if (/\b(shorts?|clip|kesit|highlight|\u00f6zet|ozet)\b/i.test(titleText) && seconds < 180) return false;
       return seconds >= 60;
     }
     function dominantVideoFormat(videoItems = []) {
@@ -4481,7 +4481,8 @@ Return exactly this JSON shape:
       const hasUrlInFirstRow = first.some((cell) => /youtube\.com|youtu\.be|^@[\w.-]+$/i.test(cell.trim()));
       const hasHeader = rows.length > 1 && !hasUrlInFirstRow && first.some((cell) => /channel|name|link|url|youtube|geo|country/.test(cell));
       const withRowIndex = (row, rowIndex) => {
-        Object.defineProperty(row, "__excelRow", { value: rowIndex, enumerable: false, configurable: true });
+        const sourceRow = rows[rowIndex - 1];
+        Object.defineProperty(row, "__excelRow", { value: sourceRow?.__excelRow || rowIndex, enumerable: false, configurable: true });
         return row;
       };
       if (!hasHeader) {
@@ -4997,7 +4998,16 @@ Return exactly this JSON shape:
         }
         if (serverRows) {
           rows = rowsToObjects(serverRows);
-          if (/\.xlsx?$/i.test(file.name)) xlsxBuffer = await file.arrayBuffer();
+          if (/\.xlsx?$/i.test(file.name)) {
+            xlsxBuffer = await file.arrayBuffer();
+            try {
+              const browserRows = await readBasicXlsxRows(xlsxBuffer);
+              const browserObjects = rowsToObjects(browserRows);
+              if (browserObjects.length) rows = browserObjects;
+            } catch (error) {
+              // Server parsed rows are still usable; browser parse only preserves hyperlink row context.
+            }
+          }
         } else if (/\.csv$|\.tsv$|\.txt$/i.test(file.name)) {
           rows = rowsToObjects(parseDelimitedRows(await file.text()));
         } else {
@@ -5018,29 +5028,45 @@ Return exactly this JSON shape:
           const directLink = fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url"]);
           return Boolean(directName || cleanYouTubeSeedLink(directLink) || Object.values(row).some((value) => cleanYouTubeSeedLink(value)));
         });
-        if (explicitRows.length) {
-          await analyzeInfluencerRows(explicitRows, "excelStatus");
-        } else if (xlsxBuffer) {
+        if (xlsxBuffer) {
           const imageFiles = await extractImagesFromXlsxBuffer(xlsxBuffer);
+          const imageRows = [];
           if (imageFiles.length) {
             const pairs = [];
             for (let index = 0; index < imageFiles.length; index += 2) pairs.push(imageFiles.slice(index, index + 2));
-            const imageRows = [];
             for (let offset = 0; offset < pairs.length; offset += 3) {
               const batch = pairs.slice(offset, offset + 3);
               updateImportStatus(`Excel görselleri okunuyor: ${offset + 1}-${Math.min(offset + batch.length, pairs.length)} / ${pairs.length} influencer...`);
-              const batchRows = await Promise.all(batch.map((pair, pairIndex) => readExcelImagePair(pair, {
-                source: "excel-embedded-images",
-                fileName: file.name,
-                influencerIndex: offset + pairIndex + 1
-              })));
+              const batchRows = await Promise.all(batch.map(async (pair, pairIndex) => {
+                const nearbyRow = closestExcelRow(rows, pair[0]?.__excelRow || pair[1]?.__excelRow);
+                const context = imageContextFromExcelRow(nearbyRow, {
+                  source: "excel-embedded-images",
+                  fileName: file.name,
+                  influencerIndex: offset + pairIndex + 1,
+                  excelRow: pair[0]?.__excelRow || pair[1]?.__excelRow || ""
+                });
+                let found = await readExcelImagePair(pair, context);
+                if (!found.length && (context.channelLink || context.channelName)) {
+                  found = [rowFromImageContext(context, "Excel görseli okunamadı; aynı satırdaki kanal linki/adı ile YouTube verisi çekiliyor.")];
+                }
+                return found.map((row) => ({
+                  ...row,
+                  "Channel Name": fieldFromRow(row, ["channel name", "name", "creator", "influencer", "kanal", "influencer name"]) || context.channelName || "",
+                  "Link": fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url"]) || context.channelLink || "",
+                  "Comments": [fieldFromRow(row, ["comments", "notes", "comment"]), context.excelRow ? `Excel row: ${context.excelRow}` : ""].filter(Boolean).join("; ")
+                }));
+              }));
               batchRows.forEach((foundRows) => imageRows.push(...foundRows));
             }
-            if (imageRows.length) await analyzeInfluencerRows(imageRows, "excelStatus");
-            else updateImportStatus("Excel içindeki görseller okundu ancak kanal bilgisi çıkarılamadı.", true);
-          } else {
+          }
+          const combinedRows = imageRows.length ? imageRows : explicitRows;
+          if (combinedRows.length) await analyzeInfluencerRows(combinedRows, "excelStatus");
+          else if (imageFiles.length) updateImportStatus("Excel içindeki görseller okundu ancak kanal bilgisi çıkarılamadı.", true);
+          else if (!explicitRows.length) {
             updateImportStatus("Excel içinde aranabilir kanal adı, YouTube bağlantısı veya gömülü görsel bulunamadı.", true);
           }
+        } else if (explicitRows.length) {
+          await analyzeInfluencerRows(explicitRows, "excelStatus");
         } else {
           await analyzeInfluencerRows(rows, "excelStatus");
         }
@@ -5052,6 +5078,17 @@ Return exactly this JSON shape:
     function zipReadString(view, offset, length) {
       const bytes = new Uint8Array(view.buffer, view.byteOffset + offset, length);
       return new TextDecoder().decode(bytes);
+    }
+
+    function xmlText(value) {
+      return String(value || "")
+        .replace(/<[^>]+>/g, "")
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;|&apos;/g, "'")
+        .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
     }
 
     async function readXlsxZipEntries(buffer) {
@@ -5106,18 +5143,42 @@ Return exactly this JSON shape:
         : [];
       const sheetName = [...entries.keys()].filter((name) => /^xl\/worksheets\/sheet\d+\.xml$/i.test(name)).sort()[0];
       if (!sheetName) throw new Error("Excel çalışma sayfası bulunamadı.");
+      const relName = sheetName.replace(/^xl\/worksheets\//i, "xl/worksheets/_rels/") + ".rels";
+      const relXml = decode(relName);
+      const rels = new Map();
+      for (const rel of relXml.matchAll(/<Relationship\b([^>]*)\/?>/gi)) {
+        const attrs = rel[1] || "";
+        const id = attrs.match(/\bId="([^"]+)"/i)?.[1] || "";
+        const target = attrs.match(/\bTarget="([^"]+)"/i)?.[1] || "";
+        const type = attrs.match(/\bType="([^"]+)"/i)?.[1] || "";
+        if (id && target && /hyperlink/i.test(type)) rels.set(id, xmlText(target));
+      }
       const documentNode = parser.parseFromString(decode(sheetName), "application/xml");
       if (documentNode.getElementsByTagName("parsererror").length) throw new Error("Excel çalışma sayfası okunamadı.");
+      const hyperlinks = new Map();
+      Array.from(documentNode.getElementsByTagName("hyperlink")).forEach((linkNode) => {
+        const ref = linkNode.getAttribute("ref") || "";
+        const rid = linkNode.getAttribute("r:id") || linkNode.getAttribute("id") || "";
+        const location = linkNode.getAttribute("location") || "";
+        const target = rels.get(rid) || location;
+        if (ref && target) hyperlinks.set(ref, target);
+      });
       return Array.from(documentNode.getElementsByTagName("row")).map((rowNode) => {
         const row = [];
+        const excelRow = Number(rowNode.getAttribute("r") || 0) || null;
         Array.from(rowNode.getElementsByTagName("c")).forEach((cell) => {
-          const index = excelColumnIndex(cell.getAttribute("r"));
+          const ref = cell.getAttribute("r") || "";
+          const index = excelColumnIndex(ref);
           const type = cell.getAttribute("t") || "";
           const inline = Array.from(cell.getElementsByTagName("t")).map((node) => node.textContent || "").join("");
           const raw = cell.getElementsByTagName("v")[0]?.textContent || "";
-          row[index] = type === "s" ? (shared[Number(raw)] || "") : type === "inlineStr" ? inline : raw;
+          const display = type === "s" ? (shared[Number(raw)] || "") : type === "inlineStr" ? inline : raw;
+          const link = hyperlinks.get(ref);
+          row[index] = link ? [display, link].filter(Boolean).join(" ") : display;
         });
-        return row.map((value) => value ?? "");
+        const values = row.map((value) => value ?? "");
+        Object.defineProperty(values, "__excelRow", { value: excelRow, enumerable: false, configurable: true });
+        return values;
       }).filter((row) => row.some((value) => String(value || "").trim()));
     }
 
@@ -5179,6 +5240,41 @@ Return exactly this JSON shape:
       return anchors;
     }
 
+    function extractCellImageAnchors(entriesByName) {
+      const anchors = new Map();
+      const cellImagesXml = entriesByName.get("xl/cellimages.xml") || "";
+      const cellImageRelsXml = entriesByName.get("xl/_rels/cellimages.xml.rels") || "";
+      if (!cellImagesXml || !cellImageRelsXml) return anchors;
+      const rels = new Map();
+      for (const rel of cellImageRelsXml.matchAll(/<Relationship\b([^>]*)\/?>/gi)) {
+        const attrs = rel[1] || "";
+        const id = attrs.match(/\bId="([^"]+)"/i)?.[1] || "";
+        const target = attrs.match(/\bTarget="([^"]+)"/i)?.[1] || "";
+        if (id && target) rels.set(id, resolveZipTarget("xl/cellimages.xml", target));
+      }
+      const imageIdToMedia = new Map();
+      const blocks = cellImagesXml.match(/<etc:cellImage\b[\s\S]*?<\/etc:cellImage>/gi) || [];
+      blocks.forEach((block) => {
+        const imageId = block.match(/<xdr:cNvPr\b[^>]*name="([^"]+)"/i)?.[1] || "";
+        const rid = block.match(/(?:r:)?embed="([^"]+)"/i)?.[1] || "";
+        const media = rels.get(rid);
+        if (imageId && media) imageIdToMedia.set(imageId, media);
+      });
+      for (const [sheetPath, sheetXml] of entriesByName) {
+        if (!/^xl\/worksheets\/sheet\d+\.xml$/i.test(sheetPath)) continue;
+        const rowBlocks = sheetXml.match(/<row\b[^>]*>[\s\S]*?<\/row>/gi) || [];
+        rowBlocks.forEach((rowBlock) => {
+          const rowNumber = Number(rowBlock.match(/<row\b[^>]*\br="(\d+)"/i)?.[1] || 0) || null;
+          for (const match of rowBlock.matchAll(/DISPIMG\(&quot;([^"&]+)&quot;|DISPIMG\("([^"]+)"/gi)) {
+            const imageId = match[1] || match[2] || "";
+            const media = imageIdToMedia.get(imageId);
+            if (media) anchors.set(media, { excelRow: rowNumber, imageId, sheetPath });
+          }
+        });
+      }
+      return anchors;
+    }
+
     async function extractImagesFromXlsxBuffer(buffer) {
       const view = new DataView(buffer);
       let eocd = -1;
@@ -5215,7 +5311,7 @@ Return exactly this JSON shape:
       zipEntries.forEach((entry) => {
         if (/\.(xml|rels)$/i.test(entry.name)) textEntries.set(entry.name, new TextDecoder().decode(entry.raw));
       });
-      const anchors = extractDrawingImageAnchors(textEntries);
+      const anchors = new Map([...extractDrawingImageAnchors(textEntries), ...extractCellImageAnchors(textEntries)]);
       const images = [];
       for (const entry of zipEntries) {
         const fileName = entry.name;
