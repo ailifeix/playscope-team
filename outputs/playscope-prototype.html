@@ -2105,12 +2105,7 @@
       }
     };
 
-    const defaultInfluencers = [
-      { name: "Elraenn", link: "https://www.youtube.com/@Elraenn", handle: "@elraenn", country: "TR", geo: "TR 98.75%", category: "Gaming", subcategory: "Variety Gaming / Just Chatting", subscribers: "3.64M", gender: "M80.28% / F19.72%", age: "18-24: 42.0%; 25-34: 28.0%; 35-44: 7.5%", avgComments: 0, flag: "TR", channel: "YouTube", views: 888500, match: 92, format: "Long-form VOD / Shorts", duration: "2h13m", keywords: "gaming, variety, chatting", comments: "Strong gaming/variety creator. Good fit for creator-led launch content.", genres: ["gaming", "variety", "chatting"], tone: "energetic", audience: "18-34 gaming", notes: "Strong variety gaming creator. Check latest campaign fit.", shortlisted: false, note: "" },
-      { name: "RRaenee", link: "https://www.youtube.com/@RRaenee", handle: "@rraenee", country: "TR", geo: "TR 92.34%", category: "Gaming", subcategory: "Horror / Variety Gaming / Just Chatting", subscribers: "1.92M", gender: "M40% / F60%", age: "18-24: 45%; 25-34: 25%", avgComments: 0, flag: "TR", channel: "YouTube", views: 399200, match: 88, format: "Long-form video + Livestream VOD", duration: "1h27m", keywords: "gaming, horror, variety", comments: "Potential fit for community-oriented gaming content.", genres: ["gaming", "horror", "variety"], tone: "friendly", audience: "18-34 gaming", notes: "Good for horror/variety and community content.", shortlisted: false, note: "" },
-      { name: "KFCEatbox", link: "https://www.youtube.com/@KFCEatbox", handle: "@kfceatbox", country: "TR", geo: "TR 78.35%", category: "Gaming", subcategory: "Variety Gaming + Just Chatting", subscribers: "2.79M", gender: "M88% / F12%", age: "18-24: 45%; 25-34: 19%", avgComments: 0, flag: "TR", channel: "YouTube", views: 117300, match: 81, format: "Long-form gameplay VOD", duration: "1h15m", keywords: "gaming, gameplay, chatting", comments: "Useful for gameplay-led activations.", genres: ["gaming", "gameplay", "chatting"], tone: "casual", audience: "18-34 gaming", notes: "Gameplay creator with variety angle.", shortlisted: false, note: "" },
-      { name: "Efe Aydal", link: "https://www.youtube.com/@EfeAydal", handle: "@efeaydal", country: "TR", geo: "TR 85.17%", category: "Gaming", subcategory: "Variety Gaming + Just Chatting", subscribers: "808K", gender: "M85% / F15%", age: "18-24: 45%; 25-34: 22%", avgComments: 0, flag: "TR", channel: "YouTube", views: 72800, match: 72, format: "Long-form gameplay VOD", duration: "1h8m", keywords: "gaming, variety", comments: "Can be considered for adjacent audience, but fit should be checked manually.", genres: ["gaming", "variety"], tone: "commentary", audience: "18-34", notes: "Manual content review recommended.", shortlisted: false, note: "" }
-    ];
+    const defaultInfluencers = [];
 
     const state = JSON.parse(localStorage.getItem("playscope-state") || "null") || {
       page: "dashboard",
@@ -3677,8 +3672,10 @@ Return exactly this JSON shape:
         result = result || null;
       }
       result = result || localResearchResult(input);
-      state.influencers.unshift(result);
-      state.selected = 0; saveState(); render();
+      const merged = mergeInfluencerIntoList(result);
+      state.selected = merged.index;
+      saveState();
+      render();
     }
 
     async function ensureBrowserYouTubeKey() {
@@ -3962,18 +3959,6 @@ Return exactly this JSON shape:
         .slice(0, 12);
     }
     function knownCreatorProfile(textValue) {
-      const text = String(textValue || "").toLowerCase();
-      if (/(^|[^a-z0-9])elraenn([^a-z0-9]|$)/i.test(text)) {
-        return {
-          category: "Gaming",
-          subcategory: "Variety Gaming / Just Chatting",
-          confidence: 90,
-          genres: ["gaming", "variety", "just chatting", "streamer"],
-          keywords: ["variety gaming", "just chatting", "streamer"],
-          reason: "Known creator profile: Elraenn is a variety gaming / just chatting streamer. Generic words such as episode or reaction should not override the creator profile.",
-          source: "known creator profile"
-        };
-      }
       return null;
     }
     function knownGameCatalog() {
@@ -4450,12 +4435,12 @@ Return exactly this JSON shape:
         });
         if (status) status.textContent = "Completing YouTube latest video averages...";
         item = await enrichWithYouTubeAverages(item);
-        state.influencers.unshift(item);
-        state.selected = 0;
+        const result = mergeInfluencerIntoList(item);
+        state.selected = result.index;
         saveState();
         render();
         const nextStatus = $("researchStatus");
-        if (nextStatus) nextStatus.textContent = `Imported extension data: ${item.name}`;
+        if (nextStatus) nextStatus.textContent = `${result.action === "updated" ? "Updated" : "Imported"} extension data: ${item.name}`;
       } catch (error) {
         if (status) status.textContent = "Extension import failed: " + error.message;
       }
@@ -4604,31 +4589,131 @@ Return exactly this JSON shape:
       };
     }
 
+    function normalizeInfluencerToken(value) {
+      return String(value || "")
+        .toLowerCase()
+        .replace(/^https?:\/\/(www\.)?youtube\.com\//i, "")
+        .replace(/^@/, "")
+        .replace(/[^\p{L}\p{N}._-]+/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function influencerMatchTokens(item = {}) {
+      const tokens = new Set();
+      const rawLink = String(item.link || item["Link"] || "").trim();
+      const rawHandle = String(item.handle || item["Handle"] || "").trim();
+      const rawName = String(item.name || item["Channel Name"] || "").trim();
+      const link = cleanYouTubeSeedLink(rawLink || rawHandle || "");
+      const channelId = (rawLink.match(/youtube\.com\/channel\/(UC[\w-]{20,})/i) || rawLink.match(/\b(UC[\w-]{20,})\b/))?.[1] || "";
+      const handle = (rawLink.match(/youtube\.com\/@([A-Za-z0-9._-]+)/i) || rawHandle.match(/^@?([A-Za-z0-9._-]{2,})$/i))?.[1] || "";
+      if (link) tokens.add(normalizeInfluencerToken(link));
+      if (channelId) tokens.add(channelId.toLowerCase());
+      if (handle) tokens.add(normalizeInfluencerToken(handle));
+      const nameToken = normalizeInfluencerToken(rawName);
+      if (nameToken && !isMetricOnlyText(nameToken) && nameToken.length >= 2) tokens.add(nameToken);
+      return tokens;
+    }
+
     function influencerMatchKey(item = {}) {
-      const link = cleanYouTubeSeedLink(item.link || item.handle || "");
-      if (link) return link.toLowerCase().replace(/^https?:\/\/(www\.)?youtube\.com\//i, "");
-      const name = String(item.name || item["Channel Name"] || "").trim().toLowerCase();
-      return name.replace(/\s+/g, " ");
+      return [...influencerMatchTokens(item)][0] || "";
+    }
+
+    function findInfluencerMatchIndex(item = {}) {
+      const tokens = influencerMatchTokens(item);
+      if (!tokens.size) return -1;
+      const exactIndex = state.influencers.findIndex((current) => {
+        const currentTokens = influencerMatchTokens(current);
+        for (const token of tokens) if (currentTokens.has(token)) return true;
+        return false;
+      });
+      if (exactIndex >= 0) return exactIndex;
+      const nameToken = normalizeInfluencerToken(item.name || item["Channel Name"] || "");
+      if (!nameToken || nameToken.length < 3) return -1;
+      let best = { index: -1, score: 0 };
+      state.influencers.forEach((current, index) => {
+        const currentName = normalizeInfluencerToken(current.name || "");
+        const currentHandle = normalizeInfluencerToken(current.handle || "");
+        const candidates = [currentName, currentHandle].filter(Boolean);
+        candidates.forEach((candidate) => {
+          let score = 0;
+          if (candidate === nameToken) score = 100;
+          else if (candidate.includes(nameToken) || nameToken.includes(candidate)) score = Math.min(candidate.length, nameToken.length) >= 4 ? 82 : 0;
+          else {
+            const a = new Set(candidate.split(/[\s._-]+/).filter((part) => part.length >= 3));
+            const b = nameToken.split(/[\s._-]+/).filter((part) => part.length >= 3);
+            const hits = b.filter((part) => a.has(part)).length;
+            if (hits) score = 55 + hits * 12;
+          }
+          if (score > best.score) best = { index, score };
+        });
+      });
+      return best.score >= 70 ? best.index : -1;
+    }
+
+    function isUsefulImportedValue(value) {
+      if (Array.isArray(value)) return value.length > 0;
+      const text = String(value ?? "").trim();
+      if (!text) return false;
+      return !/^(missing|unknown|unclear|needs youtube api analysis|needs manual content review|free data yok|-|0)$/i.test(text);
+    }
+
+    function mergeTextList(...values) {
+      const seen = new Set();
+      return values
+        .flatMap((value) => String(value || "").split(/;\s*/))
+        .map((value) => value.trim())
+        .filter(Boolean)
+        .filter((value) => {
+          const key = value.toLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .join("; ");
     }
 
     function mergeInfluencerIntoList(item) {
       const normalized = normalizeInfluencer(item);
-      const key = influencerMatchKey(normalized);
-      const existingIndex = key ? state.influencers.findIndex((current) => influencerMatchKey(current) === key) : -1;
+      const existingIndex = findInfluencerMatchIndex(normalized);
       if (existingIndex < 0) {
         state.influencers.unshift(normalized);
         return { action: "added", index: 0 };
       }
       const current = state.influencers[existingIndex];
+      const incomingIsLive = isLiveYouTubeResult(normalized);
+      const mergedSeed = { ...current };
+      Object.entries(normalized).forEach(([key, value]) => {
+        if (!isUsefulImportedValue(value)) return;
+        const currentMissing = !isUsefulImportedValue(current[key]);
+        const liveMetric = ["name", "handle", "link", "country", "geo", "subscribers", "views", "avgComments", "format", "duration", "category", "subcategory", "keywords", "genres", "match", "source"].includes(key);
+        const importedFillOnly = ["gender", "age", "demographicsSource"].includes(key);
+        const visualCanImprove = !incomingIsLive && ["geo", "country", "gender", "age", "demographicsSource", "keywords", "comments", "notes"].includes(key);
+        const currentGeneric = /^(missing|unknown|unclear|free data yok|-|turkey|tr)$/i.test(String(current[key] ?? "").trim());
+        if (incomingIsLive && liveMetric) mergedSeed[key] = value;
+        else if (currentMissing || importedFillOnly || (visualCanImprove && currentGeneric)) mergedSeed[key] = value;
+      });
       const merged = normalizeInfluencer({
-        ...current,
-        ...Object.fromEntries(Object.entries(normalized).filter(([, value]) => value !== "" && value !== "-" && value !== 0 && value !== "Free data yok")),
+        ...mergedSeed,
         note: current.note || normalized.note,
-        comments: [current.comments, normalized.comments].filter(Boolean).join("; "),
-        notes: [current.notes, normalized.notes].filter(Boolean).join("; ")
+        comments: mergeTextList(current.comments, normalized.comments),
+        notes: mergeTextList(current.notes, normalized.notes)
       });
       state.influencers[existingIndex] = merged;
       return { action: "updated", index: existingIndex };
+    }
+
+    function dedupeInfluencerList() {
+      const merged = [];
+      let removed = 0;
+      const original = state.influencers || [];
+      state.influencers = merged;
+      original.forEach((item) => {
+        const before = merged.length;
+        mergeInfluencerIntoList(item);
+        if (merged.length === before) removed += 1;
+      });
+      return removed;
     }
 
     function findYouTubeSeedFromRow(row, index) {
@@ -4671,8 +4756,9 @@ Return exactly this JSON shape:
         || /^\d+(?:[.,]\d+)?%$/.test(text);
     }
 
-    async function analyzeInfluencerRows(rows, statusId) {
+    async function analyzeInfluencerRows(rows, statusId, options = {}) {
       const status = statusId ? $(statusId) : null;
+      const replaceList = options.replaceList !== false;
       const seeds = rows.map(findYouTubeSeedFromRow).filter((seed) => seed.link || seed.name);
       if (!seeds.length) {
         updateImportStatus("Dosyada aranabilir kanal adı veya YouTube bağlantısı bulunamadı.");
@@ -4736,16 +4822,23 @@ Return exactly this JSON shape:
       let addedCount = 0;
       let updatedCount = 0;
       let lastIndex = 0;
+      if (replaceList) {
+        state.influencers = [];
+        state.selected = 0;
+      }
       imported.reverse().forEach((item) => {
         const result = mergeInfluencerIntoList(item);
         if (result.action === "updated") updatedCount += 1;
         else addedCount += 1;
         lastIndex = result.index;
       });
+      const dedupedCount = dedupeInfluencerList();
       state.selected = lastIndex;
       const fallbackText = skipped.length ? ` ${skipped.length} kanal canlı YouTube verisi olmadan eklendi.` : "";
       const engineText = state.importEngine ? ` Motor: ${state.importEngine}.` : "";
-      state.importStatus = `Tamamlandı: ${addedCount} kanal eklendi, ${updatedCount} kanal güncellendi.${fallbackText}${engineText}`;
+      const dedupeText = dedupedCount ? ` ${dedupedCount} tekrar kayıt birleştirildi.` : "";
+      const modeText = replaceList ? " Liste bu içe aktarımla yenilendi." : "";
+      state.importStatus = `Tamamlandı: ${addedCount} kanal eklendi, ${updatedCount} kanal güncellendi.${modeText}${dedupeText}${fallbackText}${engineText}`;
       saveState();
       render();
       const nextStatus = statusId ? $(statusId) : null;
@@ -4808,17 +4901,70 @@ Return exactly this JSON shape:
     }
 
     async function readExcelImagePair(files, context = {}) {
+      const images = await Promise.all(files.map(fileToDataUrl));
       try {
-        const images = await Promise.all(files.map(fileToDataUrl));
-        const response = await fetch("/api/read-image-data", {
+        const response = await fetchTeamApi("/api/read-image-data", {
           method: "POST",
           headers: { "Content-Type": "application/json", ...sharedHeaders() },
-          body: JSON.stringify({ images, context })
+          body: JSON.stringify({ images, context }),
+          timeoutMs: 12000
         });
         const result = await response.json();
         if (response.ok && result.ok && Array.isArray(result.rows)) {
           state.importEngine = "GPT Vision";
           return result.rows;
+        }
+      } catch (error) {
+        // Backend may not be able to reach the GPT endpoint on this machine; browser-side GPT is tried below.
+      }
+      try {
+        let config = getSavedGptConfig();
+        try {
+          const configResponse = await fetch("/api/client-config");
+          const backendConfig = await configResponse.json();
+          config = { ...config, ...backendConfig };
+        } catch (error) {
+          // file:// mode uses browser-saved API settings.
+        }
+        if (!config.openaiApiKey) return [];
+        const baseUrl = normalizeGptBaseUrl(config.openaiBaseUrl || "https://api.openai.com/v1");
+        const preferredModel = config.openaiModel && config.openaiModel !== "auto" ? config.openaiModel : "";
+        const prompt = `These images belong to one creator/influencer row from an Excel file. They may include performance and demographics screenshots. Context: ${JSON.stringify(context)}. Merge the visible facts into one JSON response. Return exactly: {"rows":[{"Channel Name":"","Link":"","GEO":"","Gender":"","Age":"","Category":"","Subcategory":"","Subscribers":"","avg Views":"","Avg Comments":"","Format":"","Duration":"","Keywords":"","Comments":""}]}. If a field is not visible, leave it empty. Preserve YouTube links and names exactly. Include video/content format when visible or inferable from shown recent video/content type labels only. For age/gender charts, calculate Age as total Female+Male per age group like "13-17: 14%; 18-24: 44%; 25-34: 25%" and Gender separately like "F52% / M48%". Do not put gender percentages inside Age.`;
+        for (const model of gptModelCandidates(preferredModel)) {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 25000);
+          const response = await fetch(`${baseUrl}/chat/completions`, {
+            method: "POST",
+            signal: controller.signal,
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${config.openaiApiKey}`
+            },
+            body: JSON.stringify({
+              model,
+              messages: [
+                { role: "system", content: "Extract influencer research table data from paired Excel screenshots. Return strict JSON only. Do not invent missing values." },
+                {
+                  role: "user",
+                  content: [
+                    { type: "text", text: prompt },
+                    ...images.map((url) => ({ type: "image_url", image_url: { url } }))
+                  ]
+                }
+              ],
+              temperature: 0,
+              max_tokens: 1800,
+              stream: false
+            })
+          }).catch(() => null).finally(() => clearTimeout(timeout));
+          if (!response?.ok) continue;
+          const data = await response.json().catch(() => null);
+          const parsed = parseJsonObject(data?.choices?.[0]?.message?.content || "");
+          const rows = Array.isArray(parsed?.rows) ? parsed.rows : [];
+          if (rows.length) {
+            state.importEngine = "GPT Vision (browser)";
+            return rows;
+          }
         }
         return [];
       } catch (error) {
@@ -5194,11 +5340,14 @@ Return exactly this JSON shape:
       for (const target of imageBackendTargets) {
         try {
           if (status) status.textContent = "Reading image with local backend...";
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 12000);
           const response = await fetch(`${target}/api/read-image-data`, {
             method: "POST",
+            signal: controller.signal,
             headers: { "Content-Type": "application/json", ...sharedHeaders() },
             body: JSON.stringify({ image: dataUrl, context })
-          });
+          }).finally(() => clearTimeout(timeout));
           const result = await response.json();
           if (result.ok && Array.isArray(result.rows) && result.rows.length) {
             state.importEngine = "GPT Vision (backend)";
@@ -5213,8 +5362,11 @@ Return exactly this JSON shape:
       let lastError = "";
       for (const model of modelCandidates) {
         if (status) status.textContent = `Reading image with GPT (${model})...`;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 25000);
         const response = await fetch(`${baseUrl}/chat/completions`, {
           method: "POST",
+          signal: controller.signal,
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${config.openaiApiKey}`
@@ -5235,7 +5387,7 @@ Return exactly this JSON shape:
             max_tokens: 1800,
             stream: false
           })
-        }).catch((error) => ({ ok: false, status: "network", error }));
+        }).catch((error) => ({ ok: false, status: "network", error })).finally(() => clearTimeout(timeout));
         if (!response.ok) {
           lastError = `${model}: ${await readGptError(response)}`;
           continue;
@@ -5548,16 +5700,50 @@ Return exactly this JSON shape:
       };
     }
 
+    function selectedInfluencerContext() {
+      const current = state.influencers[state.selected] || state.influencers[0] || null;
+      if (!current) return {};
+      return {
+        channelName: current.name || "",
+        channelLink: current.link || current.handle || "",
+        handle: current.handle || "",
+        selectedIndex: state.selected
+      };
+    }
+
+    function attachKnownInfluencerIdentity(rows = [], context = {}) {
+      const selectedContext = context.channelName || context.channelLink ? context : selectedInfluencerContext();
+      return rows.map((row) => {
+        const name = fieldFromRow(row, ["channel name", "name", "creator", "influencer", "kanal", "influencer name"]);
+        const link = fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url"]);
+        const candidate = { name, link };
+        const matchIndex = findInfluencerMatchIndex(candidate);
+        const matched = matchIndex >= 0 ? state.influencers[matchIndex] : null;
+        const fallbackSelected = !matched && selectedContext.channelName ? state.influencers[selectedContext.selectedIndex] || state.influencers[state.selected] || null : null;
+        const identity = matched || fallbackSelected;
+        if (!identity) return row;
+        return {
+          ...row,
+          "Channel Name": identity.name || selectedContext.channelName || (name && !/^creator from screenshot$/i.test(name) ? name : ""),
+          "Link": cleanYouTubeSeedLink(link) || identity.link || identity.handle || selectedContext.channelLink || link,
+          "Comments": [fieldFromRow(row, ["comments", "notes", "comment"]), identity.name ? `Matched existing row: ${identity.name}` : ""].filter(Boolean).join("; ")
+        };
+      });
+    }
+
     async function processImageDataFile(file, sourceLabel = "image") {
-      const status = $("imageStatus");
+      const status = $("imageStatus") || $("excelStatus");
       const channelLink = $("imageChannelLink")?.value?.trim() || "";
+      const selectedContext = selectedInfluencerContext();
       const context = {
-        channelLink,
-        channelName: ""
+        ...selectedContext,
+        channelLink: channelLink || selectedContext.channelLink || "",
+        channelName: selectedContext.channelName || ""
       };
       try {
         state.importEngine = "";
         if (status) status.textContent = `Reading ${sourceLabel} data...`;
+        updateImportStatus(`${sourceLabel} okunuyor: GPT/OCR ile kanal bilgisi çıkarılıyor...`);
         let rows = [];
         let readError = "";
         try {
@@ -5579,8 +5765,10 @@ Return exactly this JSON shape:
             "Comments": [fieldFromRow(row, ["comments", "notes", "comment"]), readError ? `Image read issue: ${readError}` : ""].filter(Boolean).join("; ")
           })) : [rowFromImageContext(context, readError ? `Image could not be read clearly. ${readError}` : "Screenshot attached; using provided YouTube link.")];
         }
+        rows = attachKnownInfluencerIdentity(rows.length ? rows : [rowFromImageContext(context, readError ? `Image could not be read clearly. ${readError}` : "Screenshot attached; using selected YouTube row.")], context);
         if (status) status.textContent = `${sourceLabel} read: ${rows.length} row(s). Now checking YouTube API...`;
-        await analyzeInfluencerRows(rows, "imageStatus");
+        updateImportStatus(`${sourceLabel} okundu: ${rows.length} satır. Şimdi YouTube API ile eşleştiriliyor...`);
+        await analyzeInfluencerRows(rows, $("imageStatus") ? "imageStatus" : "excelStatus", { replaceList: false });
       } catch (error) {
         updateImportStatus("Ekran görüntüsü işlenemedi: " + error.message, true);
       }
