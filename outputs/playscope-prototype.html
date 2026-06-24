@@ -3698,6 +3698,9 @@ Return exactly this JSON shape:
         const lookup = parseYouTubeLookup(input.name || "");
         let channelId = lookup.channelId;
         let searchTitle = "";
+        if (!channelId && lookup.videoId) {
+          channelId = await channelIdFromVideo(lookup.videoId, apiKey);
+        }
         if (!channelId && lookup.handle) {
           const handleCandidates = [...new Set([lookup.handle.replace(/^@/, ""), lookup.handle])];
           for (const handleCandidate of handleCandidates) {
@@ -3901,6 +3904,7 @@ Return exactly this JSON shape:
         views: live.views || 0,
         avgComments: live.avgComments || 0,
         format: live.format || item.format,
+        duration: live.duration || item.duration,
         link: live.link || item.link,
         channel: "YouTube",
         keywords: live.keywords || item.keywords,
@@ -4479,7 +4483,7 @@ Return exactly this JSON shape:
       if (!rows.length) return [];
       const first = rows[0].map((cell) => String(cell || "").toLowerCase());
       const hasUrlInFirstRow = first.some((cell) => /youtube\.com|youtu\.be|^@[\w.-]+$/i.test(cell.trim()));
-      const hasHeader = rows.length > 1 && !hasUrlInFirstRow && first.some((cell) => /channel|name|link|url|youtube|geo|country/.test(cell));
+      const hasHeader = rows.length > 1 && !hasUrlInFirstRow && first.some((cell) => /channel|name|link|url|youtube|geo|country|creator|influencer|达人|達人|频道|頻道|账号|帳號|名称|名稱|链接|連結|国家|國家|地区|地區|粉丝|訂閱|订阅|观看|觀看|性别|性別|年龄|年齡|类别|類別/.test(cell));
       const withRowIndex = (row, rowIndex) => {
         const sourceRow = rows[rowIndex - 1];
         Object.defineProperty(row, "__excelRow", { value: sourceRow?.__excelRow || rowIndex, enumerable: false, configurable: true });
@@ -4493,7 +4497,7 @@ Return exactly this JSON shape:
     }
 
     function compactKey(value) {
-      return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      return String(value || "").toLowerCase().normalize("NFKC").replace(/[^\p{L}\p{N}]/gu, "");
     }
 
     function fieldFromRow(row, aliases) {
@@ -4548,18 +4552,18 @@ Return exactly this JSON shape:
       const combinedAudienceText = Object.entries(row || {}).map(([key, value]) => `${key}: ${value}`).join("\n");
       const audienceHints = extractAudienceHintsFromText(combinedAudienceText);
       return {
-        geo: fieldFromRow(row, ["geo", "country", "market", "ülke", "ulke"]),
-        gender: fieldFromRow(row, ["gender", "cinsiyet", "audience gender", "gender split", "female male", "female/male", "demographics"]) || audienceHints.gender,
-        age: fieldFromRow(row, ["age", "yas", "yaş", "audience age", "age gender", "age/gender", "age distribution", "audience age gender", "audience age&gender analysis", "age gender analysis"]) || audienceHints.age,
-        subscribers: fieldFromRow(row, ["subscribers", "followers", "takipci", "takipçi", "subs"]),
-        views: fieldFromRow(row, ["avg views", "views", "average views", "avg view", "izlenme"]),
-        avgComments: fieldFromRow(row, ["avg comments", "average comments", "yorum ortalama"]),
-        category: fieldFromRow(row, ["category", "kategori"]),
-        subcategory: fieldFromRow(row, ["subcategory", "sub category", "alt kategori"]),
-        keywords: fieldFromRow(row, ["keywords", "tags", "keyword"]),
-        format: fieldFromRow(row, ["format"]),
-        duration: fieldFromRow(row, ["duration", "duration avg", "avg duration"]),
-        notes: fieldFromRow(row, ["comments", "notes", "comment", "not"])
+        geo: fieldFromRow(row, ["geo", "country", "market", "ülke", "ulke", "国家", "國家", "地区", "地區", "区域", "區域"]),
+        gender: fieldFromRow(row, ["gender", "cinsiyet", "audience gender", "gender split", "female male", "female/male", "demographics", "性别", "性別", "男女比例", "受众性别", "受眾性別"]) || audienceHints.gender,
+        age: fieldFromRow(row, ["age", "yas", "yaş", "audience age", "age gender", "age/gender", "age distribution", "audience age gender", "audience age&gender analysis", "age gender analysis", "年龄", "年齡", "受众年龄", "受眾年齡", "年龄分布", "年齡分佈"]) || audienceHints.age,
+        subscribers: fieldFromRow(row, ["subscribers", "followers", "takipci", "takipçi", "subs", "粉丝", "粉絲", "订阅", "訂閱", "订阅数", "訂閱數", "粉丝数", "粉絲數"]),
+        views: fieldFromRow(row, ["avg views", "views", "average views", "avg view", "izlenme", "平均观看", "平均觀看", "观看", "觀看", "播放", "播放量", "平均播放", "平均播放量", "近30天观看", "近30天觀看"]),
+        avgComments: fieldFromRow(row, ["avg comments", "average comments", "yorum ortalama", "平均评论", "平均評論", "评论", "評論"]),
+        category: fieldFromRow(row, ["category", "kategori", "类别", "類別", "分类", "分類", "频道类型", "頻道類型"]),
+        subcategory: fieldFromRow(row, ["subcategory", "sub category", "alt kategori", "子类别", "子類別", "细分类", "細分類", "内容类型", "內容類型"]),
+        keywords: fieldFromRow(row, ["keywords", "tags", "keyword", "关键词", "關鍵詞", "标签", "標籤"]),
+        format: fieldFromRow(row, ["format", "video format", "视频形式", "影片形式", "内容形式", "內容形式"]),
+        duration: fieldFromRow(row, ["duration", "duration avg", "avg duration", "average duration", "平均时长", "平均時長", "视频时长", "影片時長"]),
+        notes: fieldFromRow(row, ["comments", "notes", "comment", "not", "备注", "備註", "说明", "說明"])
       };
     }
 
@@ -4570,6 +4574,17 @@ Return exactly this JSON shape:
       ));
     }
 
+    function importedMetricNumber(value) {
+      const text = String(value || "").trim().toUpperCase().replace(/,/g, ".");
+      if (!text) return 0;
+      const match = text.match(/(\d+(?:\.\d+)?)\s*(K|M|B|万|萬)?/i);
+      if (!match) return 0;
+      const base = Number(match[1] || 0);
+      const unit = match[2] || "";
+      const multiplier = unit === "K" ? 1_000 : unit === "M" ? 1_000_000 : unit === "B" ? 1_000_000_000 : /万|萬/.test(unit) ? 10_000 : 1;
+      return Math.round(base * multiplier);
+    }
+
     function closestExcelRow(rows, excelRow) {
       const rowNo = Number(excelRow || 0);
       if (!rowNo || !rows.length) return null;
@@ -4577,6 +4592,31 @@ Return exactly this JSON shape:
         .map((row) => ({ row, distance: Math.abs(Number(row.__excelRow || 0) - rowNo) }))
         .filter((item) => Number.isFinite(item.distance))
         .sort((a, b) => a.distance - b.distance)[0]?.row || null;
+    }
+
+    function groupExcelImagesByRow(imageFiles = []) {
+      const groups = new Map();
+      const unanchored = [];
+      imageFiles.forEach((file, index) => {
+        const row = Number(file.__excelRow || 0);
+        if (row) {
+          const key = String(row);
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(file);
+        } else {
+          unanchored.push({ file, index });
+        }
+      });
+      const anchoredGroups = [...groups.entries()]
+        .sort((a, b) => Number(a[0]) - Number(b[0]))
+        .map(([row, files]) => {
+          files.forEach((file) => {
+            if (!file.__excelRow) Object.defineProperty(file, "__excelRow", { value: Number(row), enumerable: false, configurable: true });
+          });
+          return files;
+        });
+      for (let index = 0; index < unanchored.length; index += 2) anchoredGroups.push(unanchored.slice(index, index + 2).map((item) => item.file));
+      return anchoredGroups;
     }
 
     function imageContextFromExcelRow(row, fallback = {}) {
@@ -4656,7 +4696,20 @@ Return exactly this JSON shape:
       if (Array.isArray(value)) return value.length > 0;
       const text = String(value ?? "").trim();
       if (!text) return false;
-      return !/^(missing|unknown|unclear|needs youtube api analysis|needs manual content review|free data yok|-|0)$/i.test(text);
+      return !/^(missing|unknown|unclear|n\/a|na|none|null|needs youtube api analysis|needs manual content review|no regular videos found|free data yok|-|—|0)$/i.test(text);
+    }
+
+    function isGenericImportedValue(value) {
+      if (!isUsefulImportedValue(value)) return true;
+      const text = String(value ?? "").trim();
+      return /^(creator from screenshot|screenshot attached|turkey|tr)$/i.test(text);
+    }
+
+    function shouldLiveReplaceField(key, currentValue) {
+      const liveAlwaysFresh = new Set(["subscribers", "views", "avgComments", "format", "duration", "match", "source"]);
+      const liveFillIfMissing = new Set(["name", "handle", "link", "country", "geo", "category", "subcategory", "keywords", "genres"]);
+      if (liveAlwaysFresh.has(key)) return true;
+      return liveFillIfMissing.has(key) && isGenericImportedValue(currentValue);
     }
 
     function mergeTextList(...values) {
@@ -4686,13 +4739,10 @@ Return exactly this JSON shape:
       const mergedSeed = { ...current };
       Object.entries(normalized).forEach(([key, value]) => {
         if (!isUsefulImportedValue(value)) return;
-        const currentMissing = !isUsefulImportedValue(current[key]);
-        const liveMetric = ["name", "handle", "link", "country", "geo", "subscribers", "views", "avgComments", "format", "duration", "category", "subcategory", "keywords", "genres", "match", "source"].includes(key);
-        const importedFillOnly = ["gender", "age", "demographicsSource"].includes(key);
-        const visualCanImprove = !incomingIsLive && ["geo", "country", "gender", "age", "demographicsSource", "keywords", "comments", "notes"].includes(key);
-        const currentGeneric = /^(missing|unknown|unclear|free data yok|-|turkey|tr)$/i.test(String(current[key] ?? "").trim());
-        if (incomingIsLive && liveMetric) mergedSeed[key] = value;
-        else if (currentMissing || importedFillOnly || (visualCanImprove && currentGeneric)) mergedSeed[key] = value;
+        if (["comments", "notes", "note"].includes(key)) return;
+        const currentGeneric = isGenericImportedValue(current[key]);
+        if (incomingIsLive && shouldLiveReplaceField(key, current[key])) mergedSeed[key] = value;
+        else if (currentGeneric) mergedSeed[key] = value;
       });
       const merged = normalizeInfluencer({
         ...mergedSeed,
@@ -4719,10 +4769,10 @@ Return exactly this JSON shape:
 
     function findYouTubeSeedFromRow(row, index) {
       const values = Object.values(row).map((value) => String(value || "").trim()).filter(Boolean);
-      const directLink = cleanYouTubeSeedLink(fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url"]));
+      const directLink = cleanYouTubeSeedLink(fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url", "链接", "連結", "频道链接", "頻道連結", "频道网址", "頻道網址"]));
       const scannedLink = values.map(cleanYouTubeSeedLink).find(Boolean);
       const link = directLink || scannedLink || "";
-      const explicitName = fieldFromRow(row, ["channel name", "name", "creator", "influencer", "kanal", "influencer name"]);
+      const explicitName = fieldFromRow(row, ["channel name", "name", "creator", "influencer", "kanal", "influencer name", "达人", "達人", "达人名称", "達人名稱", "频道", "頻道", "频道名称", "頻道名稱", "账号", "帳號", "账号名称", "帳號名稱", "名称", "名稱"]);
       const firstText = values.find((value) => value !== link && !cleanYouTubeSeedLink(value) && !/^[@＠]\s*$/u.test(value) && !/^https?:/i.test(value) && !isMetricOnlyText(value));
       const name = explicitName || firstText || (link ? `Creator ${index + 1}` : "");
       if (isInvalidYouTubeSeedLink(link) && !name) return { name: "", link: "", country: "", raw: row };
@@ -4802,20 +4852,25 @@ Return exactly this JSON shape:
         if (!isLiveYouTubeResult(live)) skipped.push(seed.name || seed.link);
         const extraNotes = Object.entries(hints).filter(([, value]) => value).map(([key, value]) => `${key}: ${value}`).join("; ");
         const importedComment = fieldFromRow(seed.raw || {}, ["comments", "notes", "comment"]) || "";
+        const importedViews = importedMetricNumber(hints.views);
+        const importedSubscribers = hints.subscribers || "";
+        const importedAvgComments = importedMetricNumber(hints.avgComments);
         imported.push(normalizeInfluencer({
           ...live,
           name: seed.name || live.name,
-          link: live.link || seed.link,
-          country: live.country || seed.country,
+          link: seed.link || live.link,
+          country: seed.country || live.country,
           geo: hints.geo || live.geo || seed.country,
           gender: hints.gender || live.gender,
           age: hints.age || live.age,
-          subscribers: live.source === "youtube-live" ? live.subscribers : (hints.subscribers || live.subscribers),
-          views: live.source === "youtube-live" ? live.views : (Number(String(hints.views || "").replace(/[^\d]/g, "")) || live.views),
-          avgComments: live.source === "youtube-live" ? live.avgComments : (Number(String(hints.avgComments || "").replace(/[^\d]/g, "")) || live.avgComments),
-          format: live.format || hints.format || "-",
-          duration: live.duration || hints.duration || "-",
-          keywords: live.keywords || hints.keywords,
+          category: hints.category || live.category,
+          subcategory: hints.subcategory || live.subcategory,
+          subscribers: importedSubscribers || live.subscribers,
+          views: importedViews || live.views,
+          avgComments: importedAvgComments || live.avgComments,
+          format: hints.format || live.format || "-",
+          duration: hints.duration || live.duration || "-",
+          keywords: hints.keywords || live.keywords,
           comments: `${live.comments || (isLiveYouTubeResult(live) ? "Imported and checked with YouTube API." : "Imported; live YouTube search was unavailable.")}${extraNotes || importedComment ? " Imported visual/list data: " + [extraNotes, importedComment].filter(Boolean).join("; ") : ""}`,
           notes: `${live.notes || (isLiveYouTubeResult(live) ? "Imported and checked with YouTube API." : "Imported; live YouTube search was unavailable.")}${extraNotes || importedComment ? " Imported visual/list data: " + [extraNotes, importedComment].filter(Boolean).join("; ") : ""}`
         }));
@@ -5014,9 +5069,7 @@ Return exactly this JSON shape:
           xlsxBuffer = await file.arrayBuffer();
           let sheetRows = [];
           if (window.XLSX) {
-            const workbook = XLSX.read(xlsxBuffer, { type: "array" });
-            const firstSheet = workbook.SheetNames[0];
-            sheetRows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { header: 1, defval: "" });
+            sheetRows = await readBasicXlsxRows(xlsxBuffer);
           } else {
             updateImportStatus("Excel kütüphanesi yüklenmedi; yerleşik okuyucu kullanılıyor...");
             sheetRows = await readBasicXlsxRows(xlsxBuffer);
@@ -5024,35 +5077,35 @@ Return exactly this JSON shape:
           rows = rowsToObjects(sheetRows);
         }
         const explicitRows = rows.filter((row) => {
-          const directName = fieldFromRow(row, ["channel name", "name", "creator", "influencer", "kanal", "influencer name"]);
-          const directLink = fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url"]);
+          const directName = fieldFromRow(row, ["channel name", "name", "creator", "influencer", "kanal", "influencer name", "达人", "達人", "达人名称", "達人名稱", "频道", "頻道", "频道名称", "頻道名稱", "账号", "帳號", "账号名称", "帳號名稱", "名称", "名稱"]);
+          const directLink = fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url", "链接", "連結", "频道链接", "頻道連結", "频道网址", "頻道網址"]);
           return Boolean(directName || cleanYouTubeSeedLink(directLink) || Object.values(row).some((value) => cleanYouTubeSeedLink(value)));
         });
         if (xlsxBuffer) {
           const imageFiles = await extractImagesFromXlsxBuffer(xlsxBuffer);
           const imageRows = [];
           if (imageFiles.length) {
-            const pairs = [];
-            for (let index = 0; index < imageFiles.length; index += 2) pairs.push(imageFiles.slice(index, index + 2));
-            for (let offset = 0; offset < pairs.length; offset += 3) {
-              const batch = pairs.slice(offset, offset + 3);
-              updateImportStatus(`Excel görselleri okunuyor: ${offset + 1}-${Math.min(offset + batch.length, pairs.length)} / ${pairs.length} influencer...`);
-              const batchRows = await Promise.all(batch.map(async (pair, pairIndex) => {
-                const nearbyRow = closestExcelRow(rows, pair[0]?.__excelRow || pair[1]?.__excelRow);
+            const imageGroups = groupExcelImagesByRow(imageFiles);
+            for (let offset = 0; offset < imageGroups.length; offset += 3) {
+              const batch = imageGroups.slice(offset, offset + 3);
+              updateImportStatus(`Excel görselleri okunuyor: ${offset + 1}-${Math.min(offset + batch.length, imageGroups.length)} / ${imageGroups.length} influencer...`);
+              const batchRows = await Promise.all(batch.map(async (group, pairIndex) => {
+                const imageRow = group.find((item) => item.__excelRow)?.__excelRow || "";
+                const nearbyRow = closestExcelRow(rows, imageRow);
                 const context = imageContextFromExcelRow(nearbyRow, {
                   source: "excel-embedded-images",
                   fileName: file.name,
                   influencerIndex: offset + pairIndex + 1,
-                  excelRow: pair[0]?.__excelRow || pair[1]?.__excelRow || ""
+                  excelRow: imageRow
                 });
-                let found = await readExcelImagePair(pair, context);
+                let found = await readExcelImagePair(group.slice(0, 2), context);
                 if (!found.length && (context.channelLink || context.channelName)) {
                   found = [rowFromImageContext(context, "Excel görseli okunamadı; aynı satırdaki kanal linki/adı ile YouTube verisi çekiliyor.")];
                 }
                 return found.map((row) => ({
                   ...row,
-                  "Channel Name": fieldFromRow(row, ["channel name", "name", "creator", "influencer", "kanal", "influencer name"]) || context.channelName || "",
-                  "Link": fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url"]) || context.channelLink || "",
+                  "Channel Name": fieldFromRow(row, ["channel name", "name", "creator", "influencer", "kanal", "influencer name", "达人", "達人", "达人名称", "達人名稱", "频道", "頻道", "频道名称", "頻道名稱", "账号", "帳號", "账号名称", "帳號名稱", "名称", "名稱"]) || context.channelName || "",
+                  "Link": fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url", "链接", "連結", "频道链接", "頻道連結", "频道网址", "頻道網址"]) || context.channelLink || "",
                   "Comments": [fieldFromRow(row, ["comments", "notes", "comment"]), context.excelRow ? `Excel row: ${context.excelRow}` : ""].filter(Boolean).join("; ")
                 }));
               }));
@@ -5088,7 +5141,8 @@ Return exactly this JSON shape:
         .replace(/&gt;/g, ">")
         .replace(/&quot;/g, '"')
         .replace(/&#39;|&apos;/g, "'")
-        .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
+        .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(Number.parseInt(code, 16)))
+        .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)));
     }
 
     async function readXlsxZipEntries(buffer) {
@@ -5132,6 +5186,33 @@ Return exactly this JSON shape:
       return Math.max(0, value - 1);
     }
 
+    function excelColumnName(index) {
+      let value = Number(index || 0) + 1;
+      let name = "";
+      while (value > 0) {
+        const remainder = (value - 1) % 26;
+        name = String.fromCharCode(65 + remainder) + name;
+        value = Math.floor((value - 1) / 26);
+      }
+      return name || "A";
+    }
+
+    function expandExcelCellRef(ref) {
+      const text = String(ref || "").trim();
+      if (!text) return [];
+      const [start, end = start] = text.split(":");
+      const startCol = excelColumnIndex(start);
+      const endCol = excelColumnIndex(end);
+      const startRow = Number(start.match(/\d+/)?.[0] || 0);
+      const endRow = Number(end.match(/\d+/)?.[0] || startRow);
+      if (!startRow || !endRow) return [text];
+      const refs = [];
+      for (let row = Math.min(startRow, endRow); row <= Math.max(startRow, endRow); row += 1) {
+        for (let col = Math.min(startCol, endCol); col <= Math.max(startCol, endCol); col += 1) refs.push(`${excelColumnName(col)}${row}`);
+      }
+      return refs;
+    }
+
     async function readBasicXlsxRows(buffer) {
       const entries = await readXlsxZipEntries(buffer);
       const decode = (name) => entries.has(name) ? new TextDecoder().decode(entries.get(name)) : "";
@@ -5141,45 +5222,50 @@ Return exactly this JSON shape:
         ? Array.from(parser.parseFromString(sharedXml, "application/xml").getElementsByTagName("si"))
           .map((node) => Array.from(node.getElementsByTagName("t")).map((part) => part.textContent || "").join(""))
         : [];
-      const sheetName = [...entries.keys()].filter((name) => /^xl\/worksheets\/sheet\d+\.xml$/i.test(name)).sort()[0];
-      if (!sheetName) throw new Error("Excel çalışma sayfası bulunamadı.");
-      const relName = sheetName.replace(/^xl\/worksheets\//i, "xl/worksheets/_rels/") + ".rels";
-      const relXml = decode(relName);
-      const rels = new Map();
-      for (const rel of relXml.matchAll(/<Relationship\b([^>]*)\/?>/gi)) {
-        const attrs = rel[1] || "";
-        const id = attrs.match(/\bId="([^"]+)"/i)?.[1] || "";
-        const target = attrs.match(/\bTarget="([^"]+)"/i)?.[1] || "";
-        const type = attrs.match(/\bType="([^"]+)"/i)?.[1] || "";
-        if (id && target && /hyperlink/i.test(type)) rels.set(id, xmlText(target));
-      }
-      const documentNode = parser.parseFromString(decode(sheetName), "application/xml");
-      if (documentNode.getElementsByTagName("parsererror").length) throw new Error("Excel çalışma sayfası okunamadı.");
-      const hyperlinks = new Map();
-      Array.from(documentNode.getElementsByTagName("hyperlink")).forEach((linkNode) => {
-        const ref = linkNode.getAttribute("ref") || "";
-        const rid = linkNode.getAttribute("r:id") || linkNode.getAttribute("id") || "";
-        const location = linkNode.getAttribute("location") || "";
-        const target = rels.get(rid) || location;
-        if (ref && target) hyperlinks.set(ref, target);
-      });
-      return Array.from(documentNode.getElementsByTagName("row")).map((rowNode) => {
-        const row = [];
-        const excelRow = Number(rowNode.getAttribute("r") || 0) || null;
-        Array.from(rowNode.getElementsByTagName("c")).forEach((cell) => {
-          const ref = cell.getAttribute("r") || "";
-          const index = excelColumnIndex(ref);
-          const type = cell.getAttribute("t") || "";
-          const inline = Array.from(cell.getElementsByTagName("t")).map((node) => node.textContent || "").join("");
-          const raw = cell.getElementsByTagName("v")[0]?.textContent || "";
-          const display = type === "s" ? (shared[Number(raw)] || "") : type === "inlineStr" ? inline : raw;
-          const link = hyperlinks.get(ref);
-          row[index] = link ? [display, link].filter(Boolean).join(" ") : display;
+      const sheetNames = [...entries.keys()].filter((name) => /^xl\/worksheets\/sheet\d+\.xml$/i.test(name)).sort();
+      if (!sheetNames.length) throw new Error("Excel çalışma sayfası bulunamadı.");
+      const allRows = [];
+      for (const sheetName of sheetNames) {
+        const relName = sheetName.replace(/^xl\/worksheets\//i, "xl/worksheets/_rels/") + ".rels";
+        const relXml = decode(relName);
+        const rels = new Map();
+        for (const rel of relXml.matchAll(/<Relationship\b([^>]*)\/?>/gi)) {
+          const attrs = rel[1] || "";
+          const id = attrs.match(/\bId="([^"]+)"/i)?.[1] || "";
+          const target = attrs.match(/\bTarget="([^"]+)"/i)?.[1] || "";
+          const type = attrs.match(/\bType="([^"]+)"/i)?.[1] || "";
+          if (id && target && /hyperlink/i.test(type)) rels.set(id, xmlText(target));
+        }
+        const documentNode = parser.parseFromString(decode(sheetName), "application/xml");
+        if (documentNode.getElementsByTagName("parsererror").length) continue;
+        const hyperlinks = new Map();
+        Array.from(documentNode.getElementsByTagName("hyperlink")).forEach((linkNode) => {
+          const ref = linkNode.getAttribute("ref") || "";
+          const rid = linkNode.getAttribute("r:id") || linkNode.getAttribute("id") || "";
+          const location = linkNode.getAttribute("location") || "";
+          const target = rels.get(rid) || location;
+          if (ref && target) expandExcelCellRef(ref).forEach((cellRef) => hyperlinks.set(cellRef, target));
         });
-        const values = row.map((value) => value ?? "");
-        Object.defineProperty(values, "__excelRow", { value: excelRow, enumerable: false, configurable: true });
-        return values;
-      }).filter((row) => row.some((value) => String(value || "").trim()));
+        Array.from(documentNode.getElementsByTagName("row")).forEach((rowNode) => {
+          const row = [];
+          const excelRow = Number(rowNode.getAttribute("r") || 0) || null;
+          Array.from(rowNode.getElementsByTagName("c")).forEach((cell) => {
+            const ref = cell.getAttribute("r") || "";
+            const index = excelColumnIndex(ref);
+            const type = cell.getAttribute("t") || "";
+            const inline = Array.from(cell.getElementsByTagName("t")).map((node) => node.textContent || "").join("");
+            const raw = cell.getElementsByTagName("v")[0]?.textContent || "";
+            const display = type === "s" ? (shared[Number(raw)] || "") : type === "inlineStr" ? inline : raw;
+            const link = hyperlinks.get(ref);
+            row[index] = link ? [display, link].filter(Boolean).join(" ") : display;
+          });
+          const values = row.map((value) => value ?? "");
+          Object.defineProperty(values, "__excelRow", { value: excelRow, enumerable: false, configurable: true });
+          Object.defineProperty(values, "__sheetName", { value: sheetName, enumerable: false, configurable: true });
+          if (values.some((value) => String(value || "").trim())) allRows.push(values);
+        });
+      }
+      return allRows;
     }
 
     async function inflateZipBytes(bytes) {
@@ -5796,6 +5882,11 @@ Return exactly this JSON shape:
       };
     }
 
+    function isGenericImageCreatorName(value) {
+      const normalized = String(value || "").trim().toLowerCase();
+      return !normalized || /^(creator from screenshot|screenshot attached|unknown|n\/a|na|-|—)$/i.test(normalized);
+    }
+
     function selectedInfluencerContext() {
       const current = state.influencers[state.selected] || state.influencers[0] || null;
       if (!current) return {};
@@ -5807,20 +5898,30 @@ Return exactly this JSON shape:
       };
     }
 
-    function attachKnownInfluencerIdentity(rows = [], context = {}) {
+    function attachKnownInfluencerIdentity(rows = [], context = {}, options = {}) {
+      const allowSelectedFallback = options.allowSelectedFallback !== false;
       const selectedContext = context.channelName || context.channelLink ? context : selectedInfluencerContext();
       return rows.map((row) => {
-        const name = fieldFromRow(row, ["channel name", "name", "creator", "influencer", "kanal", "influencer name"]);
-        const link = fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url"]);
+        const name = fieldFromRow(row, ["channel name", "name", "creator", "influencer", "kanal", "influencer name", "达人", "達人", "达人名称", "達人名稱", "频道", "頻道", "频道名称", "頻道名稱", "账号", "帳號", "账号名称", "帳號名稱", "名称", "名稱"]);
+        const link = fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url", "链接", "連結", "频道链接", "頻道連結", "频道网址", "頻道網址"]);
         const candidate = { name, link };
         const matchIndex = findInfluencerMatchIndex(candidate);
         const matched = matchIndex >= 0 ? state.influencers[matchIndex] : null;
-        const fallbackSelected = !matched && selectedContext.channelName ? state.influencers[selectedContext.selectedIndex] || state.influencers[state.selected] || null : null;
+        const canUseSelectedFallback = allowSelectedFallback && isGenericImageCreatorName(name) && !cleanYouTubeSeedLink(link) && Number.isInteger(selectedContext.selectedIndex);
+        const fallbackSelected = !matched && canUseSelectedFallback ? state.influencers[selectedContext.selectedIndex] || null : null;
         const identity = matched || fallbackSelected;
-        if (!identity) return row;
+        if (!identity) {
+          if (!isGenericImageCreatorName(name) || (!selectedContext.channelName && !selectedContext.channelLink)) return row;
+          return {
+            ...row,
+            "Channel Name": name || selectedContext.channelName || "",
+            "Link": cleanYouTubeSeedLink(link) || selectedContext.channelLink || link,
+            "Comments": fieldFromRow(row, ["comments", "notes", "comment"])
+          };
+        }
         return {
           ...row,
-          "Channel Name": identity.name || selectedContext.channelName || (name && !/^creator from screenshot$/i.test(name) ? name : ""),
+          "Channel Name": isGenericImageCreatorName(name) ? (identity.name || selectedContext.channelName || "") : name,
           "Link": cleanYouTubeSeedLink(link) || identity.link || identity.handle || selectedContext.channelLink || link,
           "Comments": [fieldFromRow(row, ["comments", "notes", "comment"]), identity.name ? `Matched existing row: ${identity.name}` : ""].filter(Boolean).join("; ")
         };

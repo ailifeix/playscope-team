@@ -301,7 +301,8 @@ function xmlText(value) {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;|&apos;/g, "'")
-    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(Number.parseInt(code, 16)))
+    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)));
 }
 
 function xlsxColumnIndex(reference) {
@@ -309,6 +310,33 @@ function xlsxColumnIndex(reference) {
   let value = 0;
   for (const letter of letters) value = value * 26 + letter.charCodeAt(0) - 64;
   return Math.max(0, value - 1);
+}
+
+function xlsxColumnName(index) {
+  let value = Number(index || 0) + 1;
+  let name = "";
+  while (value > 0) {
+    const remainder = (value - 1) % 26;
+    name = String.fromCharCode(65 + remainder) + name;
+    value = Math.floor((value - 1) / 26);
+  }
+  return name || "A";
+}
+
+function expandXlsxCellRef(ref) {
+  const text = String(ref || "").trim();
+  if (!text) return [];
+  const [start, end = start] = text.split(":");
+  const startCol = xlsxColumnIndex(start);
+  const endCol = xlsxColumnIndex(end);
+  const startRow = Number(start.match(/\d+/)?.[0] || 0);
+  const endRow = Number(end.match(/\d+/)?.[0] || startRow);
+  if (!startRow || !endRow) return [text];
+  const refs = [];
+  for (let row = Math.min(startRow, endRow); row <= Math.max(startRow, endRow); row += 1) {
+    for (let col = Math.min(startCol, endCol); col <= Math.max(startCol, endCol); col += 1) refs.push(`${xlsxColumnName(col)}${row}`);
+  }
+  return refs;
 }
 
 function readZipEntries(buffer) {
@@ -346,43 +374,48 @@ function parseXlsxRows(buffer) {
   const sharedXml = entries.get("xl/sharedStrings.xml")?.toString("utf8") || "";
   const shared = [...sharedXml.matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>/gi)]
     .map((match) => [...match[1].matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/gi)].map((part) => xmlText(part[1])).join(""));
-  const sheetName = [...entries.keys()].filter((name) => /^xl\/worksheets\/sheet\d+\.xml$/i.test(name)).sort()[0];
-  if (!sheetName) throw new Error("Excel worksheet not found.");
-  const sheet = entries.get(sheetName).toString("utf8");
-  const relName = sheetName.replace(/^xl\/worksheets\//i, "xl/worksheets/_rels/") + ".rels";
-  const relXml = entries.get(relName)?.toString("utf8") || "";
-  const rels = new Map();
-  for (const rel of relXml.matchAll(/<Relationship\b([^>]*)\/?>/gi)) {
-    const attrs = rel[1] || "";
-    const id = attrs.match(/\bId="([^"]+)"/i)?.[1] || "";
-    const target = attrs.match(/\bTarget="([^"]+)"/i)?.[1] || "";
-    const type = attrs.match(/\bType="([^"]+)"/i)?.[1] || "";
-    if (id && target && /hyperlink/i.test(type)) rels.set(id, xmlText(target));
-  }
-  const hyperlinks = new Map();
-  for (const link of sheet.matchAll(/<hyperlink\b([^>]*)\/?>/gi)) {
-    const attrs = link[1] || "";
-    const ref = attrs.match(/\bref="([^"]+)"/i)?.[1] || "";
-    const rid = attrs.match(/\br:id="([^"]+)"/i)?.[1] || "";
-    const location = attrs.match(/\blocation="([^"]+)"/i)?.[1] || "";
-    const target = rels.get(rid) || xmlText(location);
-    if (ref && target) hyperlinks.set(ref, target);
-  }
-  return [...sheet.matchAll(/<row\b[^>]*>([\s\S]*?)<\/row>/gi)].map((rowMatch) => {
-    const row = [];
-    for (const cellMatch of rowMatch[1].matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/gi)) {
-      const attrs = cellMatch[1];
-      const body = cellMatch[2];
-      const reference = attrs.match(/\br="([^"]+)"/i)?.[1] || "A";
-      const type = attrs.match(/\bt="([^"]+)"/i)?.[1] || "";
-      const raw = body.match(/<v\b[^>]*>([\s\S]*?)<\/v>/i)?.[1] || "";
-      const inline = [...body.matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/gi)].map((part) => xmlText(part[1])).join("");
-      const display = type === "s" ? (shared[Number(raw)] || "") : type === "inlineStr" ? inline : xmlText(raw);
-      const link = hyperlinks.get(reference);
-      row[xlsxColumnIndex(reference)] = link ? [display, link].filter(Boolean).join(" ") : display;
+  const sheetNames = [...entries.keys()].filter((name) => /^xl\/worksheets\/sheet\d+\.xml$/i.test(name)).sort();
+  if (!sheetNames.length) throw new Error("Excel worksheet not found.");
+  const allRows = [];
+  for (const sheetName of sheetNames) {
+    const sheet = entries.get(sheetName).toString("utf8");
+    const relName = sheetName.replace(/^xl\/worksheets\//i, "xl/worksheets/_rels/") + ".rels";
+    const relXml = entries.get(relName)?.toString("utf8") || "";
+    const rels = new Map();
+    for (const rel of relXml.matchAll(/<Relationship\b([^>]*)\/?>/gi)) {
+      const attrs = rel[1] || "";
+      const id = attrs.match(/\bId="([^"]+)"/i)?.[1] || "";
+      const target = attrs.match(/\bTarget="([^"]+)"/i)?.[1] || "";
+      const type = attrs.match(/\bType="([^"]+)"/i)?.[1] || "";
+      if (id && target && /hyperlink/i.test(type)) rels.set(id, xmlText(target));
     }
-    return row.map((value) => value ?? "");
-  }).filter((row) => row.some((value) => String(value || "").trim()));
+    const hyperlinks = new Map();
+    for (const link of sheet.matchAll(/<hyperlink\b([^>]*)\/?>/gi)) {
+      const attrs = link[1] || "";
+      const ref = attrs.match(/\bref="([^"]+)"/i)?.[1] || "";
+      const rid = attrs.match(/\br:id="([^"]+)"/i)?.[1] || "";
+      const location = attrs.match(/\blocation="([^"]+)"/i)?.[1] || "";
+      const target = rels.get(rid) || xmlText(location);
+      if (ref && target) expandXlsxCellRef(ref).forEach((cellRef) => hyperlinks.set(cellRef, target));
+    }
+    for (const rowMatch of sheet.matchAll(/<row\b[^>]*>([\s\S]*?)<\/row>/gi)) {
+      const row = [];
+      for (const cellMatch of rowMatch[1].matchAll(/<c\b((?:(?!\/>)[^>])*)>([\s\S]*?)<\/c>/gi)) {
+        const attrs = cellMatch[1];
+        const body = cellMatch[2];
+        const reference = attrs.match(/\br="([^"]+)"/i)?.[1] || "A";
+        const type = attrs.match(/\bt="([^"]+)"/i)?.[1] || "";
+        const raw = body.match(/<v\b[^>]*>([\s\S]*?)<\/v>/i)?.[1] || "";
+        const inline = [...body.matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/gi)].map((part) => xmlText(part[1])).join("");
+        const display = type === "s" ? (shared[Number(raw)] || "") : type === "inlineStr" ? inline : xmlText(raw);
+        const link = hyperlinks.get(reference);
+        row[xlsxColumnIndex(reference)] = link ? [display, link].filter(Boolean).join(" ") : display;
+      }
+      const values = row.map((value) => value ?? "");
+      if (values.some((value) => String(value || "").trim())) allRows.push(values);
+    }
+  }
+  return allRows;
 }
 
 function parseDelimitedRowsServer(raw) {
@@ -516,7 +549,7 @@ async function youtubeResearch(input) {
   const channel = channelData.items?.[0];
   if (!channel) return demoInfluencer(input, "YouTube channel lookup returned no details.");
 
-  const videoSearchUrl = `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${channelId}&order=date&type=video&maxResults=8&key=${env.YOUTUBE_API_KEY}`;
+  const videoSearchUrl = `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${channelId}&order=date&type=video&maxResults=10&key=${env.YOUTUBE_API_KEY}`;
   const videoSearch = await fetch(videoSearchUrl).then((res) => res.json());
   const ids = (videoSearch.items || []).map((item) => item.id?.videoId).filter(Boolean);
   let avgViews = Number(input.views) || 0;
@@ -2083,8 +2116,8 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === "POST" && req.url === "/api/import-file") {
       const body = await readJson(req);
-      const name = String(body.name || "");
-      const encoded = String(body.data || "").replace(/^data:[^,]+,/, "");
+      const name = String(body.name || body.fileName || "");
+      const encoded = String(body.data || body.dataUrl || "").replace(/^data:[^,]+,/, "");
       if (!encoded) return send(res, 400, { ok: false, error: "File data is required." });
       const fileBuffer = Buffer.from(encoded, "base64");
       const rows = /\.xlsx?$/i.test(name)
