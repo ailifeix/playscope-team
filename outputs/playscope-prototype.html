@@ -2746,37 +2746,40 @@
             <div><div class="field-label">${tr("channel")}</div><select id="researchChannel"><option ${selectedAttr("YouTube", state.researchForm.channel)}>YouTube</option><option ${selectedAttr("Twitch", state.researchForm.channel)}>Twitch</option><option ${selectedAttr("TikTok", state.researchForm.channel)}>TikTok</option></select></div>
             <div><div class="field-label">${tr("avgViews")}</div><input id="researchViews" type="number" value="${esc(state.researchForm.views)}"></div>
           </div><div class="field-label">Genres</div><input id="researchGenres" value="${esc(state.researchForm.genres)}"><button class="primary" id="addResearchBtn" type="button" style="margin-top:12px">${tr("analyze")}</button><button class="coral" id="importExtensionBtn" type="button" style="margin-top:12px;margin-left:8px">Import Extension Data</button><p class="note" id="researchStatus">${tr("apiSafe")}</p><p class="note">For extension import, open a YouTube channel or video page. Public stats are calculated from YouTube API.</p>`)}
-          ${panel("Veri içe aktar", `<div class="unified-import">
-            <div class="unified-import-files">
-              <div class="field-label">Excel / CSV veya ekran görüntüsü seç</div>
-              <input id="importDataFile" type="file" accept=".xlsx,.xls,.csv,.tsv,.txt,text/csv,image/png,image/jpeg,image/webp">
-              <input id="imageChannelLink" type="hidden" value="">
-              <p class="note" id="selectedImportFile">${state.importFileName ? `Seçili dosya: ${esc(state.importFileName)}` : "Henüz dosya seçilmedi."}</p>
+          ${panel("Excel / Copy-paste import", `<div class="form-grid">
+            <div>
+              <div class="field-label">Excel / CSV file</div>
+              <input id="excelFile" type="file" accept=".xlsx,.xls,.csv,.tsv,.txt,text/csv">
+              <button class="primary" id="excelUploadBtn" type="button" style="margin-top:12px">Upload and analyze</button>
+              <p class="note" id="excelStatus">Upload a file with a Link, URL, YouTube, Channel Name, or Name column.</p>
             </div>
-            <div id="imagePasteZone" tabindex="0">Ya da ekran görüntüsünü buraya Ctrl+V ile yapıştır.</div>
-            <div class="unified-actions">
-              <button class="primary" id="importDataBtn" type="button">Tekrar analiz et</button>
+            <div>
+              <div class="field-label">Copy-paste rows</div>
+              <textarea id="bulkInput" placeholder="Channel Name, Link, GEO&#10;RRaenee, https://www.youtube.com/@RRaenee, TR&#10;Elraenn, https://www.youtube.com/@Elraenn, TR"></textarea>
+              <button class="primary" id="bulkAddBtn" type="button" style="margin-top:12px">Analyze pasted links</button>
+              <button id="resetBtn" type="button" style="margin-top:12px;margin-left:8px">${tr("reset")}</button>
             </div>
-            <div class="unified-status">
-              <p class="note" id="excelStatus">${esc(state.importStatus)}</p>
-              <p class="note" id="imageStatus"></p>
+            <div>
+              <div class="field-label">Image data import</div>
+              <input id="imageChannelLink" placeholder="YouTube channel link or @handle for this screenshot">
+              <input id="imageDataFile" type="file" accept="image/png,image/jpeg,image/webp">
+              <div id="imagePasteZone" tabindex="0" style="margin-top:10px;border:1px dashed var(--line);border-radius:6px;padding:12px;min-height:76px;background:var(--soft);color:var(--muted);font-size:13px">Click here, then paste a screenshot with Ctrl+V.</div>
+              <button class="primary" id="imageImportBtn" type="button" style="margin-top:12px">Read image data</button>
+              <p class="note" id="imageStatus">Paste/select a screenshot, enter the channel link, then press Read image data. Nothing is read automatically.</p>
             </div>
-          </div>`)}
+          </div><p class="note" id="bulkStatus">All methods use the same flow: extract rows, fetch each YouTube link from YouTube API, then add any extra imported data as notes.</p>`)}
         </div>
         <section class="panel">${renderTable("", "fit")}</section>`;
       bindTable();
       bindResearchFormInputs();
       $("addResearchBtn").addEventListener("click", addResearchInfluencer);
       $("importExtensionBtn").addEventListener("click", importExtensionData);
-      $("importDataBtn").addEventListener("click", uploadUnifiedImportFile);
-      $("importDataFile").addEventListener("change", handleImportFileSelection);
+      $("excelUploadBtn").addEventListener("click", uploadExcelFile);
+      $("bulkAddBtn").addEventListener("click", addBulkInfluencers);
+      $("imageImportBtn").addEventListener("click", uploadImageData);
       $("imagePasteZone").addEventListener("paste", handleImagePaste);
       $("imagePasteZone").addEventListener("click", () => $("imagePasteZone").focus());
-      $("imagePasteZone").addEventListener("dragover", (event) => {
-        event.preventDefault();
-        event.dataTransfer.dropEffect = "copy";
-      });
-      $("imagePasteZone").addEventListener("drop", handleImportDrop);
+      $("resetBtn").addEventListener("click", () => { state.influencers = defaultInfluencers; state.selected = 0; saveState(); render(); });
     }
 
     function listPage() {
@@ -4846,10 +4849,10 @@ Return exactly this JSON shape:
 
     async function analyzeInfluencerRows(rows, statusId, options = {}) {
       const status = statusId ? $(statusId) : null;
-      const replaceList = options.replaceList !== false;
+      const replaceList = Boolean(options.replaceList);
       const seeds = rows.map(findYouTubeSeedFromRow).filter((seed) => seed.link || seed.name);
       if (!seeds.length) {
-        updateImportStatus("Dosyada aranabilir kanal adı veya YouTube bağlantısı bulunamadı.");
+        if (status) status.textContent = "No usable Channel Name or YouTube Link found.";
         return;
       }
       await ensureBrowserYouTubeKey();
@@ -4938,6 +4941,11 @@ Return exactly this JSON shape:
       if (nextStatus) {
         nextStatus.textContent = state.importStatus;
       }
+    }
+
+    async function addBulkInfluencers() {
+      const rows = rowsToObjects(parseDelimitedRows($("bulkInput").value));
+      await analyzeInfluencerRows(rows, "bulkStatus");
     }
 
     function updateImportStatus(message, persist = false) {
@@ -5067,7 +5075,7 @@ Return exactly this JSON shape:
 
     async function uploadExcelFile() {
       const status = $("excelStatus");
-      const file = $("importDataFile")?.files?.[0] || pendingImportFile;
+      const file = $("excelFile")?.files?.[0] || $("importDataFile")?.files?.[0] || pendingImportFile;
       if (!file) {
         if (status) status.textContent = "Choose an Excel or CSV file first.";
         return;
@@ -5885,8 +5893,12 @@ Return exactly this JSON shape:
 
     async function uploadImageData() {
       const status = $("imageStatus");
-      const file = $("importDataFile")?.files?.[0] || pendingImportFile;
+      const file = $("imageDataFile")?.files?.[0] || pendingImportFile;
       const channelLink = $("imageChannelLink")?.value?.trim() || "";
+      if (!channelLink) {
+        if (status) status.textContent = "A channel link or @handle is required before reading the image.";
+        return;
+      }
       if (!file) {
         if (state.pendingImageDataUrl) {
           const pastedFile = dataUrlToFile(state.pendingImageDataUrl, "pasted-screenshot.png");
@@ -5973,18 +5985,15 @@ Return exactly this JSON shape:
     }
 
     async function processImageDataFile(file, sourceLabel = "image") {
-      const status = $("imageStatus") || $("excelStatus");
+      const status = $("imageStatus");
       const channelLink = $("imageChannelLink")?.value?.trim() || "";
-      const selectedContext = selectedInfluencerContext();
       const context = {
-        ...selectedContext,
-        channelLink: channelLink || selectedContext.channelLink || "",
-        channelName: selectedContext.channelName || ""
+        channelLink,
+        channelName: channelLink ? "" : ""
       };
       try {
         state.importEngine = "";
         if (status) status.textContent = `Reading ${sourceLabel} data...`;
-        updateImportStatus(`${sourceLabel} okunuyor: GPT/OCR ile kanal bilgisi çıkarılıyor...`);
         let rows = [];
         let readError = "";
         try {
@@ -6006,12 +6015,10 @@ Return exactly this JSON shape:
             "Comments": [fieldFromRow(row, ["comments", "notes", "comment"]), readError ? `Image read issue: ${readError}` : ""].filter(Boolean).join("; ")
           })) : [rowFromImageContext(context, readError ? `Image could not be read clearly. ${readError}` : "Screenshot attached; using provided YouTube link.")];
         }
-        rows = attachKnownInfluencerIdentity(rows.length ? rows : [rowFromImageContext(context, readError ? `Image could not be read clearly. ${readError}` : "Screenshot attached; using selected YouTube row.")], context);
         if (status) status.textContent = `${sourceLabel} read: ${rows.length} row(s). Now checking YouTube API...`;
-        updateImportStatus(`${sourceLabel} okundu: ${rows.length} satır. Şimdi YouTube API ile eşleştiriliyor...`);
-        await analyzeInfluencerRows(rows, $("imageStatus") ? "imageStatus" : "excelStatus", { replaceList: false });
+        await analyzeInfluencerRows(rows, "imageStatus");
       } catch (error) {
-        updateImportStatus("Ekran görüntüsü işlenemedi: " + error.message, true);
+        if (status) status.textContent = error.message;
       }
     }
 
@@ -6029,21 +6036,17 @@ Return exactly this JSON shape:
         }
         state.pendingImageDataUrl = await fileToDataUrl(file);
         state.pendingImageName = `Pasted image (${Math.round(file.size / 1024)} KB)`;
-        state.importFileName = file.name || "Yapıştırılan ekran görüntüsü";
         pendingImportFile = file;
         saveState();
         $("imagePasteZone").textContent = `Pasted image: ${file.type || "image"} (${Math.round(file.size / 1024)} KB)`;
-        const selectedLabel = $("selectedImportFile");
-        if (selectedLabel) selectedLabel.textContent = `Seçili dosya: ${state.importFileName}`;
-        updateImportStatus("Görsel hazır. Kanal bilgileri okunup YouTube'da otomatik aranıyor...");
-        await processImageDataFile(file, "pasted image");
+        if (status) status.textContent = "Screenshot is ready. Enter the channel link, then press Read image data.";
         return;
       }
       if (textItem) {
         event.preventDefault();
         textItem.getAsString(async (textValue) => {
           $("imageChannelLink").value = textValue.trim();
-          if (status) status.textContent = "Yapıştırılan metin kanal linkine eklendi. Görseli ekleyip analiz düğmesine bas.";
+          if (status) status.textContent = "Pasted text added as channel link. Press Read image data when ready.";
         });
         return;
       }
