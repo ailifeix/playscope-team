@@ -2113,6 +2113,7 @@
       project: { name: "Galaxy Raiders", genre: "Space Strategy", markets: "TR, DE, FR, BR, JP", audience: "18-34, male 68%", goal: "Global Launch", keywords: "space, strategy, mobile, launch" },
       influencers: defaultInfluencers,
       selected: 0,
+      researchForm: { name: "NewCreator", country: "Turkey", channel: "YouTube", views: "88000", genres: "strategy mobile space" },
       localizationOutput: "",
       competitorGenre: "strategy",
       googlePlayQuery: "",
@@ -2702,16 +2703,49 @@
       $("dashboardExportBtn")?.addEventListener("click", exportCsv);
     }
 
+    function readResearchForm() {
+      return {
+        name: $("researchName")?.value?.trim() || "",
+        country: $("researchCountry")?.value?.trim() || "Turkey",
+        channel: $("researchChannel")?.value || "YouTube",
+        views: $("researchViews")?.value || "88000",
+        genres: $("researchGenres")?.value || ""
+      };
+    }
+
+    function bindResearchFormInputs() {
+      ["researchName", "researchCountry", "researchViews", "researchGenres"].forEach((id) => {
+        const input = $(id);
+        if (!input) return;
+        input.addEventListener("input", () => {
+          state.researchForm = { ...(state.researchForm || {}), ...readResearchForm() };
+          saveState();
+        });
+      });
+      $("researchChannel")?.addEventListener("change", () => {
+        state.researchForm = { ...(state.researchForm || {}), ...readResearchForm() };
+        saveState();
+      });
+    }
+
     function searchPage() {
+      state.researchForm = {
+        name: "NewCreator",
+        country: "Turkey",
+        channel: "YouTube",
+        views: "88000",
+        genres: "strategy mobile space",
+        ...(state.researchForm || {})
+      };
       $("page").innerHTML = `
         ${pageHead(tr("search"), tr("pageSearchSub"))}
         <div class="grid half">
           ${panel("Quick research", `<div class="form-grid">
-            <div><div class="field-label">Name / Channel</div><input id="researchName" value="NewCreator"></div>
-            <div><div class="field-label">${tr("country")}</div><input id="researchCountry" value="Turkey"></div>
-            <div><div class="field-label">${tr("channel")}</div><select id="researchChannel"><option>YouTube</option><option>Twitch</option><option>TikTok</option></select></div>
-            <div><div class="field-label">${tr("avgViews")}</div><input id="researchViews" type="number" value="88000"></div>
-          </div><div class="field-label">Genres</div><input id="researchGenres" value="strategy mobile space"><button class="primary" id="addResearchBtn" type="button" style="margin-top:12px">${tr("analyze")}</button><button class="coral" id="importExtensionBtn" type="button" style="margin-top:12px;margin-left:8px">Import Extension Data</button><p class="note" id="researchStatus">${tr("apiSafe")}</p><p class="note">For extension import, open a YouTube channel or video page. Public stats are calculated from YouTube API.</p>`)}
+            <div><div class="field-label">Name / Channel</div><input id="researchName" value="${esc(state.researchForm.name)}"></div>
+            <div><div class="field-label">${tr("country")}</div><input id="researchCountry" value="${esc(state.researchForm.country)}"></div>
+            <div><div class="field-label">${tr("channel")}</div><select id="researchChannel"><option ${selectedAttr("YouTube", state.researchForm.channel)}>YouTube</option><option ${selectedAttr("Twitch", state.researchForm.channel)}>Twitch</option><option ${selectedAttr("TikTok", state.researchForm.channel)}>TikTok</option></select></div>
+            <div><div class="field-label">${tr("avgViews")}</div><input id="researchViews" type="number" value="${esc(state.researchForm.views)}"></div>
+          </div><div class="field-label">Genres</div><input id="researchGenres" value="${esc(state.researchForm.genres)}"><button class="primary" id="addResearchBtn" type="button" style="margin-top:12px">${tr("analyze")}</button><button class="coral" id="importExtensionBtn" type="button" style="margin-top:12px;margin-left:8px">Import Extension Data</button><p class="note" id="researchStatus">${tr("apiSafe")}</p><p class="note">For extension import, open a YouTube channel or video page. Public stats are calculated from YouTube API.</p>`)}
           ${panel("Veri içe aktar", `<div class="unified-import">
             <div class="unified-import-files">
               <div class="field-label">Excel / CSV veya ekran görüntüsü seç</div>
@@ -2731,6 +2765,7 @@
         </div>
         <section class="panel">${renderTable("", "fit")}</section>`;
       bindTable();
+      bindResearchFormInputs();
       $("addResearchBtn").addEventListener("click", addResearchInfluencer);
       $("importExtensionBtn").addEventListener("click", importExtensionData);
       $("importDataBtn").addEventListener("click", uploadUnifiedImportFile);
@@ -3648,9 +3683,11 @@ Return exactly this JSON shape:
       render();
     }
     async function addResearchInfluencer() {
-      const name = $("researchName").value.trim() || "NewCreator";
-      const genres = $("researchGenres").value.split(/[,\s]+/).filter(Boolean);
-      const input = { name, country: $("researchCountry").value || "Turkey", channel: $("researchChannel").value, views: Number($("researchViews").value) || 50000, genres: genres.join(" "), project: state.project };
+      state.researchForm = { ...(state.researchForm || {}), ...readResearchForm() };
+      saveState();
+      const name = state.researchForm.name || "NewCreator";
+      const genres = String(state.researchForm.genres || "").split(/[,\s]+/).filter(Boolean);
+      const input = { name, country: state.researchForm.country || "Turkey", channel: state.researchForm.channel || "YouTube", views: Number(state.researchForm.views) || 50000, genres: genres.join(" "), project: state.project };
       const status = $("researchStatus");
       if (status) status.textContent = "Researching YouTube...";
       let result = null;
@@ -5908,8 +5945,15 @@ Return exactly this JSON shape:
         const matchIndex = findInfluencerMatchIndex(candidate);
         const matched = matchIndex >= 0 ? state.influencers[matchIndex] : null;
         const canUseSelectedFallback = allowSelectedFallback && isGenericImageCreatorName(name) && !cleanYouTubeSeedLink(link) && Number.isInteger(selectedContext.selectedIndex);
+        const contextualIdentity = allowSelectedFallback && !cleanYouTubeSeedLink(link) && (selectedContext.channelName || selectedContext.channelLink)
+          ? {
+              name: selectedContext.channelName,
+              link: selectedContext.channelLink,
+              handle: selectedContext.handle || ""
+            }
+          : null;
         const fallbackSelected = !matched && canUseSelectedFallback ? state.influencers[selectedContext.selectedIndex] || null : null;
-        const identity = matched || fallbackSelected;
+        const identity = matched || fallbackSelected || contextualIdentity;
         if (!identity) {
           if (!isGenericImageCreatorName(name) || (!selectedContext.channelName && !selectedContext.channelLink)) return row;
           return {
@@ -5921,9 +5965,9 @@ Return exactly this JSON shape:
         }
         return {
           ...row,
-          "Channel Name": isGenericImageCreatorName(name) ? (identity.name || selectedContext.channelName || "") : name,
+          "Channel Name": matched ? (isGenericImageCreatorName(name) ? (identity.name || selectedContext.channelName || "") : name) : (identity.name || selectedContext.channelName || name),
           "Link": cleanYouTubeSeedLink(link) || identity.link || identity.handle || selectedContext.channelLink || link,
-          "Comments": [fieldFromRow(row, ["comments", "notes", "comment"]), identity.name ? `Matched existing row: ${identity.name}` : ""].filter(Boolean).join("; ")
+          "Comments": [fieldFromRow(row, ["comments", "notes", "comment"]), !matched && name && !isGenericImageCreatorName(name) ? `Visible screenshot name: ${name}` : "", identity.name ? `Matched existing row: ${identity.name}` : ""].filter(Boolean).join("; ")
         };
       });
     }
