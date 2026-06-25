@@ -67,7 +67,7 @@ function getOpenAiKey() {
 }
 
 function getAiModuleWireApi() {
-  const value = String(env.OPENAI_WIRE_API || env.GPT_WIRE_API || env.AI_WIRE_API || env.WIRE_API || "responses").trim().toLowerCase();
+  const value = String(env.OPENAI_WIRE_API || env.GPT_WIRE_API || env.AI_WIRE_API || env.WIRE_API || "chat").trim().toLowerCase();
   return value === "responses" ? "responses" : "chat";
 }
 
