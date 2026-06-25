@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="tr">
 <head>
   <meta charset="utf-8" />
@@ -1569,7 +1569,7 @@
       const market = state.project.markets.toLowerCase().includes((item.flag || "").toLowerCase()) ? 7 : 0;
       const view = item.views > 100000 ? 5 : item.views > 70000 ? 2 : 0;
       const words = [state.project.genre, state.project.keywords].join(" ").toLowerCase();
-      const genre = item.genres.some((g) => words.includes(g.toLowerCase())) ? 8 : 0;
+      const genre = (item.genres || []).some((g) => words.includes(String(g || "").toLowerCase())) ? 8 : 0;
       return Math.max(35, Math.min(98, Math.round(item.match * .72 + market + view + genre)));
     }
     function recommendation(score) {
@@ -1640,7 +1640,7 @@
     function rows(filter = "", sort = "fit") {
       return state.influencers
         .map((item, index) => ({ ...item, index, fit: fitScore(item) }))
-        .filter((item) => !filter || [item.name, item.country, item.channel, item.handle, item.genres.join(" ")].join(" ").toLowerCase().includes(filter.toLowerCase()))
+        .filter((item) => !filter || [item.name, item.country, item.channel, item.handle, (item.genres || []).join(" ")].join(" ").toLowerCase().includes(filter.toLowerCase()))
         .sort((a, b) => sort === "views" ? b.views - a.views : sort === "match" ? b.match - a.match : b.fit - a.fit);
     }
 
