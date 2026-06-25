@@ -11,3 +11,7 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
+      - key: OPENAI_WIRE_API
+        value: chat
+      - key: GPT_API_BASE_URL
+        value: https://api.xai.kg/v1
