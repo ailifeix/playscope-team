@@ -3660,13 +3660,11 @@ Return exactly this JSON shape:
     function getImportedRowHints(row) {
       const combinedAudienceText = Object.entries(row || {}).map(([key, value]) => `${key}: ${value}`).join("\n");
       const audienceHints = extractAudienceHintsFromText(combinedAudienceText);
-      const values = Object.values(row || {}).map((value) => String(value || "").trim()).filter(Boolean);
-      const fallbackFollower = values.find((value) => /^\d+(?:[.,]\d+)?\s*[KMBkmb]$/.test(value)) || "";
       return {
         geo: fieldFromRow(row, ["geo", "country", "market", "ülke", "ulke"]),
         gender: fieldFromRow(row, ["gender", "cinsiyet", "audience gender", "gender split", "female male", "female/male", "demographics"]) || audienceHints.gender,
         age: fieldFromRow(row, ["age", "yas", "yaş", "audience age", "age gender", "age/gender", "age distribution", "audience age gender", "audience age&gender analysis", "age gender analysis"]) || audienceHints.age,
-        subscribers: fieldFromRow(row, ["subscribers", "followers", "takipci", "takipçi", "subs"]) || fallbackFollower,
+        subscribers: fieldFromRow(row, ["subscribers", "followers", "takipci", "takipçi", "subs"]),
         views: fieldFromRow(row, ["avg views", "views", "average views", "avg view", "izlenme"]),
         avgComments: fieldFromRow(row, ["avg comments", "average comments", "yorum ortalama"]),
         category: fieldFromRow(row, ["category", "kategori"]),
@@ -3712,59 +3710,6 @@ Return exactly this JSON shape:
       return name.replace(/\s+/g, " ");
     }
 
-    function missingInfluencerValue(value) {
-      const text = String(value ?? "").trim();
-      return !text || /^(?:-|missing|unknown|unclear|n\/a|free data yok|data yok|no data)$/i.test(text) || /^needs\b/i.test(text);
-    }
-
-    function usableInfluencerValue(value) {
-      return !missingInfluencerValue(value) && value !== 0;
-    }
-
-    function mergeOcrIntoExistingInfluencer(row) {
-      const normalized = normalizeInfluencer({
-        name: fieldFromRow(row, ["channel name", "name", "creator", "influencer"]) || row.name || row["Channel Name"] || "",
-        link: fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url"]) || row.link || row.Link || "",
-        geo: fieldFromRow(row, ["geo", "country", "market", "ülke", "ulke"]) || row.geo || row.GEO || "",
-        gender: fieldFromRow(row, ["gender", "cinsiyet", "audience gender", "gender split"]) || row.gender || row.Gender || "",
-        age: fieldFromRow(row, ["age", "yas", "yaş", "audience age", "age gender", "age/gender"]) || row.age || row.Age || "",
-        subscribers: fieldFromRow(row, ["subscribers", "followers", "takipci", "takipçi", "subs"]) || row.subscribers || row.Subscribers || "",
-        views: fieldFromRow(row, ["avg views", "views", "average views", "avg view", "izlenme"]) || row.views || row["avg Views"] || "",
-        avgComments: fieldFromRow(row, ["avg comments", "average comments", "yorum ortalama"]) || row.avgComments || row["Avg Comments"] || "",
-        category: fieldFromRow(row, ["category", "kategori"]) || row.category || row.Category || "",
-        subcategory: fieldFromRow(row, ["subcategory", "sub category", "alt kategori"]) || row.subcategory || row.Subcategory || "",
-        keywords: fieldFromRow(row, ["keywords", "tags", "keyword"]) || row.keywords || row.Keywords || "",
-        format: fieldFromRow(row, ["format"]) || row.format || row.Format || "",
-        duration: fieldFromRow(row, ["duration", "duration avg", "avg duration"]) || row.duration || row.Duration || "",
-        comments: fieldFromRow(row, ["comments", "notes", "comment"]) || row.comments || row.Comments || "OCR data"
-      });
-      const key = influencerMatchKey(normalized);
-      const index = key ? state.influencers.findIndex((item) => influencerMatchKey(item) === key) : -1;
-      if (index < 0) return false;
-      const current = state.influencers[index];
-      const merged = { ...current };
-      Object.entries(normalized).forEach(([field, value]) => {
-        if (["comments", "notes", "note", "shortlisted"].includes(field)) return;
-        if (usableInfluencerValue(value) && missingInfluencerValue(merged[field])) merged[field] = value;
-      });
-      merged.comments = [current.comments, normalized.comments].filter(Boolean).join("; ");
-      merged.notes = [current.notes, normalized.notes].filter(Boolean).join("; ");
-      state.influencers[index] = normalizeInfluencer(merged);
-      state.selected = index;
-      return true;
-    }
-
-    function applyOcrRowsToExistingInfluencers(rows, statusId) {
-      let updated = 0;
-      rows.forEach((row) => { if (mergeOcrIntoExistingInfluencer(row)) updated += 1; });
-      saveState();
-      render();
-      const status = statusId ? $(statusId) : null;
-      if (status) status.textContent = updated
-        ? `OCR okundu. ${updated} mevcut satırın eksikleri dolduruldu.`
-        : "OCR okundu ama mevcut Excel/list satırlarıyla eşleşen isim/link bulunamadı; yeni satır açılmadı.";
-    }
-
     function mergeInfluencerIntoList(item) {
       const normalized = normalizeInfluencer(item);
       const key = influencerMatchKey(normalized);
@@ -3807,23 +3752,13 @@ Return exactly this JSON shape:
       const text = String(value || "").trim().replace(/^＠/, "@");
       if (!text || text === "@" || /^@[\W_]*$/u.test(text)) return true;
       if (/^@/.test(text)) return !/^@[\p{L}\p{N}._-]{2,}$/u.test(text);
-      return !/youtube\.com|youtu\.be|twitch\.tv/i.test(text);
-    }
-
-    function isYouTubeSeedLink(value) {
-      const text = String(value || "");
-      return /youtube\.com|youtu\.be|^@[\p{L}\p{N}._-]{2,}$/iu.test(text);
-    }
-
-    function isTwitchSeedLink(value) {
-      return /twitch\.tv/i.test(String(value || ""));
+      return !/youtube\.com|youtu\.be/i.test(text);
     }
 
     function cleanYouTubeSeedLink(value) {
       const text = String(value || "").trim().replace(/^＠/, "@");
       if (isInvalidYouTubeSeedLink(text)) return "";
       if (/^www\.youtube\.com/i.test(text)) return `https://${text}`;
-      if (/^www\.twitch\.tv/i.test(text)) return `https://${text}`;
       return text;
     }
 
@@ -3843,57 +3778,28 @@ Return exactly this JSON shape:
         return;
       }
       await ensureBrowserYouTubeKey();
+      if (!state.api?.youtube) {
+        if (status) status.textContent = "YouTube API key gerekli. Settings sayfasina key'i kaydet.";
+        return;
+      }
       const imported = [];
       const skipped = [];
       for (let index = 0; index < seeds.length; index += 1) {
         const seed = seeds[index];
-        const hints = getImportedRowHints(seed.raw || {});
-        if (status) status.textContent = state.api?.youtube
-          ? `Analyzing ${index + 1}/${seeds.length}: ${seed.name || seed.link}`
-          : `Importing ${index + 1}/${seeds.length}: ${seed.name || seed.link}`;
-        let live = {
-          source: "excel-import",
-          name: seed.name,
-          link: seed.link,
+        if (status) status.textContent = `Analyzing ${index + 1}/${seeds.length}: ${seed.name || seed.link}`;
+        const live = await youtubeFromBrowser({
+          name: seed.link || seed.name,
+          fallbackName: seed.name,
           country: seed.country || "Turkey",
-          geo: seed.country || "Turkey",
-          subscribers: "-",
-          gender: "Missing",
-          age: "Missing",
-          avgComments: 0,
+          channel: "YouTube",
           views: 0,
-          category: "Unclear",
-          subcategory: "Needs YouTube API analysis",
-          format: "-",
-          duration: "-",
-          keywords: "",
-          comments: "Imported from Excel/list.",
-          notes: "Imported from Excel/list."
-        };
-        const shouldAnalyzeWithYouTube = state.api?.youtube && (!seed.link || isYouTubeSeedLink(seed.link));
-        if (shouldAnalyzeWithYouTube) {
-          live = await youtubeFromBrowser({
-            name: seed.link || seed.name,
-            fallbackName: seed.name,
-            country: seed.country || "Turkey",
-            channel: "YouTube",
-            views: 0,
-            genres: "",
-            project: state.project
-          }, state.api.youtube).catch((error) => ({
-            ...live,
-            comments: `Imported from Excel/list. YouTube API failed: ${error.message}`,
-            notes: `Imported from Excel/list. YouTube API failed: ${error.message}`
-          }));
-        } else if (isTwitchSeedLink(seed.link)) {
-          live = {
-            ...live,
-            channel: "Twitch",
-            category: "Unclear",
-            subcategory: "Twitch profile - needs screenshot/manual category",
-            comments: "Imported from Excel/list. Twitch link kept; YouTube API is skipped for Twitch.",
-            notes: "Imported from Excel/list. Twitch link kept; YouTube API is skipped for Twitch."
-          };
+          genres: "",
+          project: state.project
+        }, state.api.youtube);
+        const hints = getImportedRowHints(seed.raw || {});
+        if (live.source !== "youtube-live" && !hasUsefulImportedMetrics(hints)) {
+          skipped.push(seed.name || seed.link);
+          continue;
         }
         const extraNotes = Object.entries(hints).filter(([, value]) => value).map(([key, value]) => `${key}: ${value}`).join("; ");
         const importedComment = fieldFromRow(seed.raw || {}, ["comments", "notes", "comment"]) || "";
@@ -3929,7 +3835,7 @@ Return exactly this JSON shape:
       render();
       const nextStatus = statusId ? $(statusId) : null;
       if (nextStatus) {
-        const skippedText = skipped.length ? ` ${skipped.length} row could not be read.` : "";
+        const skippedText = skipped.length ? ` ${skipped.length} row could not be matched, so it was not added.` : "";
         nextStatus.textContent = `Done. ${addedCount} added, ${updatedCount} updated.${skippedText}`;
       }
     }
@@ -3937,28 +3843,6 @@ Return exactly this JSON shape:
     async function addBulkInfluencers() {
       const rows = rowsToObjects(parseDelimitedRows($("bulkInput").value));
       await analyzeInfluencerRows(rows, "bulkStatus");
-    }
-
-    function attachExcelHyperlinks(sheet, rows) {
-      const rangeRef = sheet?.["!ref"];
-      if (!rangeRef || !rows.length || !window.XLSX) return rows;
-      const range = XLSX.utils.decode_range(rangeRef);
-      rows.forEach((row, index) => {
-        const excelRow = Number(row.__excelRow || (range.s.r + 2 + index));
-        if (!excelRow) return;
-        for (let colIndex = range.s.c; colIndex <= range.e.c; colIndex += 1) {
-          const cell = sheet[XLSX.utils.encode_cell({ r: excelRow - 1, c: colIndex })];
-          const target = cell?.l?.Target || cell?.l?.target || "";
-          if (/youtube\.com|youtu\.be|twitch\.tv/i.test(target) && !fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url"])) {
-            row.Link = target;
-          }
-        }
-      });
-      return rows;
-    }
-
-    function rowHasCreatorLink(row) {
-      return Boolean(fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url"]) || Object.values(row || {}).find((value) => cleanYouTubeSeedLink(value)));
     }
 
     async function uploadExcelFile() {
@@ -3981,10 +3865,8 @@ Return exactly this JSON shape:
           xlsxBuffer = await file.arrayBuffer();
           const workbook = XLSX.read(xlsxBuffer, { type: "array" });
           const firstSheet = workbook.SheetNames[0];
-          const sheet = workbook.Sheets[firstSheet];
-          const sheetRows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-          rows = attachExcelHyperlinks(sheet, rowsToObjects(sheetRows));
-          if (rows.some(rowHasCreatorLink)) rows = rows.filter(rowHasCreatorLink);
+          const sheetRows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { header: 1, defval: "" });
+          rows = rowsToObjects(sheetRows);
         }
         await analyzeInfluencerRows(rows, "excelStatus");
         if (xlsxBuffer) {
@@ -3993,7 +3875,7 @@ Return exactly this JSON shape:
             const anchored = imageFiles.filter((imageFile) => imageFile.__excelRow).map((imageFile) => `row ${imageFile.__excelRow}`).join(", ");
             if (status) status.textContent = `Excel image found. Reading ${imageFiles.length} embedded image(s)${anchored ? ` (${anchored})` : ""}...`;
             const imageRows = [];
-            for (const imageFile of imageFiles.slice(0, 30)) {
+            for (const imageFile of imageFiles.slice(0, 3)) {
               try {
                 const linkedRow = closestExcelRow(rows, imageFile.__excelRow);
                 const imageContext = imageContextFromExcelRow(linkedRow, {
@@ -4008,16 +3890,12 @@ Return exactly this JSON shape:
                   if (status) status.textContent = `Excel image GPT failed, trying OCR: ${gptError.message}`;
                   rowsFromImage = await readImageRowsWithOcr(imageFile, status, imageContext);
                 }
-                imageRows.push(...rowsFromImage.map((row) => ({
-                  ...row,
-                  "Channel Name": fieldFromRow(row, ["channel name", "name", "creator", "influencer"]) || imageContext.channelName || "",
-                  "Link": fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url"]) || imageContext.channelLink || ""
-                })));
+                imageRows.push(...rowsFromImage);
               } catch (imageError) {
                 if (status) status.textContent = `Excel image OCR failed: ${imageError.message}`;
               }
             }
-            if (imageRows.length) applyOcrRowsToExistingInfluencers(imageRows, "excelStatus");
+            if (imageRows.length) await analyzeInfluencerRows(imageRows, "excelStatus");
             else if (status) status.textContent = `Excel image found, but OCR could not find usable channel rows.`;
           } else if (status) {
             status.textContent = rows.length
@@ -4093,40 +3971,6 @@ Return exactly this JSON shape:
       return anchors;
     }
 
-    function extractCellImageAnchors(entriesByName) {
-      const anchors = new Map();
-      const cellImagesXml = entriesByName.get("xl/cellimages.xml") || "";
-      const relXml = entriesByName.get("xl/_rels/cellimages.xml.rels") || "";
-      if (!cellImagesXml || !relXml) return anchors;
-      const rels = new Map();
-      for (const rel of relXml.matchAll(/<Relationship\b[^>]*Id="([^"]+)"[^>]*Target="([^"]+)"/gi)) {
-        rels.set(rel[1], resolveZipTarget("xl/cellimages.xml", rel[2]));
-      }
-      const imageById = new Map();
-      const blocks = cellImagesXml.match(/<etc:cellImage\b[\s\S]*?<\/etc:cellImage>/gi) || [];
-      for (const block of blocks) {
-        const nameMatch = block.match(/<xdr:cNvPr\b[^>]*name="([^"]+)"/i);
-        const embedMatch = block.match(/(?:r:)?embed="([^"]+)"/i);
-        if (!nameMatch || !embedMatch) continue;
-        const mediaPath = rels.get(embedMatch[1]);
-        if (mediaPath) imageById.set(nameMatch[1], mediaPath);
-      }
-      const worksheetXml = entriesByName.get("xl/worksheets/sheet1.xml") || "";
-      const cells = worksheetXml.match(/<c\b[^>]*r="[^"]+"[\s\S]*?<\/c>/gi) || [];
-      for (const cell of cells) {
-        const cellRef = cell.match(/\br="([A-Z]+)(\d+)"/i);
-        const idMatch = cell.match(/DISPIMG\((?:&quot;|")([^"&]+)(?:&quot;|")/i);
-        if (!cellRef || !idMatch) continue;
-        const mediaPath = imageById.get(idMatch[1]);
-        if (!mediaPath) continue;
-        anchors.set(mediaPath, {
-          excelRow: Number(cellRef[2]),
-          drawingPath: "xl/cellimages.xml"
-        });
-      }
-      return anchors;
-    }
-
     async function extractImagesFromXlsxBuffer(buffer) {
       const view = new DataView(buffer);
       let eocd = -1;
@@ -4163,7 +4007,7 @@ Return exactly this JSON shape:
       zipEntries.forEach((entry) => {
         if (/\.(xml|rels)$/i.test(entry.name)) textEntries.set(entry.name, new TextDecoder().decode(entry.raw));
       });
-      const anchors = new Map([...extractDrawingImageAnchors(textEntries), ...extractCellImageAnchors(textEntries)]);
+      const anchors = extractDrawingImageAnchors(textEntries);
       const images = [];
       for (const entry of zipEntries) {
         const fileName = entry.name;
@@ -4640,8 +4484,8 @@ Return exactly this JSON shape:
             "Comments": [fieldFromRow(row, ["comments", "notes", "comment"]), readError ? `Image read issue: ${readError}` : ""].filter(Boolean).join("; ")
           })) : [rowFromImageContext(context, readError ? `Image could not be read clearly. ${readError}` : "Screenshot attached; using provided YouTube link.")];
         }
-        if (status) status.textContent = `${sourceLabel} read: ${rows.length} row(s). Filling missing fields only...`;
-        applyOcrRowsToExistingInfluencers(rows, "imageStatus");
+        if (status) status.textContent = `${sourceLabel} read: ${rows.length} row(s). Now checking YouTube API...`;
+        await analyzeInfluencerRows(rows, "imageStatus");
       } catch (error) {
         if (status) status.textContent = error.message;
       }
