@@ -47,16 +47,8 @@ function getAiModel() {
 }
 
 function getAiModelCandidates() {
-  const preferred = env.GPT_MODEL && env.GPT_MODEL !== "auto" ? env.GPT_MODEL : "";
-  return [...new Set([
-    preferred,
-    "gpt-4o-mini",
-    "gpt-4o",
-    "gpt-4.1-mini",
-    "gpt-4.1",
-    "gpt-3.5-turbo",
-    "chatgpt-4o-latest"
-  ].filter(Boolean))];
+  const preferred = env.GPT_MODEL && env.GPT_MODEL !== "auto" ? env.GPT_MODEL : "gpt-5.5";
+  return [preferred];
 }
 
 function getAiModuleBaseUrl() {
@@ -81,18 +73,10 @@ function getAiModuleWireApi() {
 
 function getAiModuleModelCandidates(module) {
   const preferred = module === "review"
-    ? (env.REVIEW_MODEL || env.AI_REVIEW_MODEL || env.AI_MODEL || "")
-    : (env.AI_MODEL || "");
-  const legacyModel = env.GPT_MODEL && env.GPT_MODEL !== "auto" ? env.GPT_MODEL : "";
-  return [...new Set([
-    preferred && preferred !== "auto" ? preferred : "",
-    "gpt-5.5",
-    legacyModel,
-    "gpt-4o-mini",
-    "gpt-4o",
-    "gpt-4.1-mini",
-    "gpt-4.1"
-  ].filter(Boolean))];
+    ? (env.REVIEW_MODEL || env.AI_REVIEW_MODEL || env.AI_MODEL || env.GPT_MODEL || "gpt-5.5")
+    : (env.AI_MODEL || env.GPT_MODEL || "gpt-5.5");
+
+  return [preferred && preferred !== "auto" ? preferred : "gpt-5.5"];
 }
 
 function getAiReasoningEffort() {
