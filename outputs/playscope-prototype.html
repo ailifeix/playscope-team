@@ -1055,916 +1055,6 @@
         min-height: auto;
       }
     }
-
-    /* Reference-faithful PlayScope dashboard. */
-    :root {
-      --bg: #f8f9fc;
-      --surface: #ffffff;
-      --soft: #fafbff;
-      --ink: #171927;
-      --muted: #697086;
-      --line: #e4e7ef;
-      --teal: #6f36f4;
-      --teal-soft: #f1ebff;
-      --shadow: 0 2px 10px rgba(30, 35, 60, .035);
-    }
-    body { background: #f8f9fc; }
-    .app { grid-template-columns: 232px minmax(0, 1fr); }
-    .sidebar {
-      position: sticky;
-      top: 0;
-      height: 100vh;
-      padding: 20px 10px 14px;
-      background: #fff;
-      border-right: 1px solid #e5e7ef;
-      color: var(--ink);
-    }
-    .brand {
-      color: #171927;
-      padding: 2px 9px 18px;
-      font-size: 22px;
-    }
-    .brand span { color: #171927; font-size: 22px; }
-    .mark {
-      width: 31px;
-      height: 31px;
-      background: #6f36f4;
-      box-shadow: none;
-    }
-    .mark:before {
-      inset: 8px 5px;
-      width: 17px;
-      height: 11px;
-      border: 2px solid #fff;
-      border-radius: 6px 6px 8px 8px;
-    }
-    .mark:after {
-      content: "+  ·";
-      position: absolute;
-      left: 8px;
-      top: 7px;
-      color: #fff;
-      font-size: 10px;
-      font-weight: 900;
-      letter-spacing: 3px;
-    }
-    .nav, .sidebar-foot { gap: 3px; }
-    .nav button, .sidebar-foot button {
-      min-height: 44px;
-      padding: 10px 12px;
-      color: #42485d;
-      border-radius: 7px;
-      font-size: 13px;
-      font-weight: 650;
-    }
-    .nav button:hover, .sidebar-foot button:hover {
-      background: #f7f5ff;
-      color: #6f36f4;
-    }
-    .nav button.active, .sidebar-foot button.active {
-      color: #6f36f4;
-      background: #f0eaff;
-      box-shadow: none;
-    }
-    .sidebar-foot {
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid var(--line);
-    }
-    .profile {
-      margin-top: auto;
-      padding: 12px 8px 0;
-      background: transparent;
-      border: 0;
-      border-top: 1px solid var(--line);
-      border-radius: 0;
-      color: var(--ink);
-    }
-    .profile span { color: var(--muted); }
-    .profile button { color: var(--ink); }
-    main {
-      padding: 16px 18px 18px;
-      gap: 12px;
-      background: #fbfcfe;
-    }
-    .brief {
-      min-height: 56px;
-      padding: 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border: 0;
-      box-shadow: none;
-      background: transparent;
-    }
-    .brief > div:first-child { min-width: 0; }
-    .brief-grid { display: none; }
-    .section-title {
-      min-height: 42px;
-      margin: 0;
-      padding: 6px 12px 6px 7px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      background: #fff;
-      font-size: 14px;
-      box-shadow: var(--shadow);
-    }
-    .project-avatar {
-      width: 30px;
-      height: 30px;
-      display: grid;
-      place-items: center;
-      border-radius: 6px;
-      background: linear-gradient(135deg, #4f2ad9, #d85aa7);
-      color: #fff;
-      font-size: 12px;
-      font-weight: 850;
-    }
-    .active-badge {
-      display: inline-flex;
-      padding: 4px 8px;
-      border-radius: 6px;
-      background: #e8f7ed;
-      color: #24924a;
-      font-size: 11px;
-      font-weight: 800;
-    }
-    .top-actions { gap: 8px; }
-    .top-actions button, .top-actions select, .date-chip {
-      width: auto;
-      min-height: 40px;
-      padding: 8px 12px;
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      background: #fff;
-      color: #25283a;
-      box-shadow: var(--shadow);
-      font-size: 12px;
-    }
-    .top-actions .primary {
-      color: #fff;
-      background: #6f36f4;
-      border-color: #6f36f4;
-    }
-    .language-select { width: 106px; }
-    #page { display: grid; gap: 10px; }
-    .panel {
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      box-shadow: var(--shadow);
-      background: #fff;
-    }
-    .panel-head { min-height: 43px; padding: 11px 14px; }
-    .panel-head h3 { font-size: 13px; }
-    .panel-body { padding: 12px 14px; }
-    .text-action {
-      min-height: auto;
-      padding: 2px 4px;
-      border: 0;
-      background: transparent;
-      color: #6f36f4;
-      box-shadow: none;
-      font-size: 9px;
-      font-weight: 800;
-    }
-    .text-action:hover { transform: none; border: 0; box-shadow: none; }
-    .overview-panel .panel-body { padding: 12px 18px 14px; }
-    .overview-row {
-      display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-      gap: 0;
-    }
-    .overview-item {
-      min-width: 0;
-      padding: 2px 18px;
-      display: grid;
-      grid-template-columns: 32px minmax(0, 1fr);
-      gap: 9px;
-      align-items: center;
-      border-right: 1px solid var(--line);
-    }
-    .overview-item:first-child { padding-left: 0; }
-    .overview-item:last-child { border-right: 0; padding-right: 0; }
-    .overview-icon { color: #6f36f4; }
-    .overview-icon .icon { width: 24px; height: 24px; }
-    .overview-item small { display: block; color: #34384c; font-size: 10px; }
-    .overview-item strong { display: block; margin: 3px 0; color: #6f36f4; font-size: 20px; line-height: 1; }
-    .overview-item span { display: block; color: var(--muted); font-size: 9px; line-height: 1.35; }
-    .reference-actions .panel-body { padding: 10px; }
-    .reference-actions .quick-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-    .reference-actions .quick-card {
-      min-height: 70px;
-      padding: 10px;
-      grid-template-columns: 44px minmax(0, 1fr) 18px;
-      align-items: center;
-      align-content: center;
-      gap: 10px;
-      border-radius: 7px;
-    }
-    .reference-actions .quick-card .quick-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 7px;
-    }
-    .reference-actions .quick-card strong { margin-bottom: 3px; font-size: 12px; }
-    .reference-actions .quick-card span { font-size: 10px; }
-    .quick-arrow { color: #555d72; font-size: 18px; text-align: center; }
-    .reference-content {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 350px;
-      gap: 10px;
-      align-items: stretch;
-    }
-    .dashboard-table-wrap { overflow: auto; }
-    .dashboard-table { min-width: 760px; }
-    .dashboard-table th { padding: 9px 10px; font-size: 9px; background: #fff; }
-    .dashboard-table td { padding: 8px 10px; font-size: 10px; }
-    .dashboard-table .person { width: 26px; height: 26px; font-size: 9px; }
-    .dashboard-table .name-cell { min-width: 150px; gap: 8px; }
-    .dashboard-table .name-cell strong { font-size: 10px; }
-    .dashboard-table .name-cell span { font-size: 9px; }
-    .platform-badge, .country-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 22px;
-      height: 18px;
-      padding: 0 5px;
-      border-radius: 4px;
-      color: #fff;
-      background: #ff3040;
-      font-size: 8px;
-      font-weight: 800;
-    }
-    .platform-badge.twitch { background: #8447f5; }
-    .trend-up { color: #199653; font-weight: 750; }
-    .trend-down { color: #e24555; font-weight: 750; }
-    .rail-panel .panel-body { padding: 8px; }
-    .alert-list, .action-list { display: grid; gap: 5px; }
-    .rail-item {
-      min-height: 56px;
-      padding: 8px 9px;
-      display: grid;
-      grid-template-columns: 24px minmax(0, 1fr) auto;
-      align-items: center;
-      gap: 8px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: #fff;
-    }
-    .rail-item strong { display: block; margin-bottom: 3px; font-size: 10px; }
-    .rail-item span { display: block; color: var(--muted); font-size: 9px; line-height: 1.35; }
-    .rail-symbol { color: #6f36f4; font-size: 17px; text-align: center; }
-    .rail-time { color: var(--muted); font-size: 8px; white-space: nowrap; }
-    .rail-section-title {
-      margin: 12px 2px 7px;
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-    }
-    .action-row {
-      min-height: 45px;
-      padding: 7px 6px;
-      display: grid;
-      grid-template-columns: 16px minmax(0, 1fr) auto;
-      gap: 7px;
-      align-items: center;
-      border-bottom: 1px solid #eef0f5;
-    }
-    .action-row:last-child { border-bottom: 0; }
-    .action-row input { width: 13px; height: 13px; }
-    .action-row strong { display: block; font-size: 10px; }
-    .action-row span { display: block; margin-top: 2px; color: var(--muted); font-size: 9px; }
-    .dashboard-footer-metrics {
-      display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-      gap: 0;
-      padding: 10px 12px;
-    }
-    .footer-metric {
-      padding: 0 14px;
-      border-right: 1px solid var(--line);
-      font-size: 9px;
-    }
-    .footer-metric:first-child { padding-left: 0; }
-    .footer-metric:last-child { border-right: 0; }
-    .footer-metric small { display: block; color: var(--muted); }
-    .footer-metric strong { display: block; margin-top: 3px; font-size: 11px; }
-    @media (max-width: 1200px) {
-      .overview-row { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 14px; }
-      .overview-item:nth-child(3) { border-right: 0; }
-      .reference-actions .quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .reference-content { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 760px) {
-      .app { grid-template-columns: 1fr; }
-      .sidebar { height: auto; }
-      .brief { align-items: stretch; flex-direction: column; gap: 8px; }
-      .top-actions { overflow-x: auto; flex-wrap: nowrap; }
-      .overview-row, .dashboard-footer-metrics { grid-template-columns: 1fr 1fr; }
-      .overview-item { border-right: 0; border-bottom: 1px solid var(--line); padding: 10px; }
-      .reference-actions .quick-grid { grid-template-columns: 1fr; }
-    }
-    /* Shared workbench styling for all non-dashboard modules. */
-    body:not([data-page="dashboard"]) #page { gap: 12px; }
-    body:not([data-page="dashboard"]) .page-head {
-      min-height: 54px;
-      padding: 3px 2px 5px;
-      align-items: center;
-    }
-    body:not([data-page="dashboard"]) .page-head h2 {
-      font-size: 21px;
-      line-height: 1.15;
-    }
-    body:not([data-page="dashboard"]) .page-head p {
-      margin-top: 4px;
-      font-size: 11px;
-    }
-    body:not([data-page="dashboard"]) .grid { gap: 10px; }
-    body:not([data-page="dashboard"]) .panel {
-      box-shadow: 0 2px 10px rgba(30,35,60,.035);
-    }
-    body:not([data-page="dashboard"]) .panel-head {
-      min-height: 44px;
-      padding: 11px 14px;
-    }
-    body:not([data-page="dashboard"]) .panel-head h3 { font-size: 13px; }
-    body:not([data-page="dashboard"]) .panel-body { padding: 14px; }
-    body:not([data-page="dashboard"]) .field-label {
-      margin-bottom: 5px;
-      color: #60677a;
-      font-size: 10px;
-      font-weight: 700;
-    }
-    body:not([data-page="dashboard"]) input,
-    body:not([data-page="dashboard"]) select,
-    body:not([data-page="dashboard"]) textarea {
-      border-color: #dfe3ec;
-      border-radius: 6px;
-      background: #fff;
-      font-size: 12px;
-    }
-    body:not([data-page="dashboard"]) input,
-    body:not([data-page="dashboard"]) select { min-height: 38px; padding: 8px 10px; }
-    body:not([data-page="dashboard"]) textarea { min-height: 100px; padding: 10px; line-height: 1.5; }
-    body:not([data-page="dashboard"]) button {
-      min-height: 36px;
-      padding: 8px 11px;
-      border-radius: 6px;
-      font-size: 11px;
-    }
-    body:not([data-page="dashboard"]) .primary {
-      background: #6f36f4;
-      border-color: #6f36f4;
-      box-shadow: none;
-    }
-    body:not([data-page="dashboard"]) .coral {
-      color: #6f36f4;
-      background: #f2ecff;
-      border-color: #ded0ff;
-    }
-    body:not([data-page="dashboard"]) .ghost {
-      color: #4b5267;
-      background: #f8f9fc;
-      border-color: #e1e4ed;
-    }
-    body:not([data-page="dashboard"]) .note {
-      color: #747b8e;
-      font-size: 10px;
-      line-height: 1.45;
-    }
-    body:not([data-page="dashboard"]) .form-grid {
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    body:not([data-page="dashboard"]) .controls { gap: 6px; }
-    body:not([data-page="dashboard"]) .controls input,
-    body:not([data-page="dashboard"]) .controls select { width: 145px; }
-    body:not([data-page="dashboard"]) .table-wrap {
-      max-height: 560px;
-      border-top: 0;
-      border-radius: 0 0 7px 7px;
-    }
-    body:not([data-page="dashboard"]) table { font-size: 11px; }
-    body:not([data-page="dashboard"]) th { padding: 9px 10px; font-size: 9px; }
-    body:not([data-page="dashboard"]) td { padding: 9px 10px; font-size: 10px; }
-    body:not([data-page="dashboard"]) .person { width: 29px; height: 29px; font-size: 9px; }
-    body:not([data-page="dashboard"]) .name-cell strong { font-size: 11px; }
-    body:not([data-page="dashboard"]) .name-cell span,
-    body:not([data-page="dashboard"]) .cell-muted { font-size: 9px; }
-    body:not([data-page="dashboard"]) .score { font-size: 17px; }
-    body:not([data-page="dashboard"]) .score small { font-size: 8px; }
-    body:not([data-page="dashboard"]) .result-box {
-      min-height: 92px;
-      padding: 12px;
-      border-color: #e1e4ed;
-      background: #fafbff;
-      font-size: 11px;
-    }
-    body[data-page="search"] .grid.half {
-      grid-template-columns: 1fr;
-      align-items: start;
-    }
-    body[data-page="search"] .grid.half > .panel:first-child { position: static; top: auto; }
-    body[data-page="search"] .form-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    body[data-page="search"] .panel:nth-child(2) .form-grid {
-      grid-template-columns: minmax(260px, .85fr) minmax(280px, 1fr) minmax(280px, 1fr);
-    }
-    @media (max-width: 980px) {
-      body[data-page="search"] .form-grid,
-      body[data-page="search"] .panel:nth-child(2) .form-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-    body[data-page="search"] #imagePasteZone {
-      min-height: 64px !important;
-      background: #fafbff !important;
-      font-size: 10px !important;
-    }
-    body[data-page="list"] .grid.two {
-      grid-template-columns: minmax(0, 1fr) 350px;
-      align-items: start;
-    }
-    body[data-page="list"] .detail {
-      top: 12px;
-      padding: 14px;
-      max-height: calc(100vh - 92px);
-    }
-    body[data-page="list"] .detail .person { width: 50px; height: 50px; }
-    body[data-page="list"] .analysis-list { font-size: 10px; line-height: 1.55; }
-    body[data-page="list"] .big-score { font-size: 30px; }
-    body[data-page="localization"] .localization-workspace .loc-main-grid {
-      grid-template-columns: minmax(0, 1.35fr) minmax(250px, .65fr);
-      gap: 14px;
-    }
-    body[data-page="localization"] .localization-workspace textarea { min-height: 180px; }
-    body[data-page="localization"] .localization-output-box { min-height: 160px; }
-    body[data-page="localization"] .loc-import-grid {
-      grid-template-columns: minmax(280px, 520px);
-      padding-top: 12px;
-      margin-top: 12px;
-    }
-    body[data-page="competitors"] .grid.two {
-      grid-template-columns: minmax(0, 1.35fr) minmax(330px, .65fr);
-      align-items: start;
-    }
-    body[data-page="competitors"] .detail { top: 12px; max-height: calc(100vh - 92px); }
-    body[data-page="competitors"] .form-grid { padding: 12px 14px 0; }
-    body[data-page="aiReviews"] .ai-module-grid,
-    body[data-page="aiSocial"] .ai-module-grid,
-    body[data-page="aiLocQa"] .ai-module-grid,
-    body[data-page="aiCampaign"] .ai-module-grid {
-      grid-template-columns: minmax(360px, .78fr) minmax(0, 1.22fr);
-      gap: 10px;
-      align-items: start;
-    }
-    body[data-page^="ai"] .ai-form-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 9px;
-    }
-    body[data-page^="ai"] .ai-full { grid-column: 1 / -1; }
-    body[data-page^="ai"] .ai-checks {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 5px;
-    }
-    body[data-page^="ai"] .ai-checks label {
-      padding: 7px 8px;
-      border: 1px solid #e4e7ef;
-      border-radius: 6px;
-      background: #fafbff;
-      font-size: 9px;
-    }
-    body[data-page^="ai"] .ai-checks input { min-height: 0; }
-    body[data-page^="ai"] .ai-card {
-      padding: 11px 0;
-      border: 0;
-      border-bottom: 1px solid #eceef4;
-      border-radius: 0;
-      background: transparent;
-      box-shadow: none;
-      font-size: 10px;
-    }
-    body[data-page^="ai"] .ai-card:last-child { border-bottom: 0; }
-    body[data-page^="ai"] .ai-card h3,
-    body[data-page^="ai"] .ai-card h4 { margin-top: 0; font-size: 12px; }
-    body[data-page^="ai"] .ai-result-stack { gap: 0; }
-    body[data-page^="ai"] .ai-stat-grid { gap: 7px; }
-    body[data-page^="ai"] .ai-stat {
-      padding: 10px;
-      border-color: #e4e7ef;
-      background: #fafbff;
-      font-size: 9px;
-    }
-    body[data-page^="ai"] .ai-stat strong { font-size: 18px; }
-    body[data-page="aiSocial"] .ai-table-wrap { max-height: 360px; overflow: auto; }
-    body[data-page="aiSocial"] .ai-table th,
-    body[data-page="aiSocial"] .ai-table td { padding: 7px; font-size: 9px; }
-    body[data-page="aiSettings"] .grid.two,
-    body[data-page="settings"] .grid.half { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
-    body[data-page="settings"] .task { padding: 9px; }
-    body[data-page="settings"] .task strong { font-size: 10px; }
-    body[data-page="settings"] .task span { font-size: 9px; }
-    body[data-page="help"] .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    @media (max-width: 1100px) {
-      body[data-page="search"] .grid.half,
-      body[data-page="list"] .grid.two,
-      body[data-page="competitors"] .grid.two,
-      body[data-page="aiReviews"] .ai-module-grid,
-      body[data-page="aiSocial"] .ai-module-grid,
-      body[data-page="aiLocQa"] .ai-module-grid,
-      body[data-page="aiCampaign"] .ai-module-grid,
-      body[data-page="aiSettings"] .grid.two,
-      body[data-page="settings"] .grid.half { grid-template-columns: 1fr; }
-      body[data-page="search"] .grid.half > .panel:first-child,
-      body[data-page="list"] .detail,
-      body[data-page="competitors"] .detail { position: static; max-height: none; }
-    }
-    @media (max-width: 760px) {
-      body:not([data-page="dashboard"]) .page-head { align-items: stretch; }
-      body[data-page^="ai"] .ai-form-grid,
-      body[data-page^="ai"] .ai-checks,
-      body[data-page="localization"] .localization-workspace .loc-main-grid,
-      body[data-page="help"] .grid.three { grid-template-columns: 1fr; }
-    }
-    body,
-    main {
-      background: #ffffff;
-    }
-    .unified-import {
-      display: grid;
-      grid-template-columns: minmax(0, 1.25fr) minmax(260px, .75fr);
-      gap: 14px 16px;
-      align-items: start;
-    }
-    .unified-import-main,
-    .unified-import-files {
-      min-width: 0;
-    }
-    .unified-import-main textarea {
-      min-height: 132px;
-    }
-    .unified-import-files {
-      display: grid;
-      gap: 8px;
-    }
-    .unified-import-files input[type="file"] {
-      min-height: 42px;
-      padding: 6px;
-      background: #fff;
-    }
-    .unified-import #imagePasteZone {
-      min-height: 76px !important;
-      margin: 0 !important;
-      padding: 12px !important;
-      display: flex;
-      align-items: center;
-      border: 1px dashed #d9ddea !important;
-      border-radius: 6px !important;
-      background: #fff !important;
-      color: #747b8e !important;
-      font-size: 10px !important;
-      cursor: text;
-    }
-    .unified-actions {
-      grid-column: 1 / -1;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      padding-top: 12px;
-      border-top: 1px solid #eceef4;
-    }
-    .unified-status {
-      grid-column: 1 / -1;
-      min-height: 18px;
-    }
-    .unified-status .note:empty { display: none; }
-    .unified-status .note { margin: 2px 0; }
-    @media (max-width: 900px) {
-      .unified-import { grid-template-columns: 1fr; }
-      .unified-actions,
-      .unified-status { grid-column: 1; }
-    }
-
-    /* Growth command dashboard reference pass. */
-    .app { grid-template-columns: 252px minmax(0, 1fr); }
-    .sidebar {
-      padding: 16px 10px 14px;
-      background: #17181d;
-      border-right: 0;
-      color: #fff;
-    }
-    .brand { color: #fff; padding: 0 8px 16px; }
-    .brand span { color: #fff; font-size: 20px; }
-    .mark { background: #5b47ff; box-shadow: 0 8px 22px rgba(91,71,255,.35); }
-    .nav { gap: 2px; overflow-y: auto; }
-    .nav-group-label {
-      margin: 12px 12px 5px;
-      color: #73798a;
-      font-size: 9px;
-      font-weight: 800;
-      letter-spacing: 1.5px;
-    }
-    .nav button, .sidebar-foot button {
-      min-height: 38px;
-      padding: 8px 12px;
-      color: #aeb4c3;
-      font-size: 12px;
-      border-radius: 8px;
-    }
-    .nav button:hover, .sidebar-foot button:hover {
-      color: #fff;
-      background: #22242b;
-    }
-    .nav button.active, .sidebar-foot button.active {
-      color: #fff;
-      background: #292b32;
-      box-shadow: none;
-    }
-    .nav button.active .icon { color: #7869ff; }
-    .sidebar-foot { border-top-color: #2b2d34; }
-    .profile {
-      border-top-color: #2b2d34;
-      color: #fff;
-    }
-    .profile button { color: #fff; }
-    .profile span { color: #8e95a6; }
-    .avatar { background: #5b47ff; }
-    body[data-page="dashboard"] main {
-      padding: 0 28px 28px;
-      gap: 0;
-      background: #fff;
-    }
-    body[data-page="dashboard"] .brief { display: none; }
-    body[data-page="dashboard"] #page { display: grid; gap: 18px; }
-    .command-header {
-      min-height: 64px;
-      margin: 0 -28px;
-      padding: 0 28px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-      border-bottom: 1px solid #e8e7e4;
-      background: #fff;
-    }
-    .command-header h2 { margin: 0; font-size: 20px; letter-spacing: 0; }
-    .command-header p { margin: 3px 0 0; color: #818797; font-size: 11px; }
-    .command-header-actions { display: flex; align-items: center; gap: 10px; }
-    .command-search {
-      width: 280px;
-      min-height: 40px;
-      padding: 0 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      border: 1px solid #e4e3df;
-      border-radius: 9px;
-      background: #fafaf9;
-      color: #8c92a0;
-    }
-    .command-search input {
-      min-height: 0;
-      padding: 0;
-      border: 0;
-      background: transparent;
-      box-shadow: none;
-      font-size: 11px;
-    }
-    .command-icon-btn,
-    .command-primary {
-      min-height: 40px;
-      border-radius: 9px;
-    }
-    .command-icon-btn { width: 40px; padding: 0; background: #fff; }
-    .command-primary {
-      padding: 0 17px;
-      color: #fff;
-      border-color: #5b47ff;
-      background: #5b47ff;
-      font-weight: 800;
-      box-shadow: 0 8px 20px rgba(91,71,255,.2);
-    }
-    .command-kpis {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 16px;
-      margin-top: 26px;
-    }
-    .command-kpi,
-    .command-panel {
-      border: 1px solid #e6e4df;
-      border-radius: 14px;
-      background: #fff;
-      box-shadow: none;
-    }
-    .command-kpi {
-      min-height: 122px;
-      padding: 18px 20px 14px;
-      overflow: hidden;
-    }
-    .command-kpi > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .command-kpi span { color: #747b8d; font-size: 11px; }
-    .command-kpi em {
-      padding: 4px 7px;
-      border-radius: 6px;
-      color: #159a64;
-      background: #eaf8f1;
-      font-size: 9px;
-      font-style: normal;
-      font-weight: 800;
-    }
-    .command-kpi em.neutral { color: #6c7280; background: #f1f2f4; }
-    .command-kpi > strong { display: block; margin-top: 12px; font-size: 30px; line-height: 1; }
-    .command-kpi p { margin: 12px 0 0; color: #9197a5; font-size: 10px; }
-    .command-spark { width: 100%; height: 42px; margin-top: 15px; }
-    .command-main-grid,
-    .command-bottom-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.68fr) minmax(300px, .98fr);
-      gap: 16px;
-    }
-    .command-panel { min-width: 0; overflow: hidden; }
-    .command-panel-head {
-      min-height: 66px;
-      padding: 18px 22px 12px;
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .command-panel-head h3 { margin: 0; font-size: 15px; }
-    .command-panel-head p { margin: 3px 0 0; color: #8a90a0; font-size: 10px; }
-    .command-tabs { display: flex; padding: 3px; border-radius: 9px; background: #f2f1ee; }
-    .command-tabs button {
-      min-height: 28px;
-      padding: 5px 11px;
-      border: 0;
-      background: transparent;
-      color: #777d8b;
-      font-size: 10px;
-      box-shadow: none;
-    }
-    .command-tabs button.active { color: #fff; background: #1b1c20; }
-    .command-chart { padding: 2px 22px 0; }
-    .command-chart svg { width: 100%; height: 250px; overflow: visible; }
-    .chart-gridline { fill: none; stroke: #efeee9; stroke-width: 1; }
-    .chart-area { fill: url(#reachFill); }
-    .chart-reach { fill: none; stroke: #5b47ff; stroke-width: 3; }
-    .chart-fit { fill: none; stroke: #159bb5; stroke-width: 2; stroke-dasharray: 5 6; }
-    .command-months { display: flex; justify-content: space-between; color: #9a9fad; font-size: 9px; }
-    .command-legend {
-      margin: 10px 22px 0;
-      padding: 12px 0 17px;
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      border-top: 1px solid #efeee9;
-      color: #777d8b;
-      font-size: 10px;
-    }
-    .command-legend span, .coverage-list span { display: flex; align-items: center; gap: 7px; }
-    .command-legend i, .coverage-list i { width: 8px; height: 8px; border-radius: 3px; }
-    i.purple { background: #5b47ff; }
-    i.cyan { background: #159bb5; }
-    i.lavender { background: #9b8cff; }
-    i.gray { background: #deddd8; }
-    .command-legend strong { margin-left: auto; color: #4e5463; font-size: 10px; }
-    .coverage-ring {
-      width: 150px;
-      aspect-ratio: 1;
-      margin: 10px auto 16px;
-      display: grid;
-      place-items: center;
-      border-radius: 50%;
-      background: conic-gradient(#5b47ff 0 var(--coverage), #9b8cff var(--coverage) calc(var(--coverage) + 38deg), #e4e3df 0);
-      position: relative;
-    }
-    .coverage-ring:after { content: ""; position: absolute; inset: 28px; border-radius: 50%; background: #fff; }
-    .coverage-ring > div { position: relative; z-index: 1; text-align: center; }
-    .coverage-ring strong { display: block; font-size: 28px; }
-    .coverage-ring span { display: block; margin-top: 2px; color: #8b91a0; font-size: 9px; }
-    .coverage-list { display: grid; gap: 12px; padding: 0 24px 22px; }
-    .coverage-list > div { display: flex; justify-content: space-between; color: #73798a; font-size: 10px; }
-    .coverage-list strong { color: #272a33; }
-    .command-link {
-      min-height: auto;
-      padding: 2px;
-      border: 0;
-      background: transparent;
-      color: #5b47ff;
-      box-shadow: none;
-      font-size: 10px;
-      font-weight: 800;
-    }
-    .command-table-head,
-    .command-creator-row {
-      display: grid;
-      grid-template-columns: minmax(210px, 1.5fr) .8fr .7fr 50px;
-      align-items: center;
-      gap: 12px;
-      padding: 0 22px;
-    }
-    .command-table-head { min-height: 30px; color: #9a9fad; font-size: 9px; font-weight: 800; }
-    .command-creator-row {
-      width: 100%;
-      min-height: 56px;
-      border: 0;
-      border-top: 1px solid #efeee9;
-      border-radius: 0;
-      background: #fff;
-      text-align: left;
-      box-shadow: none;
-      font-size: 10px;
-    }
-    .command-creator-row:hover { transform: none; background: #fafafa; }
-    .command-creator { display: flex; align-items: center; gap: 10px; }
-    .command-creator > i {
-      width: 32px;
-      height: 32px;
-      display: grid;
-      place-items: center;
-      border-radius: 50%;
-      color: #fff;
-      background: #5b47ff;
-      font-size: 9px;
-      font-style: normal;
-      font-weight: 850;
-    }
-    .command-creator strong, .command-creator small { display: block; }
-    .command-creator small { margin-top: 2px; color: #969baa; font-size: 9px; }
-    .command-platform { width: max-content; padding: 4px 7px; border-radius: 5px; background: #f0efec; color: #686e7d; }
-    .positive { color: #169b66; }
-    .command-activity { padding-bottom: 8px; }
-    .command-project-list { margin: 0; padding: 0 22px 18px; }
-    .command-project-list > div {
-      padding: 10px 0;
-      display: grid;
-      grid-template-columns: 115px minmax(0, 1fr);
-      gap: 12px;
-      border-bottom: 1px solid #efeee9;
-    }
-    .command-project-list > div:last-child { border-bottom: 0; }
-    .command-project-list dt { color: #8e94a3; font-size: 9px; }
-    .command-project-list dd { margin: 0; color: #343843; font-size: 10px; font-weight: 750; overflow-wrap: anywhere; }
-    .command-tools { overflow: visible; }
-    .command-tool-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
-      padding: 0 22px 20px;
-    }
-    .command-tool-grid button {
-      min-height: 72px;
-      padding: 12px;
-      display: flex;
-      align-items: center;
-      gap: 11px;
-      border-color: #e6e4df;
-      background: #fff;
-      text-align: left;
-      box-shadow: none;
-    }
-    .command-tool-grid button:hover { border-color: #bdb5ff; background: #faf9ff; }
-    .command-tool-grid .icon { width: 20px; height: 20px; color: #5b47ff; }
-    .command-tool-grid strong, .command-tool-grid small { display: block; }
-    .command-tool-grid strong { font-size: 11px; }
-    .command-tool-grid small { margin-top: 4px; color: #8c92a0; font-size: 9px; line-height: 1.35; }
-    .activity-item {
-      position: relative;
-      margin: 0 22px;
-      padding: 12px 0 12px 19px;
-      border-bottom: 1px solid #efeee9;
-      color: #6d7382;
-      font-size: 10px;
-      line-height: 1.45;
-    }
-    .activity-item:before { content: ""; position: absolute; left: 0; top: 17px; width: 8px; height: 8px; border-radius: 50%; }
-    .activity-item.purple:before { background: #5b47ff; }
-    .activity-item.green:before { background: #20a874; }
-    .activity-item.orange:before { background: #df8615; }
-    .activity-item strong { color: #363a45; }
-    .activity-item small { display: block; margin-top: 3px; color: #a0a5b1; }
-    @media (max-width: 1180px) {
-      .command-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .command-main-grid, .command-bottom-grid { grid-template-columns: 1fr; }
-      .command-tool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-    @media (max-width: 760px) {
-      body[data-page="dashboard"] main { padding: 0 12px 18px; }
-      .command-header { margin: 0 -12px; padding: 10px 12px; align-items: stretch; flex-direction: column; }
-      .command-header-actions { overflow-x: auto; }
-      .command-search { min-width: 230px; }
-      .command-kpis { grid-template-columns: 1fr; margin-top: 16px; }
-      .command-tool-grid { grid-template-columns: 1fr; }
-      .command-table-head, .command-creator-row { grid-template-columns: minmax(180px,1fr) 80px 70px 42px; min-width: 500px; }
-      .command-top-list { overflow-x: auto; }
-    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -1997,7 +1087,6 @@
           </select>
           <button type="button" id="editBriefBtn"></button>
           <button type="button" id="exportBtn"></button>
-          <button type="button" class="primary" id="quickActionBtn">+ Hızlı İşlem</button>
         </div>
       </section>
       <div id="page"></div>
@@ -2117,7 +1206,12 @@
       }
     };
 
-    const defaultInfluencers = [];
+    const defaultInfluencers = [
+      { name: "Elraenn", link: "https://www.youtube.com/@Elraenn", handle: "@elraenn", country: "TR", geo: "TR 98.75%", category: "Gaming", subcategory: "Variety Gaming / Just Chatting", subscribers: "3.64M", gender: "M80.28% / F19.72%", age: "18-24: 42.0%; 25-34: 28.0%; 35-44: 7.5%", avgComments: 0, flag: "TR", channel: "YouTube", views: 888500, match: 92, format: "Long-form VOD / Shorts", duration: "2h13m", keywords: "gaming, variety, chatting", comments: "Strong gaming/variety creator. Good fit for creator-led launch content.", genres: ["gaming", "variety", "chatting"], tone: "energetic", audience: "18-34 gaming", notes: "Strong variety gaming creator. Check latest campaign fit.", shortlisted: false, note: "" },
+      { name: "RRaenee", link: "https://www.youtube.com/@RRaenee", handle: "@rraenee", country: "TR", geo: "TR 92.34%", category: "Gaming", subcategory: "Horror / Variety Gaming / Just Chatting", subscribers: "1.92M", gender: "M40% / F60%", age: "18-24: 45%; 25-34: 25%", avgComments: 0, flag: "TR", channel: "YouTube", views: 399200, match: 88, format: "Long-form video + Livestream VOD", duration: "1h27m", keywords: "gaming, horror, variety", comments: "Potential fit for community-oriented gaming content.", genres: ["gaming", "horror", "variety"], tone: "friendly", audience: "18-34 gaming", notes: "Good for horror/variety and community content.", shortlisted: false, note: "" },
+      { name: "KFCEatbox", link: "https://www.youtube.com/@KFCEatbox", handle: "@kfceatbox", country: "TR", geo: "TR 78.35%", category: "Gaming", subcategory: "Variety Gaming + Just Chatting", subscribers: "2.79M", gender: "M88% / F12%", age: "18-24: 45%; 25-34: 19%", avgComments: 0, flag: "TR", channel: "YouTube", views: 117300, match: 81, format: "Long-form gameplay VOD", duration: "1h15m", keywords: "gaming, gameplay, chatting", comments: "Useful for gameplay-led activations.", genres: ["gaming", "gameplay", "chatting"], tone: "casual", audience: "18-34 gaming", notes: "Gameplay creator with variety angle.", shortlisted: false, note: "" },
+      { name: "Efe Aydal", link: "https://www.youtube.com/@EfeAydal", handle: "@efeaydal", country: "TR", geo: "TR 85.17%", category: "Gaming", subcategory: "Variety Gaming + Just Chatting", subscribers: "808K", gender: "M85% / F15%", age: "18-24: 45%; 25-34: 22%", avgComments: 0, flag: "TR", channel: "YouTube", views: 72800, match: 72, format: "Long-form gameplay VOD", duration: "1h8m", keywords: "gaming, variety", comments: "Can be considered for adjacent audience, but fit should be checked manually.", genres: ["gaming", "variety"], tone: "commentary", audience: "18-34", notes: "Manual content review recommended.", shortlisted: false, note: "" }
+    ];
 
     const state = JSON.parse(localStorage.getItem("playscope-state") || "null") || {
       page: "dashboard",
@@ -2125,7 +1219,6 @@
       project: { name: "Galaxy Raiders", genre: "Space Strategy", markets: "TR, DE, FR, BR, JP", audience: "18-34, male 68%", goal: "Global Launch", keywords: "space, strategy, mobile, launch" },
       influencers: defaultInfluencers,
       selected: 0,
-      researchForm: { name: "NewCreator", country: "Turkey", channel: "YouTube", views: "88000", genres: "strategy mobile space" },
       localizationOutput: "",
       competitorGenre: "strategy",
       googlePlayQuery: "",
@@ -2161,10 +1254,6 @@
       backendStatus: "unknown",
       ...state.ai.settings
     };
-    state.importFileName = state.importFileName || "";
-    state.importStatus = state.importStatus || "Excel/CSV seç veya ekran görüntüsünü yapıştır; analiz otomatik başlar.";
-    state.importEngine = state.importEngine || "";
-    let pendingImportFile = null;
 
     const competitors = {
       strategy: [
@@ -2367,7 +1456,7 @@
       const seconds = parseYouTubeDuration(video.contentDetails?.duration);
       if (!seconds || isStreamReplayVideo(video)) return false;
       const titleText = String(video.snippet?.title || "").toLowerCase();
-      if (/\b(shorts?|clip|kesit|highlight|\u00f6zet|ozet)\b/i.test(titleText) && seconds < 180) return false;
+      if (/\b(shorts?|clip|kesit|highlight|özet|ozet)\b/i.test(titleText) && seconds < 180) return false;
       return seconds >= 60;
     }
     function dominantVideoFormat(videoItems = []) {
@@ -2512,17 +1601,21 @@
     function pageHead(title, subtitle, action = "") { return `<div class="page-head"><div><h2>${title}</h2><p>${subtitle}</p></div>${action}</div>`; }
 
     function renderShell() {
-      const navGroups = [
-        ["", [["dashboard", "dashboard", "dashboard"]]],
-        ["DISCOVERY", [["search", "search", "search"], ["list", "list", "list"]]],
-        ["INTELLIGENCE", [["competitors", "target", "competitors"], ["aiReviews", "review", "aiReviews"], ["aiSocial", "social", "aiSocial"]]],
-        ["LOCALIZATION", [["localization", "globe", "localization"], ["aiLocQa", "globe", "aiLocQa"]]],
-        ["CREATIVE", [["aiCampaign", "megaphone", "aiCampaign"]]],
-        ["SYSTEM", [["aiSettings", "settings", "aiSettings"]]]
+      const nav = [
+        ["dashboard", "dashboard", "dashboard"],
+        ["search", "search", "search"],
+        ["list", "list", "list"],
+        ["localization", "globe", "localization"],
+        ["competitors", "target", "competitors"],
+        ["aiReviews", "review", "aiReviews"],
+        ["aiSocial", "social", "aiSocial"],
+        ["aiLocQa", "globe", "aiLocQa"],
+        ["aiCampaign", "megaphone", "aiCampaign"]
       ];
       if (state.page === "aiReport" || state.page === "aiWorkspace") state.page = "dashboard";
-      $("mainNav").innerHTML = navGroups.map(([group, items]) => `${group ? `<div class="nav-group-label">${group}</div>` : ""}${items.map(([page, icon, label]) => `<button class="${state.page === page ? "active" : ""}" data-page="${page}" type="button">${icons[icon]}<span>${navT(label)}</span></button>`).join("")}`).join("");
+      $("mainNav").innerHTML = nav.map(([page, icon, label]) => `<button class="${state.page === page ? "active" : ""}" data-page="${page}" type="button">${icons[icon]}<span>${navT(label)}</span></button>`).join("");
       $("footNav").innerHTML = [
+        ["aiSettings", "settings", "aiSettings"],
         ["settings", "settings", "settings"],
         ["help", "help", "help"]
       ].map(([page, icon, label]) => `<button class="${state.page === page ? "active" : ""}" data-page="${page}" type="button">${icons[icon]}<span>${navT(label)}</span></button>`).join("");
@@ -2531,7 +1624,7 @@
         saveState();
         render();
       }));
-      $("briefTitle").innerHTML = `<span class="project-avatar">${initials(state.project.name || "PS")}</span><span>${esc(state.project.name || "PlayScope")}</span><span class="active-badge">Active</span>`;
+      $("briefTitle").innerHTML = `${icons.doc}<span>${tr("brief")}</span>`;
       $("briefGrid").innerHTML = [
         [tr("projectName"), state.project.name],
         [tr("genre"), state.project.genre],
@@ -2542,11 +1635,6 @@
       $("languageSelect").value = state.lang;
       $("editBriefBtn").innerHTML = `${icons.doc}<span>${tr("editBrief")}</span>`;
       $("exportBtn").innerHTML = `${icons.list}<span>${tr("export")}</span>`;
-      $("quickActionBtn").onclick = () => {
-        state.page = "search";
-        saveState();
-        render();
-      };
     }
 
     function rows(filter = "", sort = "fit") {
@@ -2653,115 +1741,76 @@
 
     function dashboardPage() {
       const total = state.influencers.length;
+      const imported = state.influencers.filter((i) => /youtube|extension/i.test(i.source || "")).length;
       const withViews = state.influencers.filter((i) => Number(i.views || 0) > 0);
       const avgViews = withViews.length ? Math.round(withViews.reduce((sum, i) => sum + Number(i.views || 0), 0) / withViews.length) : 0;
-      const topMatches = rows("", "fit").slice(0, 5);
-      const avgFit = total ? Math.round(state.influencers.reduce((sum, item) => sum + fitScore(item), 0) / total) : 0;
-      const imported = state.influencers.filter((item) => /youtube|extension|excel|image/i.test(item.source || "")).length;
-      const shortlisted = state.influencers.filter((item) => item.shortlisted).length;
+      const topMatches = rows("", "fit").slice(0, 3);
+      const topMatchText = topMatches.length ? topMatches.map((item) => `${item.name} ${fitScore(item)}%`).join(" / ") : "Henüz liste yok";
+      const marketCount = new Set(state.influencers.map((item) => item.geo || item.country).filter(Boolean)).size;
       $("page").innerHTML = `
-        <header class="command-header">
-          <div><h2>Dashboard</h2><p>${esc(state.project.name)} · ${esc(state.project.genre)}</p></div>
-          <div class="command-header-actions">
-            <button type="button" id="dashboardExportBtn">${icons.list}<span>Dışa Aktar</span></button>
-            <button type="button" data-dash-page="settings">${icons.doc}<span>Brifi Düzenle</span></button>
-            <button class="command-primary" data-dash-page="search" type="button">+ Influencer Ekle</button>
+        ${pageHead(tr("dashboard"), "Influencer araştırması, sosyal içerik analizi ve kampanya hazırlığını tek ekranda takip et.")}
+        <div class="dashboard-layout">
+          <div class="dashboard-main">
+            <div class="dashboard-summary">
+              <section class="panel project-card">
+                <div>
+                  <h3>${esc(state.project.name || "PlayScope")}</h3>
+                  <p>${esc(state.project.genre || "Oyun")} için ${esc(state.project.markets || "hedef pazar")} odaklı creator keşfi ve içerik değerlendirme çalışma alanı.</p>
+                </div>
+                <span class="pill">${esc(state.project.goal || "Kampanya hazırlığı")}</span>
+              </section>
+              <section class="panel dashboard-kpi"><small>Creator listesi</small><strong>${total}</strong><span>Kayıtlı profil</span></section>
+              <section class="panel dashboard-kpi"><small>İçe aktarılan</small><strong>${imported}</strong><span>YouTube / eklenti</span></section>
+              <section class="panel dashboard-kpi"><small>Ortalama izlenme</small><strong>${views(avgViews)}</strong><span>Mevcut liste</span></section>
+            </div>
+            <section class="panel">
+              <div class="panel-head"><h3>Hızlı işlemler</h3></div>
+              <div class="panel-body">
+                <div class="quick-grid">
+                  <button class="quick-card" data-dash-page="search" type="button"><span class="quick-icon">${icons.search}</span><span><strong>Creator bul</strong>Link, Excel veya ekran görüntüsünden yeni profilleri analiz et.</span></button>
+                  <button class="quick-card" data-dash-page="aiSocial" type="button"><span class="quick-icon">${icons.social}</span><span><strong>Sosyal analiz</strong>Instagram gönderilerini rapora çevir.</span></button>
+                  <button class="quick-card" data-dash-page="aiReviews" type="button"><span class="quick-icon">${icons.review}</span><span><strong>Yorumları incele</strong>Oyuncu yorumlarından risk ve fırsat çıkar.</span></button>
+                  <button class="quick-card" data-dash-page="aiLocQa" type="button"><span class="quick-icon">${icons.globe}</span><span><strong>Lokalizasyon QA</strong>Metinleri pazar uyumu ve ton açısından kontrol et.</span></button>
+                </div>
+              </div>
+            </section>
+            <section class="panel mini-table">${renderTable("", "fit")}</section>
           </div>
-        </header>
-        <div class="command-kpis">
-          <section class="command-kpi"><div><span>Influencer Listesi</span></div><strong>${total.toLocaleString()}</strong><p>Kayıtlı creator profili</p></section>
-          <section class="command-kpi"><div><span>İçe Aktarılan</span></div><strong>${imported}</strong><p>YouTube, Excel veya görsel</p></section>
-          <section class="command-kpi"><div><span>Ortalama İzlenme</span></div><strong>${views(avgViews)}</strong><p>Mevcut profil listesi</p></section>
-          <section class="command-kpi"><div><span>Shortlist</span></div><strong>${shortlisted}</strong><p>Kampanya için işaretlenen</p></section>
-        </div>
-        <div class="command-bottom-grid">
-          <section class="command-panel command-top-list">
-            <div class="command-panel-head"><div><h3>Influencer Listesi</h3><p>Uygunluk puanına göre sıralandı</p></div><button class="command-link" data-dash-page="list" type="button">Tümünü gör →</button></div>
-            <div class="command-table-head"><span>CREATOR</span><span>PLATFORM</span><span>TAKİPÇİ</span><span>UYGUNLUK</span></div>
-            ${topMatches.length ? topMatches.map((item) => `<button class="command-creator-row" data-dashboard-index="${item.index}" type="button"><span class="command-creator"><i>${initials(item.name)}</i><span><strong>${esc(item.name)}</strong><small>${esc(item.handle || "")}</small></span></span><span class="command-platform">${esc(item.channel || "YouTube")}</span><span>${esc(item.subscribers || "-")}</span><strong class="positive">${item.fit}%</strong></button>`).join("") : `<div class="empty">Henüz influencer kaydı yok.</div>`}
-          </section>
-          <section class="command-panel command-project">
-            <div class="command-panel-head"><div><h3>Proje Brifi</h3><p>Aktif proje bilgileri</p></div></div>
-            <dl class="command-project-list">
-              <div><dt>Proje</dt><dd>${esc(state.project.name)}</dd></div>
-              <div><dt>Tür</dt><dd>${esc(state.project.genre)}</dd></div>
-              <div><dt>Hedef Pazarlar</dt><dd>${esc(state.project.markets)}</dd></div>
-              <div><dt>Hedef Kitle</dt><dd>${esc(state.project.audience)}</dd></div>
-              <div><dt>Kampanya Hedefi</dt><dd>${esc(state.project.goal)}</dd></div>
-              <div><dt>Ortalama Uygunluk</dt><dd>${avgFit}%</dd></div>
-            </dl>
-          </section>
-        </div>
-        <section class="command-panel command-tools">
-          <div class="command-panel-head"><div><h3>Hızlı İşlemler</h3><p>PlayScope modüllerine geç</p></div></div>
-          <div class="command-tool-grid">
-            <button data-dash-page="search" type="button">${icons.search}<span><strong>Influencer Ara</strong><small>Yeni creator ekle ve analiz et</small></span></button>
-            <button data-dash-page="aiSocial" type="button">${icons.social}<span><strong>Sosyal Analiz</strong><small>Instagram içeriklerini incele</small></span></button>
-            <button data-dash-page="aiReviews" type="button">${icons.review}<span><strong>Review Analizi</strong><small>Oyuncu yorumlarını analiz et</small></span></button>
-            <button data-dash-page="localization" type="button">${icons.globe}<span><strong>Lokalizasyon</strong><small>GPT ile oyun metni çevir</small></span></button>
-          </div>
-        </section>`;
+          <aside class="insight-panel">
+            ${panel("Öne çıkanlar", `
+              <div class="insight-item"><strong>En iyi eşleşmeler</strong><span>${esc(topMatchText)}</span></div>
+              <div class="insight-item"><strong>Pazar kapsamı</strong><span>${marketCount || 0} farklı GEO/pazar sinyali bulundu.</span></div>
+              <div class="insight-item"><strong>Veri kalitesi</strong><span>${withViews.length}/${total || 0} kayıtta izlenme verisi var.</span></div>
+            `)}
+            ${panel("Sıradaki aksiyonlar", `
+              <div class="next-action"><strong>1. Creator listesini temizle</strong><span>Eksik yaş, cinsiyet ve GEO alanlarını tamamla.</span></div>
+              <div class="next-action"><strong>2. Sosyal içerikleri tara</strong><span>Rakip veya creator Instagram profilini analiz et.</span></div>
+              <div class="next-action"><strong>3. Export al</strong><span>匹配度 dahil güncel tabloyu dışa aktar.</span></div>
+            `)}
+          </aside>
+        </div>`;
+      bindTable();
       document.querySelectorAll("[data-dash-page]").forEach((button) => button.addEventListener("click", () => {
         state.page = button.dataset.dashPage;
         saveState();
         render();
       }));
-      document.querySelectorAll("[data-dashboard-index]").forEach((row) => row.addEventListener("click", () => {
-        state.selected = Number(row.dataset.dashboardIndex || 0);
-        state.page = "list";
-        saveState();
-        render();
-      }));
-      $("dashboardExportBtn")?.addEventListener("click", exportCsv);
-    }
-
-    function readResearchForm() {
-      return {
-        name: $("researchName")?.value?.trim() || "",
-        country: $("researchCountry")?.value?.trim() || "Turkey",
-        channel: $("researchChannel")?.value || "YouTube",
-        views: $("researchViews")?.value || "88000",
-        genres: $("researchGenres")?.value || ""
-      };
-    }
-
-    function bindResearchFormInputs() {
-      ["researchName", "researchCountry", "researchViews", "researchGenres"].forEach((id) => {
-        const input = $(id);
-        if (!input) return;
-        input.addEventListener("input", () => {
-          state.researchForm = { ...(state.researchForm || {}), ...readResearchForm() };
-          saveState();
-        });
-      });
-      $("researchChannel")?.addEventListener("change", () => {
-        state.researchForm = { ...(state.researchForm || {}), ...readResearchForm() };
-        saveState();
-      });
     }
 
     function searchPage() {
-      state.researchForm = {
-        name: "NewCreator",
-        country: "Turkey",
-        channel: "YouTube",
-        views: "88000",
-        genres: "strategy mobile space",
-        ...(state.researchForm || {})
-      };
       $("page").innerHTML = `
         ${pageHead(tr("search"), tr("pageSearchSub"))}
         <div class="grid half">
           ${panel("Quick research", `<div class="form-grid">
-            <div><div class="field-label">Name / Channel</div><input id="researchName" value="${esc(state.researchForm.name)}"></div>
-            <div><div class="field-label">${tr("country")}</div><input id="researchCountry" value="${esc(state.researchForm.country)}"></div>
-            <div><div class="field-label">${tr("channel")}</div><select id="researchChannel"><option ${selectedAttr("YouTube", state.researchForm.channel)}>YouTube</option><option ${selectedAttr("Twitch", state.researchForm.channel)}>Twitch</option><option ${selectedAttr("TikTok", state.researchForm.channel)}>TikTok</option></select></div>
-            <div><div class="field-label">${tr("avgViews")}</div><input id="researchViews" type="number" value="${esc(state.researchForm.views)}"></div>
-          </div><div class="field-label">Genres</div><input id="researchGenres" value="${esc(state.researchForm.genres)}"><button class="primary" id="addResearchBtn" type="button" style="margin-top:12px">${tr("analyze")}</button><button class="coral" id="importExtensionBtn" type="button" style="margin-top:12px;margin-left:8px">Import Extension Data</button><p class="note" id="researchStatus">${tr("apiSafe")}</p><p class="note">For extension import, open a YouTube channel or video page. Public stats are calculated from YouTube API.</p>`)}
+            <div><div class="field-label">Name / Channel</div><input id="researchName" value="NewCreator"></div>
+            <div><div class="field-label">${tr("country")}</div><input id="researchCountry" value="Turkey"></div>
+            <div><div class="field-label">${tr("channel")}</div><select id="researchChannel"><option>YouTube</option><option>Twitch</option><option>TikTok</option></select></div>
+            <div><div class="field-label">${tr("avgViews")}</div><input id="researchViews" type="number" value="88000"></div>
+          </div><div class="field-label">Genres</div><input id="researchGenres" value="strategy mobile space"><button class="primary" id="addResearchBtn" type="button" style="margin-top:12px">${tr("analyze")}</button><button class="coral" id="importExtensionBtn" type="button" style="margin-top:12px;margin-left:8px">Import Extension Data</button><p class="note" id="researchStatus">${tr("apiSafe")}</p><p class="note">For extension import, open a YouTube channel or video page. Public stats are calculated from YouTube API.</p>`)}
           ${panel("Excel / Copy-paste import", `<div class="form-grid">
             <div>
               <div class="field-label">Excel / CSV file</div>
-              <input id="excelFile" type="file" accept=".xlsx,.xls,.csv,.tsv,.txt,text/csv">
+              <input id="excelFile" type="file" accept=".xlsx,.xls,.csv,.tsv,text/csv">
               <button class="primary" id="excelUploadBtn" type="button" style="margin-top:12px">Upload and analyze</button>
               <p class="note" id="excelStatus">Upload a file with a Link, URL, YouTube, Channel Name, or Name column.</p>
             </div>
@@ -2783,7 +1832,6 @@
         </div>
         <section class="panel">${renderTable("", "fit")}</section>`;
       bindTable();
-      bindResearchFormInputs();
       $("addResearchBtn").addEventListener("click", addResearchInfluencer);
       $("importExtensionBtn").addEventListener("click", importExtensionData);
       $("excelUploadBtn").addEventListener("click", uploadExcelFile);
@@ -3698,36 +2746,42 @@ Return exactly this JSON shape:
       render();
     }
     async function addResearchInfluencer() {
-      state.researchForm = { ...(state.researchForm || {}), ...readResearchForm() };
-      saveState();
-      const name = state.researchForm.name || "NewCreator";
-      const genres = String(state.researchForm.genres || "").split(/[,\s]+/).filter(Boolean);
-      const input = { name, country: state.researchForm.country || "Turkey", channel: state.researchForm.channel || "YouTube", views: Number(state.researchForm.views) || 50000, genres: genres.join(" "), project: state.project };
+      const name = $("researchName").value.trim() || "NewCreator";
+      const genres = $("researchGenres").value.split(/[,\s]+/).filter(Boolean);
+      const input = { name, country: $("researchCountry").value || "Turkey", channel: $("researchChannel").value, views: Number($("researchViews").value) || 50000, genres: genres.join(" "), project: state.project };
       const status = $("researchStatus");
       if (status) status.textContent = "Researching YouTube...";
       let result = null;
       await ensureBrowserYouTubeKey();
       if (state.api?.youtube) {
         result = await youtubeFromBrowser(input, state.api.youtube);
-        if (status && result) status.textContent = isLiveYouTubeResult(result) ? "Loaded live YouTube data." : result.notes;
+        if (status && result) status.textContent = result.source === "youtube-live" ? "Loaded live YouTube data from browser." : result.notes;
+      }
+      if (result && result.source !== "youtube-live") {
+        state.influencers.unshift(result);
+        state.selected = 0; saveState(); render();
+        return;
+      }
+      if (!state.api?.youtube) {
+        const noKey = localResearchResult(input);
+        noKey.notes = "No browser YouTube API key found. Go to Settings, paste the YouTube API key, press Save, then Analyze again.";
+        state.influencers.unshift(noKey);
+        state.selected = 0; saveState(); render();
+        return;
       }
       try {
-        if (!isLiveYouTubeResult(result)) {
-          if (status) status.textContent = "Searching through PlayScope server...";
+        if (!result || result.source !== "youtube-live") {
           const response = await fetch("/api/research", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
-          if (response.ok) result = await response.json();
+          result = await response.json();
           if (result?.source === "demo" && !state.api?.youtube) {
-            result.notes += " Live YouTube data is unavailable; the search was saved with available information.";
+            result.notes += " Browser YouTube key is not saved yet. Go to Settings > API Status and save your YouTube API key, then try again.";
           }
         }
       } catch (error) {
         result = result || null;
       }
-      result = result || localResearchResult(input);
-      const merged = mergeInfluencerIntoList(result);
-      state.selected = merged.index;
-      saveState();
-      render();
+      state.influencers.unshift(result || { name, link: "", handle: "@" + name.toLowerCase().replace(/[^a-z0-9]/g, ""), country: input.country, geo: input.country, category: "Unclear", subcategory: "Needs YouTube API analysis", subscribers: "-", gender: "Missing", age: "Missing", avgComments: 0, flag: "TR", channel: input.channel, views: input.views, match: genres.includes("strategy") ? 86 : 68, format: "-", duration: "-", keywords: genres.join(", "), comments: "Created locally because backend was unavailable.", genres, tone: "research", audience: "estimated players", notes: "Created locally because backend was unavailable.", shortlisted: false, note: "" });
+      state.selected = 0; saveState(); render();
     }
 
     async function ensureBrowserYouTubeKey() {
@@ -3750,9 +2804,6 @@ Return exactly this JSON shape:
         const lookup = parseYouTubeLookup(input.name || "");
         let channelId = lookup.channelId;
         let searchTitle = "";
-        if (!channelId && lookup.videoId) {
-          channelId = await channelIdFromVideo(lookup.videoId, apiKey);
-        }
         if (!channelId && lookup.handle) {
           const handleCandidates = [...new Set([lookup.handle.replace(/^@/, ""), lookup.handle])];
           for (const handleCandidate of handleCandidates) {
@@ -3883,10 +2934,6 @@ Return exactly this JSON shape:
       return { query: value };
     }
 
-    function isLiveYouTubeResult(result) {
-      return result?.source === "youtube-live" || result?.source === "youtube";
-    }
-
     function chooseBestChannelSearchResult(items = [], query = "", fallbackName = "") {
       if (!items.length) return null;
       const wanted = normalizeSearchText(fallbackName || query);
@@ -3956,7 +3003,6 @@ Return exactly this JSON shape:
         views: live.views || 0,
         avgComments: live.avgComments || 0,
         format: live.format || item.format,
-        duration: live.duration || item.duration,
         link: live.link || item.link,
         channel: "YouTube",
         keywords: live.keywords || item.keywords,
@@ -4015,6 +3061,18 @@ Return exactly this JSON shape:
         .slice(0, 12);
     }
     function knownCreatorProfile(textValue) {
+      const text = String(textValue || "").toLowerCase();
+      if (/(^|[^a-z0-9])elraenn([^a-z0-9]|$)/i.test(text)) {
+        return {
+          category: "Gaming",
+          subcategory: "Variety Gaming / Just Chatting",
+          confidence: 90,
+          genres: ["gaming", "variety", "just chatting", "streamer"],
+          keywords: ["variety gaming", "just chatting", "streamer"],
+          reason: "Known creator profile: Elraenn is a variety gaming / just chatting streamer. Generic words such as episode or reaction should not override the creator profile.",
+          source: "known creator profile"
+        };
+      }
       return null;
     }
     function knownGameCatalog() {
@@ -4491,12 +3549,12 @@ Return exactly this JSON shape:
         });
         if (status) status.textContent = "Completing YouTube latest video averages...";
         item = await enrichWithYouTubeAverages(item);
-        const result = mergeInfluencerIntoList(item);
-        state.selected = result.index;
+        state.influencers.unshift(item);
+        state.selected = 0;
         saveState();
         render();
         const nextStatus = $("researchStatus");
-        if (nextStatus) nextStatus.textContent = `${result.action === "updated" ? "Updated" : "Imported"} extension data: ${item.name}`;
+        if (nextStatus) nextStatus.textContent = `Imported extension data: ${item.name}`;
       } catch (error) {
         if (status) status.textContent = "Extension import failed: " + error.message;
       }
@@ -4535,10 +3593,9 @@ Return exactly this JSON shape:
       if (!rows.length) return [];
       const first = rows[0].map((cell) => String(cell || "").toLowerCase());
       const hasUrlInFirstRow = first.some((cell) => /youtube\.com|youtu\.be|^@[\w.-]+$/i.test(cell.trim()));
-      const hasHeader = rows.length > 1 && !hasUrlInFirstRow && first.some((cell) => /channel|name|link|url|youtube|geo|country|creator|influencer|达人|達人|频道|頻道|账号|帳號|名称|名稱|链接|連結|国家|國家|地区|地區|粉丝|訂閱|订阅|观看|觀看|性别|性別|年龄|年齡|类别|類別/.test(cell));
+      const hasHeader = rows.length > 1 && !hasUrlInFirstRow && first.some((cell) => /channel|name|link|url|youtube|geo|country/.test(cell));
       const withRowIndex = (row, rowIndex) => {
-        const sourceRow = rows[rowIndex - 1];
-        Object.defineProperty(row, "__excelRow", { value: sourceRow?.__excelRow || rowIndex, enumerable: false, configurable: true });
+        Object.defineProperty(row, "__excelRow", { value: rowIndex, enumerable: false, configurable: true });
         return row;
       };
       if (!hasHeader) {
@@ -4549,7 +3606,7 @@ Return exactly this JSON shape:
     }
 
     function compactKey(value) {
-      return String(value || "").toLowerCase().normalize("NFKC").replace(/[^\p{L}\p{N}]/gu, "");
+      return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
     }
 
     function fieldFromRow(row, aliases) {
@@ -4604,18 +3661,18 @@ Return exactly this JSON shape:
       const combinedAudienceText = Object.entries(row || {}).map(([key, value]) => `${key}: ${value}`).join("\n");
       const audienceHints = extractAudienceHintsFromText(combinedAudienceText);
       return {
-        geo: fieldFromRow(row, ["geo", "country", "market", "ülke", "ulke", "国家", "國家", "地区", "地區", "区域", "區域"]),
-        gender: fieldFromRow(row, ["gender", "cinsiyet", "audience gender", "gender split", "female male", "female/male", "demographics", "性别", "性別", "男女比例", "受众性别", "受眾性別"]) || audienceHints.gender,
-        age: fieldFromRow(row, ["age", "yas", "yaş", "audience age", "age gender", "age/gender", "age distribution", "audience age gender", "audience age&gender analysis", "age gender analysis", "年龄", "年齡", "受众年龄", "受眾年齡", "年龄分布", "年齡分佈"]) || audienceHints.age,
-        subscribers: fieldFromRow(row, ["subscribers", "followers", "takipci", "takipçi", "subs", "粉丝", "粉絲", "订阅", "訂閱", "订阅数", "訂閱數", "粉丝数", "粉絲數"]),
-        views: fieldFromRow(row, ["avg views", "views", "average views", "avg view", "izlenme", "平均观看", "平均觀看", "观看", "觀看", "播放", "播放量", "平均播放", "平均播放量", "近30天观看", "近30天觀看"]),
-        avgComments: fieldFromRow(row, ["avg comments", "average comments", "yorum ortalama", "平均评论", "平均評論", "评论", "評論"]),
-        category: fieldFromRow(row, ["category", "kategori", "类别", "類別", "分类", "分類", "频道类型", "頻道類型"]),
-        subcategory: fieldFromRow(row, ["subcategory", "sub category", "alt kategori", "子类别", "子類別", "细分类", "細分類", "内容类型", "內容類型"]),
-        keywords: fieldFromRow(row, ["keywords", "tags", "keyword", "关键词", "關鍵詞", "标签", "標籤"]),
-        format: fieldFromRow(row, ["format", "video format", "视频形式", "影片形式", "内容形式", "內容形式"]),
-        duration: fieldFromRow(row, ["duration", "duration avg", "avg duration", "average duration", "平均时长", "平均時長", "视频时长", "影片時長"]),
-        notes: fieldFromRow(row, ["comments", "notes", "comment", "not", "备注", "備註", "说明", "說明"])
+        geo: fieldFromRow(row, ["geo", "country", "market", "ülke", "ulke"]),
+        gender: fieldFromRow(row, ["gender", "cinsiyet", "audience gender", "gender split", "female male", "female/male", "demographics"]) || audienceHints.gender,
+        age: fieldFromRow(row, ["age", "yas", "yaş", "audience age", "age gender", "age/gender", "age distribution", "audience age gender", "audience age&gender analysis", "age gender analysis"]) || audienceHints.age,
+        subscribers: fieldFromRow(row, ["subscribers", "followers", "takipci", "takipçi", "subs"]),
+        views: fieldFromRow(row, ["avg views", "views", "average views", "avg view", "izlenme"]),
+        avgComments: fieldFromRow(row, ["avg comments", "average comments", "yorum ortalama"]),
+        category: fieldFromRow(row, ["category", "kategori"]),
+        subcategory: fieldFromRow(row, ["subcategory", "sub category", "alt kategori"]),
+        keywords: fieldFromRow(row, ["keywords", "tags", "keyword"]),
+        format: fieldFromRow(row, ["format"]),
+        duration: fieldFromRow(row, ["duration", "duration avg", "avg duration"]),
+        notes: fieldFromRow(row, ["comments", "notes", "comment", "not"])
       };
     }
 
@@ -4626,17 +3683,6 @@ Return exactly this JSON shape:
       ));
     }
 
-    function importedMetricNumber(value) {
-      const text = String(value || "").trim().toUpperCase().replace(/,/g, ".");
-      if (!text) return 0;
-      const match = text.match(/(\d+(?:\.\d+)?)\s*(K|M|B|万|萬)?/i);
-      if (!match) return 0;
-      const base = Number(match[1] || 0);
-      const unit = match[2] || "";
-      const multiplier = unit === "K" ? 1_000 : unit === "M" ? 1_000_000 : unit === "B" ? 1_000_000_000 : /万|萬/.test(unit) ? 10_000 : 1;
-      return Math.round(base * multiplier);
-    }
-
     function closestExcelRow(rows, excelRow) {
       const rowNo = Number(excelRow || 0);
       if (!rowNo || !rows.length) return null;
@@ -4644,31 +3690,6 @@ Return exactly this JSON shape:
         .map((row) => ({ row, distance: Math.abs(Number(row.__excelRow || 0) - rowNo) }))
         .filter((item) => Number.isFinite(item.distance))
         .sort((a, b) => a.distance - b.distance)[0]?.row || null;
-    }
-
-    function groupExcelImagesByRow(imageFiles = []) {
-      const groups = new Map();
-      const unanchored = [];
-      imageFiles.forEach((file, index) => {
-        const row = Number(file.__excelRow || 0);
-        if (row) {
-          const key = String(row);
-          if (!groups.has(key)) groups.set(key, []);
-          groups.get(key).push(file);
-        } else {
-          unanchored.push({ file, index });
-        }
-      });
-      const anchoredGroups = [...groups.entries()]
-        .sort((a, b) => Number(a[0]) - Number(b[0]))
-        .map(([row, files]) => {
-          files.forEach((file) => {
-            if (!file.__excelRow) Object.defineProperty(file, "__excelRow", { value: Number(row), enumerable: false, configurable: true });
-          });
-          return files;
-        });
-      for (let index = 0; index < unanchored.length; index += 2) anchoredGroups.push(unanchored.slice(index, index + 2).map((item) => item.file));
-      return anchoredGroups;
     }
 
     function imageContextFromExcelRow(row, fallback = {}) {
@@ -4682,149 +3703,39 @@ Return exactly this JSON shape:
       };
     }
 
-    function normalizeInfluencerToken(value) {
-      return String(value || "")
-        .toLowerCase()
-        .replace(/^https?:\/\/(www\.)?youtube\.com\//i, "")
-        .replace(/^@/, "")
-        .replace(/[^\p{L}\p{N}._-]+/gu, " ")
-        .replace(/\s+/g, " ")
-        .trim();
-    }
-
-    function influencerMatchTokens(item = {}) {
-      const tokens = new Set();
-      const rawLink = String(item.link || item["Link"] || "").trim();
-      const rawHandle = String(item.handle || item["Handle"] || "").trim();
-      const rawName = String(item.name || item["Channel Name"] || "").trim();
-      const link = cleanYouTubeSeedLink(rawLink || rawHandle || "");
-      const channelId = (rawLink.match(/youtube\.com\/channel\/(UC[\w-]{20,})/i) || rawLink.match(/\b(UC[\w-]{20,})\b/))?.[1] || "";
-      const handle = (rawLink.match(/youtube\.com\/@([A-Za-z0-9._-]+)/i) || rawHandle.match(/^@?([A-Za-z0-9._-]{2,})$/i))?.[1] || "";
-      if (link) tokens.add(normalizeInfluencerToken(link));
-      if (channelId) tokens.add(channelId.toLowerCase());
-      if (handle) tokens.add(normalizeInfluencerToken(handle));
-      const nameToken = normalizeInfluencerToken(rawName);
-      if (nameToken && !isMetricOnlyText(nameToken) && nameToken.length >= 2) tokens.add(nameToken);
-      return tokens;
-    }
-
     function influencerMatchKey(item = {}) {
-      return [...influencerMatchTokens(item)][0] || "";
-    }
-
-    function findInfluencerMatchIndex(item = {}) {
-      const tokens = influencerMatchTokens(item);
-      if (!tokens.size) return -1;
-      const exactIndex = state.influencers.findIndex((current) => {
-        const currentTokens = influencerMatchTokens(current);
-        for (const token of tokens) if (currentTokens.has(token)) return true;
-        return false;
-      });
-      if (exactIndex >= 0) return exactIndex;
-      const nameToken = normalizeInfluencerToken(item.name || item["Channel Name"] || "");
-      if (!nameToken || nameToken.length < 3) return -1;
-      let best = { index: -1, score: 0 };
-      state.influencers.forEach((current, index) => {
-        const currentName = normalizeInfluencerToken(current.name || "");
-        const currentHandle = normalizeInfluencerToken(current.handle || "");
-        const candidates = [currentName, currentHandle].filter(Boolean);
-        candidates.forEach((candidate) => {
-          let score = 0;
-          if (candidate === nameToken) score = 100;
-          else if (candidate.includes(nameToken) || nameToken.includes(candidate)) score = Math.min(candidate.length, nameToken.length) >= 4 ? 82 : 0;
-          else {
-            const a = new Set(candidate.split(/[\s._-]+/).filter((part) => part.length >= 3));
-            const b = nameToken.split(/[\s._-]+/).filter((part) => part.length >= 3);
-            const hits = b.filter((part) => a.has(part)).length;
-            if (hits) score = 55 + hits * 12;
-          }
-          if (score > best.score) best = { index, score };
-        });
-      });
-      return best.score >= 70 ? best.index : -1;
-    }
-
-    function isUsefulImportedValue(value) {
-      if (Array.isArray(value)) return value.length > 0;
-      const text = String(value ?? "").trim();
-      if (!text) return false;
-      return !/^(missing|unknown|unclear|n\/a|na|none|null|needs youtube api analysis|needs manual content review|no regular videos found|free data yok|-|—|0)$/i.test(text);
-    }
-
-    function isGenericImportedValue(value) {
-      if (!isUsefulImportedValue(value)) return true;
-      const text = String(value ?? "").trim();
-      return /^(creator from screenshot|screenshot attached|turkey|tr)$/i.test(text);
-    }
-
-    function shouldLiveReplaceField(key, currentValue) {
-      const liveAlwaysFresh = new Set(["subscribers", "views", "avgComments", "format", "duration", "match", "source"]);
-      const liveFillIfMissing = new Set(["name", "handle", "link", "country", "geo", "category", "subcategory", "keywords", "genres"]);
-      if (liveAlwaysFresh.has(key)) return true;
-      return liveFillIfMissing.has(key) && isGenericImportedValue(currentValue);
-    }
-
-    function mergeTextList(...values) {
-      const seen = new Set();
-      return values
-        .flatMap((value) => String(value || "").split(/;\s*/))
-        .map((value) => value.trim())
-        .filter(Boolean)
-        .filter((value) => {
-          const key = value.toLowerCase();
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        })
-        .join("; ");
+      const link = cleanYouTubeSeedLink(item.link || item.handle || "");
+      if (link) return link.toLowerCase().replace(/^https?:\/\/(www\.)?youtube\.com\//i, "");
+      const name = String(item.name || item["Channel Name"] || "").trim().toLowerCase();
+      return name.replace(/\s+/g, " ");
     }
 
     function mergeInfluencerIntoList(item) {
       const normalized = normalizeInfluencer(item);
-      const existingIndex = findInfluencerMatchIndex(normalized);
+      const key = influencerMatchKey(normalized);
+      const existingIndex = key ? state.influencers.findIndex((current) => influencerMatchKey(current) === key) : -1;
       if (existingIndex < 0) {
         state.influencers.unshift(normalized);
         return { action: "added", index: 0 };
       }
       const current = state.influencers[existingIndex];
-      const incomingIsLive = isLiveYouTubeResult(normalized);
-      const mergedSeed = { ...current };
-      Object.entries(normalized).forEach(([key, value]) => {
-        if (!isUsefulImportedValue(value)) return;
-        if (["comments", "notes", "note"].includes(key)) return;
-        const currentGeneric = isGenericImportedValue(current[key]);
-        if (incomingIsLive && shouldLiveReplaceField(key, current[key])) mergedSeed[key] = value;
-        else if (currentGeneric) mergedSeed[key] = value;
-      });
       const merged = normalizeInfluencer({
-        ...mergedSeed,
+        ...current,
+        ...Object.fromEntries(Object.entries(normalized).filter(([, value]) => value !== "" && value !== "-" && value !== 0 && value !== "Free data yok")),
         note: current.note || normalized.note,
-        comments: mergeTextList(current.comments, normalized.comments),
-        notes: mergeTextList(current.notes, normalized.notes)
+        comments: [current.comments, normalized.comments].filter(Boolean).join("; "),
+        notes: [current.notes, normalized.notes].filter(Boolean).join("; ")
       });
       state.influencers[existingIndex] = merged;
       return { action: "updated", index: existingIndex };
     }
 
-    function dedupeInfluencerList() {
-      const merged = [];
-      let removed = 0;
-      const original = state.influencers || [];
-      state.influencers = merged;
-      original.forEach((item) => {
-        const before = merged.length;
-        mergeInfluencerIntoList(item);
-        if (merged.length === before) removed += 1;
-      });
-      return removed;
-    }
-
     function findYouTubeSeedFromRow(row, index) {
       const values = Object.values(row).map((value) => String(value || "").trim()).filter(Boolean);
-      const directLink = cleanYouTubeSeedLink(fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url", "链接", "連結", "频道链接", "頻道連結", "频道网址", "頻道網址"]));
+      const directLink = cleanYouTubeSeedLink(fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url"]));
       const scannedLink = values.map(cleanYouTubeSeedLink).find(Boolean);
       const link = directLink || scannedLink || "";
-      const explicitName = fieldFromRow(row, ["channel name", "name", "creator", "influencer", "kanal", "influencer name", "达人", "達人", "达人名称", "達人名稱", "频道", "頻道", "频道名称", "頻道名稱", "账号", "帳號", "账号名称", "帳號名稱", "名称", "名稱"]);
+      const explicitName = fieldFromRow(row, ["channel name", "name", "creator", "influencer", "kanal", "influencer name"]);
       const firstText = values.find((value) => value !== link && !cleanYouTubeSeedLink(value) && !/^[@＠]\s*$/u.test(value) && !/^https?:/i.test(value) && !isMetricOnlyText(value));
       const name = explicitName || firstText || (link ? `Creator ${index + 1}` : "");
       if (isInvalidYouTubeSeedLink(link) && !name) return { name: "", link: "", country: "", raw: row };
@@ -4859,21 +3770,24 @@ Return exactly this JSON shape:
         || /^\d+(?:[.,]\d+)?%$/.test(text);
     }
 
-    async function analyzeInfluencerRows(rows, statusId, options = {}) {
+    async function analyzeInfluencerRows(rows, statusId) {
       const status = statusId ? $(statusId) : null;
-      const replaceList = Boolean(options.replaceList);
       const seeds = rows.map(findYouTubeSeedFromRow).filter((seed) => seed.link || seed.name);
       if (!seeds.length) {
         if (status) status.textContent = "No usable Channel Name or YouTube Link found.";
         return;
       }
       await ensureBrowserYouTubeKey();
+      if (!state.api?.youtube) {
+        if (status) status.textContent = "YouTube API key gerekli. Settings sayfasina key'i kaydet.";
+        return;
+      }
       const imported = [];
       const skipped = [];
       for (let index = 0; index < seeds.length; index += 1) {
         const seed = seeds[index];
         if (status) status.textContent = `Analyzing ${index + 1}/${seeds.length}: ${seed.name || seed.link}`;
-        const researchInput = {
+        const live = await youtubeFromBrowser({
           name: seed.link || seed.name,
           fallbackName: seed.name,
           country: seed.country || "Turkey",
@@ -4881,77 +3795,48 @@ Return exactly this JSON shape:
           views: 0,
           genres: "",
           project: state.project
-        };
-        let live = null;
-        if (state.api?.youtube) live = await youtubeFromBrowser(researchInput, state.api.youtube);
-        if (!isLiveYouTubeResult(live)) {
-          try {
-            const response = await fetch("/api/research", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(researchInput)
-            });
-            if (response.ok) {
-              const backendResult = await response.json();
-              if (backendResult) live = backendResult;
-            }
-          } catch (error) {
-            // The selected row is still imported below when live research is unavailable.
-          }
-        }
-        live = live || localResearchResult(researchInput);
+        }, state.api.youtube);
         const hints = getImportedRowHints(seed.raw || {});
-        if (!isLiveYouTubeResult(live)) skipped.push(seed.name || seed.link);
+        if (live.source !== "youtube-live" && !hasUsefulImportedMetrics(hints)) {
+          skipped.push(seed.name || seed.link);
+          continue;
+        }
         const extraNotes = Object.entries(hints).filter(([, value]) => value).map(([key, value]) => `${key}: ${value}`).join("; ");
         const importedComment = fieldFromRow(seed.raw || {}, ["comments", "notes", "comment"]) || "";
-        const importedViews = importedMetricNumber(hints.views);
-        const importedSubscribers = hints.subscribers || "";
-        const importedAvgComments = importedMetricNumber(hints.avgComments);
         imported.push(normalizeInfluencer({
           ...live,
-          name: seed.name || live.name,
-          link: seed.link || live.link,
-          country: seed.country || live.country,
+          name: live.name || seed.name,
+          link: live.link || seed.link,
+          country: live.country || seed.country,
           geo: hints.geo || live.geo || seed.country,
           gender: hints.gender || live.gender,
           age: hints.age || live.age,
-          category: hints.category || live.category,
-          subcategory: hints.subcategory || live.subcategory,
-          subscribers: importedSubscribers || live.subscribers,
-          views: importedViews || live.views,
-          avgComments: importedAvgComments || live.avgComments,
-          format: hints.format || live.format || "-",
-          duration: hints.duration || live.duration || "-",
-          keywords: hints.keywords || live.keywords,
-          comments: `${live.comments || (isLiveYouTubeResult(live) ? "Imported and checked with YouTube API." : "Imported; live YouTube search was unavailable.")}${extraNotes || importedComment ? " Imported visual/list data: " + [extraNotes, importedComment].filter(Boolean).join("; ") : ""}`,
-          notes: `${live.notes || (isLiveYouTubeResult(live) ? "Imported and checked with YouTube API." : "Imported; live YouTube search was unavailable.")}${extraNotes || importedComment ? " Imported visual/list data: " + [extraNotes, importedComment].filter(Boolean).join("; ") : ""}`
+          subscribers: live.source === "youtube-live" ? live.subscribers : (hints.subscribers || live.subscribers),
+          views: live.source === "youtube-live" ? live.views : (Number(String(hints.views || "").replace(/[^\d]/g, "")) || live.views),
+          avgComments: live.source === "youtube-live" ? live.avgComments : (Number(String(hints.avgComments || "").replace(/[^\d]/g, "")) || live.avgComments),
+          format: live.format || hints.format || "-",
+          duration: live.duration || hints.duration || "-",
+          keywords: live.keywords || hints.keywords,
+          comments: `${live.comments || "Imported and checked with YouTube API."}${extraNotes || importedComment ? " Imported visual/list data: " + [extraNotes, importedComment].filter(Boolean).join("; ") : ""}`,
+          notes: `${live.notes || "Imported and checked with YouTube API."}${extraNotes || importedComment ? " Imported visual/list data: " + [extraNotes, importedComment].filter(Boolean).join("; ") : ""}`
         }));
       }
       let addedCount = 0;
       let updatedCount = 0;
       let lastIndex = 0;
-      if (replaceList) {
-        state.influencers = [];
-        state.selected = 0;
-      }
       imported.reverse().forEach((item) => {
         const result = mergeInfluencerIntoList(item);
         if (result.action === "updated") updatedCount += 1;
         else addedCount += 1;
         lastIndex = result.index;
       });
-      const dedupedCount = dedupeInfluencerList();
       state.selected = lastIndex;
-      const fallbackText = skipped.length ? ` ${skipped.length} kanal canlı YouTube verisi olmadan eklendi.` : "";
-      const engineText = state.importEngine ? ` Motor: ${state.importEngine}.` : "";
-      const dedupeText = dedupedCount ? ` ${dedupedCount} tekrar kayıt birleştirildi.` : "";
-      const modeText = replaceList ? " Liste bu içe aktarımla yenilendi." : "";
-      state.importStatus = `Tamamlandı: ${addedCount} kanal eklendi, ${updatedCount} kanal güncellendi.${modeText}${dedupeText}${fallbackText}${engineText}`;
       saveState();
       render();
       const nextStatus = statusId ? $(statusId) : null;
       if (nextStatus) {
-        nextStatus.textContent = state.importStatus;
+        const skippedText = skipped.length ? ` ${skipped.length} row could not be matched, so it was not added.` : "";
+        nextStatus.textContent = `Done. ${addedCount} added, ${updatedCount} updated.${skippedText}`;
       }
     }
 
@@ -4960,134 +3845,9 @@ Return exactly this JSON shape:
       await analyzeInfluencerRows(rows, "bulkStatus");
     }
 
-    function updateImportStatus(message, persist = false) {
-      state.importStatus = String(message || "");
-      const excelStatus = $("excelStatus");
-      const imageStatus = $("imageStatus");
-      if (excelStatus) excelStatus.textContent = state.importStatus;
-      if (imageStatus && imageStatus.textContent) imageStatus.textContent = "";
-      if (persist) saveState();
-    }
-
-    async function uploadUnifiedImportFile() {
-      const status = $("excelStatus");
-      try {
-        const file = $("importDataFile")?.files?.[0] || pendingImportFile;
-        if (!file && state.pendingImageDataUrl) {
-          await uploadImageData();
-          return;
-        }
-        if (!file) {
-          if (status) status.textContent = "Önce Excel, CSV veya ekran görüntüsü seç.";
-          return;
-        }
-        const isImage = /^image\//i.test(file.type || "") || /\.(png|jpe?g|webp)$/i.test(file.name || "");
-        updateImportStatus(`${file.name} okunuyor...`);
-        if (isImage) await uploadImageData();
-        else await uploadExcelFile();
-      } catch (error) {
-        updateImportStatus("Dosya işlenemedi: " + (error?.message || String(error)), true);
-      }
-    }
-
-    async function handleImportFileSelection(event) {
-      const file = event.target?.files?.[0];
-      const status = $("excelStatus");
-      const imageStatus = $("imageStatus");
-      state.pendingImageDataUrl = "";
-      state.pendingImageName = "";
-      if (!file) {
-        updateImportStatus("Dosya seçilmedi.");
-        return;
-      }
-      pendingImportFile = file;
-      state.importFileName = file.name;
-      state.importEngine = "";
-      const size = file.size >= 1024 * 1024
-        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
-        : `${Math.max(1, Math.round(file.size / 1024))} KB`;
-      const selectedLabel = $("selectedImportFile");
-      if (selectedLabel) selectedLabel.textContent = `Seçili dosya: ${file.name}`;
-      updateImportStatus(`Seçildi: ${file.name} (${size}). Otomatik analiz ve YouTube araması başlıyor...`);
-      if (imageStatus) imageStatus.textContent = "";
-      await uploadUnifiedImportFile();
-    }
-
-    async function readExcelImagePair(files, context = {}) {
-      const images = await Promise.all(files.map(fileToDataUrl));
-      try {
-        const response = await fetchTeamApi("/api/read-image-data", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...sharedHeaders() },
-          body: JSON.stringify({ images, context }),
-          timeoutMs: 12000
-        });
-        const result = await response.json();
-        if (response.ok && result.ok && Array.isArray(result.rows)) {
-          state.importEngine = "GPT Vision";
-          return result.rows;
-        }
-      } catch (error) {
-        // Backend may not be able to reach the GPT endpoint on this machine; browser-side GPT is tried below.
-      }
-      try {
-        let config = getSavedGptConfig();
-        try {
-          const configResponse = await fetch("/api/client-config");
-          const backendConfig = await configResponse.json();
-          config = { ...config, ...backendConfig };
-        } catch (error) {
-          // file:// mode uses browser-saved API settings.
-        }
-        if (!config.openaiApiKey) return [];
-        const baseUrl = normalizeGptBaseUrl(config.openaiBaseUrl || "https://api.openai.com/v1");
-        const preferredModel = config.openaiModel && config.openaiModel !== "auto" ? config.openaiModel : "";
-        const prompt = `These images belong to one creator/influencer row from an Excel file. They may include performance and demographics screenshots. Context: ${JSON.stringify(context)}. Merge the visible facts into one JSON response. Return exactly: {"rows":[{"Channel Name":"","Link":"","GEO":"","Gender":"","Age":"","Category":"","Subcategory":"","Subscribers":"","avg Views":"","Avg Comments":"","Format":"","Duration":"","Keywords":"","Comments":""}]}. If a field is not visible, leave it empty. Preserve YouTube links and names exactly. Include video/content format when visible or inferable from shown recent video/content type labels only. For age/gender charts, calculate Age as total Female+Male per age group like "13-17: 14%; 18-24: 44%; 25-34: 25%" and Gender separately like "F52% / M48%". Do not put gender percentages inside Age.`;
-        for (const model of gptModelCandidates(preferredModel)) {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 25000);
-          const response = await fetch(`${baseUrl}/chat/completions`, {
-            method: "POST",
-            signal: controller.signal,
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${config.openaiApiKey}`
-            },
-            body: JSON.stringify({
-              model,
-              messages: [
-                { role: "system", content: "Extract influencer research table data from paired Excel screenshots. Return strict JSON only. Do not invent missing values." },
-                {
-                  role: "user",
-                  content: [
-                    { type: "text", text: prompt },
-                    ...images.map((url) => ({ type: "image_url", image_url: { url } }))
-                  ]
-                }
-              ],
-              temperature: 0,
-              max_tokens: 1800,
-              stream: false
-            })
-          }).catch(() => null).finally(() => clearTimeout(timeout));
-          if (!response?.ok) continue;
-          const data = await response.json().catch(() => null);
-          const parsed = parseJsonObject(data?.choices?.[0]?.message?.content || "");
-          const rows = Array.isArray(parsed?.rows) ? parsed.rows : [];
-          if (rows.length) {
-            state.importEngine = "GPT Vision (browser)";
-            return rows;
-          }
-        }
-        return [];
-      } catch (error) {
-        return [];
-      }
-    }
-
     async function uploadExcelFile() {
       const status = $("excelStatus");
-      const file = $("excelFile")?.files?.[0] || $("importDataFile")?.files?.[0] || pendingImportFile;
+      const file = $("excelFile").files?.[0];
       if (!file) {
         if (status) status.textContent = "Choose an Excel or CSV file first.";
         return;
@@ -5095,234 +3855,62 @@ Return exactly this JSON shape:
       try {
         let rows = [];
         let xlsxBuffer = null;
-        let serverRows = null;
-        try {
-          updateImportStatus(`${file.name} sunucuda okunuyor...`);
-          const response = await fetch("/api/import-file", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", ...sharedHeaders() },
-            body: JSON.stringify({ name: file.name, data: await fileToDataUrl(file) })
-          });
-          const result = await response.json();
-          if (response.ok && result.ok && Array.isArray(result.rows)) serverRows = result.rows;
-        } catch (error) {
-          serverRows = null;
-        }
-        if (serverRows) {
-          rows = rowsToObjects(serverRows);
-          if (/\.xlsx?$/i.test(file.name)) {
-            xlsxBuffer = await file.arrayBuffer();
-            try {
-              const browserRows = await readBasicXlsxRows(xlsxBuffer);
-              const browserObjects = rowsToObjects(browserRows);
-              if (browserObjects.length) rows = browserObjects;
-            } catch (error) {
-              // Server parsed rows are still usable; browser parse only preserves hyperlink row context.
-            }
-          }
-        } else if (/\.csv$|\.tsv$|\.txt$/i.test(file.name)) {
+        if (/\.csv$|\.tsv$|\.txt$/i.test(file.name)) {
           rows = rowsToObjects(parseDelimitedRows(await file.text()));
         } else {
-          xlsxBuffer = await file.arrayBuffer();
-          let sheetRows = [];
-          if (window.XLSX) {
-            sheetRows = await readBasicXlsxRows(xlsxBuffer);
-          } else {
-            updateImportStatus("Excel kütüphanesi yüklenmedi; yerleşik okuyucu kullanılıyor...");
-            sheetRows = await readBasicXlsxRows(xlsxBuffer);
+          if (!window.XLSX) {
+            if (status) status.textContent = "Excel parser could not load. Save the file as CSV or use copy-paste.";
+            return;
           }
+          xlsxBuffer = await file.arrayBuffer();
+          const workbook = XLSX.read(xlsxBuffer, { type: "array" });
+          const firstSheet = workbook.SheetNames[0];
+          const sheetRows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { header: 1, defval: "" });
           rows = rowsToObjects(sheetRows);
         }
-        const explicitRows = rows.filter((row) => {
-          const directName = fieldFromRow(row, ["channel name", "name", "creator", "influencer", "kanal", "influencer name", "达人", "達人", "达人名称", "達人名稱", "频道", "頻道", "频道名称", "頻道名稱", "账号", "帳號", "账号名称", "帳號名稱", "名称", "名稱"]);
-          const directLink = fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url", "链接", "連結", "频道链接", "頻道連結", "频道网址", "頻道網址"]);
-          return Boolean(directName || cleanYouTubeSeedLink(directLink) || Object.values(row).some((value) => cleanYouTubeSeedLink(value)));
-        });
+        await analyzeInfluencerRows(rows, "excelStatus");
         if (xlsxBuffer) {
           const imageFiles = await extractImagesFromXlsxBuffer(xlsxBuffer);
-          const imageRows = [];
           if (imageFiles.length) {
-            const imageGroups = groupExcelImagesByRow(imageFiles);
-            for (let offset = 0; offset < imageGroups.length; offset += 3) {
-              const batch = imageGroups.slice(offset, offset + 3);
-              updateImportStatus(`Excel görselleri okunuyor: ${offset + 1}-${Math.min(offset + batch.length, imageGroups.length)} / ${imageGroups.length} influencer...`);
-              const batchRows = await Promise.all(batch.map(async (group, pairIndex) => {
-                const imageRow = group.find((item) => item.__excelRow)?.__excelRow || "";
-                const nearbyRow = closestExcelRow(rows, imageRow);
-                const context = imageContextFromExcelRow(nearbyRow, {
-                  source: "excel-embedded-images",
+            const anchored = imageFiles.filter((imageFile) => imageFile.__excelRow).map((imageFile) => `row ${imageFile.__excelRow}`).join(", ");
+            if (status) status.textContent = `Excel image found. Reading ${imageFiles.length} embedded image(s)${anchored ? ` (${anchored})` : ""}...`;
+            const imageRows = [];
+            for (const imageFile of imageFiles.slice(0, 3)) {
+              try {
+                const linkedRow = closestExcelRow(rows, imageFile.__excelRow);
+                const imageContext = imageContextFromExcelRow(linkedRow, {
+                  source: "excel-embedded-image",
                   fileName: file.name,
-                  influencerIndex: offset + pairIndex + 1,
-                  excelRow: imageRow
+                  excelRow: imageFile.__excelRow || ""
                 });
-                let found = await readExcelImagePair(group.slice(0, 2), context);
-                if (!found.length && (context.channelLink || context.channelName)) {
-                  found = [rowFromImageContext(context, "Excel görseli okunamadı; aynı satırdaki kanal linki/adı ile YouTube verisi çekiliyor.")];
+                let rowsFromImage = [];
+                try {
+                  rowsFromImage = await readImageRowsWithGPT(imageFile, status, imageContext);
+                } catch (gptError) {
+                  if (status) status.textContent = `Excel image GPT failed, trying OCR: ${gptError.message}`;
+                  rowsFromImage = await readImageRowsWithOcr(imageFile, status, imageContext);
                 }
-                return found.map((row) => ({
-                  ...row,
-                  "Channel Name": fieldFromRow(row, ["channel name", "name", "creator", "influencer", "kanal", "influencer name", "达人", "達人", "达人名称", "達人名稱", "频道", "頻道", "频道名称", "頻道名稱", "账号", "帳號", "账号名称", "帳號名稱", "名称", "名稱"]) || context.channelName || "",
-                  "Link": fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url", "链接", "連結", "频道链接", "頻道連結", "频道网址", "頻道網址"]) || context.channelLink || "",
-                  "Comments": [fieldFromRow(row, ["comments", "notes", "comment"]), context.excelRow ? `Excel row: ${context.excelRow}` : ""].filter(Boolean).join("; ")
-                }));
-              }));
-              batchRows.forEach((foundRows) => imageRows.push(...foundRows));
+                imageRows.push(...rowsFromImage);
+              } catch (imageError) {
+                if (status) status.textContent = `Excel image OCR failed: ${imageError.message}`;
+              }
             }
+            if (imageRows.length) await analyzeInfluencerRows(imageRows, "excelStatus");
+            else if (status) status.textContent = `Excel image found, but OCR could not find usable channel rows.`;
+          } else if (status) {
+            status.textContent = rows.length
+              ? `Excel rows were read, but no embedded image was found in this file.`
+              : `No table rows or embedded images found in this Excel file.`;
           }
-          const combinedRows = imageRows.length ? imageRows : explicitRows;
-          if (combinedRows.length) await analyzeInfluencerRows(combinedRows, "excelStatus");
-          else if (imageFiles.length) updateImportStatus("Excel içindeki görseller okundu ancak kanal bilgisi çıkarılamadı.", true);
-          else if (!explicitRows.length) {
-            updateImportStatus("Excel içinde aranabilir kanal adı, YouTube bağlantısı veya gömülü görsel bulunamadı.", true);
-          }
-        } else if (explicitRows.length) {
-          await analyzeInfluencerRows(explicitRows, "excelStatus");
-        } else {
-          await analyzeInfluencerRows(rows, "excelStatus");
         }
       } catch (error) {
-        updateImportStatus("Excel/CSV okunamadı: " + error.message, true);
+        if (status) status.textContent = "File could not be read: " + error.message;
       }
     }
 
     function zipReadString(view, offset, length) {
       const bytes = new Uint8Array(view.buffer, view.byteOffset + offset, length);
       return new TextDecoder().decode(bytes);
-    }
-
-    function xmlText(value) {
-      return String(value || "")
-        .replace(/<[^>]+>/g, "")
-        .replace(/&amp;/g, "&")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;|&apos;/g, "'")
-        .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(Number.parseInt(code, 16)))
-        .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)));
-    }
-
-    async function readXlsxZipEntries(buffer) {
-      const view = new DataView(buffer);
-      let eocd = -1;
-      for (let offset = view.byteLength - 22; offset >= 0 && offset > view.byteLength - 66000; offset -= 1) {
-        if (view.getUint32(offset, true) === 0x06054b50) {
-          eocd = offset;
-          break;
-        }
-      }
-      if (eocd < 0) throw new Error("Geçerli bir XLSX dosyası değil.");
-      const entries = view.getUint16(eocd + 10, true);
-      let cdOffset = view.getUint32(eocd + 16, true);
-      const result = new Map();
-      for (let index = 0; index < entries; index += 1) {
-        if (view.getUint32(cdOffset, true) !== 0x02014b50) break;
-        const method = view.getUint16(cdOffset + 10, true);
-        const compressedSize = view.getUint32(cdOffset + 20, true);
-        const fileNameLength = view.getUint16(cdOffset + 28, true);
-        const extraLength = view.getUint16(cdOffset + 30, true);
-        const commentLength = view.getUint16(cdOffset + 32, true);
-        const localOffset = view.getUint32(cdOffset + 42, true);
-        const fileName = normalizeZipPath(zipReadString(view, cdOffset + 46, fileNameLength));
-        cdOffset += 46 + fileNameLength + extraLength + commentLength;
-        if (view.getUint32(localOffset, true) !== 0x04034b50) continue;
-        const localNameLength = view.getUint16(localOffset + 26, true);
-        const localExtraLength = view.getUint16(localOffset + 28, true);
-        const dataOffset = localOffset + 30 + localNameLength + localExtraLength;
-        const compressed = new Uint8Array(buffer.slice(dataOffset, dataOffset + compressedSize));
-        const raw = method === 0 ? compressed : method === 8 ? await inflateZipBytes(compressed) : null;
-        if (raw) result.set(fileName, raw);
-      }
-      return result;
-    }
-
-    function excelColumnIndex(reference) {
-      const letters = String(reference || "A").match(/^[A-Z]+/i)?.[0]?.toUpperCase() || "A";
-      let value = 0;
-      for (const letter of letters) value = value * 26 + letter.charCodeAt(0) - 64;
-      return Math.max(0, value - 1);
-    }
-
-    function excelColumnName(index) {
-      let value = Number(index || 0) + 1;
-      let name = "";
-      while (value > 0) {
-        const remainder = (value - 1) % 26;
-        name = String.fromCharCode(65 + remainder) + name;
-        value = Math.floor((value - 1) / 26);
-      }
-      return name || "A";
-    }
-
-    function expandExcelCellRef(ref) {
-      const text = String(ref || "").trim();
-      if (!text) return [];
-      const [start, end = start] = text.split(":");
-      const startCol = excelColumnIndex(start);
-      const endCol = excelColumnIndex(end);
-      const startRow = Number(start.match(/\d+/)?.[0] || 0);
-      const endRow = Number(end.match(/\d+/)?.[0] || startRow);
-      if (!startRow || !endRow) return [text];
-      const refs = [];
-      for (let row = Math.min(startRow, endRow); row <= Math.max(startRow, endRow); row += 1) {
-        for (let col = Math.min(startCol, endCol); col <= Math.max(startCol, endCol); col += 1) refs.push(`${excelColumnName(col)}${row}`);
-      }
-      return refs;
-    }
-
-    async function readBasicXlsxRows(buffer) {
-      const entries = await readXlsxZipEntries(buffer);
-      const decode = (name) => entries.has(name) ? new TextDecoder().decode(entries.get(name)) : "";
-      const parser = new DOMParser();
-      const sharedXml = decode("xl/sharedStrings.xml");
-      const shared = sharedXml
-        ? Array.from(parser.parseFromString(sharedXml, "application/xml").getElementsByTagName("si"))
-          .map((node) => Array.from(node.getElementsByTagName("t")).map((part) => part.textContent || "").join(""))
-        : [];
-      const sheetNames = [...entries.keys()].filter((name) => /^xl\/worksheets\/sheet\d+\.xml$/i.test(name)).sort();
-      if (!sheetNames.length) throw new Error("Excel çalışma sayfası bulunamadı.");
-      const allRows = [];
-      for (const sheetName of sheetNames) {
-        const relName = sheetName.replace(/^xl\/worksheets\//i, "xl/worksheets/_rels/") + ".rels";
-        const relXml = decode(relName);
-        const rels = new Map();
-        for (const rel of relXml.matchAll(/<Relationship\b([^>]*)\/?>/gi)) {
-          const attrs = rel[1] || "";
-          const id = attrs.match(/\bId="([^"]+)"/i)?.[1] || "";
-          const target = attrs.match(/\bTarget="([^"]+)"/i)?.[1] || "";
-          const type = attrs.match(/\bType="([^"]+)"/i)?.[1] || "";
-          if (id && target && /hyperlink/i.test(type)) rels.set(id, xmlText(target));
-        }
-        const documentNode = parser.parseFromString(decode(sheetName), "application/xml");
-        if (documentNode.getElementsByTagName("parsererror").length) continue;
-        const hyperlinks = new Map();
-        Array.from(documentNode.getElementsByTagName("hyperlink")).forEach((linkNode) => {
-          const ref = linkNode.getAttribute("ref") || "";
-          const rid = linkNode.getAttribute("r:id") || linkNode.getAttribute("id") || "";
-          const location = linkNode.getAttribute("location") || "";
-          const target = rels.get(rid) || location;
-          if (ref && target) expandExcelCellRef(ref).forEach((cellRef) => hyperlinks.set(cellRef, target));
-        });
-        Array.from(documentNode.getElementsByTagName("row")).forEach((rowNode) => {
-          const row = [];
-          const excelRow = Number(rowNode.getAttribute("r") || 0) || null;
-          Array.from(rowNode.getElementsByTagName("c")).forEach((cell) => {
-            const ref = cell.getAttribute("r") || "";
-            const index = excelColumnIndex(ref);
-            const type = cell.getAttribute("t") || "";
-            const inline = Array.from(cell.getElementsByTagName("t")).map((node) => node.textContent || "").join("");
-            const raw = cell.getElementsByTagName("v")[0]?.textContent || "";
-            const display = type === "s" ? (shared[Number(raw)] || "") : type === "inlineStr" ? inline : raw;
-            const link = hyperlinks.get(ref);
-            row[index] = link ? [display, link].filter(Boolean).join(" ") : display;
-          });
-          const values = row.map((value) => value ?? "");
-          Object.defineProperty(values, "__excelRow", { value: excelRow, enumerable: false, configurable: true });
-          Object.defineProperty(values, "__sheetName", { value: sheetName, enumerable: false, configurable: true });
-          if (values.some((value) => String(value || "").trim())) allRows.push(values);
-        });
-      }
-      return allRows;
     }
 
     async function inflateZipBytes(bytes) {
@@ -5383,41 +3971,6 @@ Return exactly this JSON shape:
       return anchors;
     }
 
-    function extractCellImageAnchors(entriesByName) {
-      const anchors = new Map();
-      const cellImagesXml = entriesByName.get("xl/cellimages.xml") || "";
-      const cellImageRelsXml = entriesByName.get("xl/_rels/cellimages.xml.rels") || "";
-      if (!cellImagesXml || !cellImageRelsXml) return anchors;
-      const rels = new Map();
-      for (const rel of cellImageRelsXml.matchAll(/<Relationship\b([^>]*)\/?>/gi)) {
-        const attrs = rel[1] || "";
-        const id = attrs.match(/\bId="([^"]+)"/i)?.[1] || "";
-        const target = attrs.match(/\bTarget="([^"]+)"/i)?.[1] || "";
-        if (id && target) rels.set(id, resolveZipTarget("xl/cellimages.xml", target));
-      }
-      const imageIdToMedia = new Map();
-      const blocks = cellImagesXml.match(/<etc:cellImage\b[\s\S]*?<\/etc:cellImage>/gi) || [];
-      blocks.forEach((block) => {
-        const imageId = block.match(/<xdr:cNvPr\b[^>]*name="([^"]+)"/i)?.[1] || "";
-        const rid = block.match(/(?:r:)?embed="([^"]+)"/i)?.[1] || "";
-        const media = rels.get(rid);
-        if (imageId && media) imageIdToMedia.set(imageId, media);
-      });
-      for (const [sheetPath, sheetXml] of entriesByName) {
-        if (!/^xl\/worksheets\/sheet\d+\.xml$/i.test(sheetPath)) continue;
-        const rowBlocks = sheetXml.match(/<row\b[^>]*>[\s\S]*?<\/row>/gi) || [];
-        rowBlocks.forEach((rowBlock) => {
-          const rowNumber = Number(rowBlock.match(/<row\b[^>]*\br="(\d+)"/i)?.[1] || 0) || null;
-          for (const match of rowBlock.matchAll(/DISPIMG\(&quot;([^"&]+)&quot;|DISPIMG\("([^"]+)"/gi)) {
-            const imageId = match[1] || match[2] || "";
-            const media = imageIdToMedia.get(imageId);
-            if (media) anchors.set(media, { excelRow: rowNumber, imageId, sheetPath });
-          }
-        });
-      }
-      return anchors;
-    }
-
     async function extractImagesFromXlsxBuffer(buffer) {
       const view = new DataView(buffer);
       let eocd = -1;
@@ -5454,7 +4007,7 @@ Return exactly this JSON shape:
       zipEntries.forEach((entry) => {
         if (/\.(xml|rels)$/i.test(entry.name)) textEntries.set(entry.name, new TextDecoder().decode(entry.raw));
       });
-      const anchors = new Map([...extractDrawingImageAnchors(textEntries), ...extractCellImageAnchors(textEntries)]);
+      const anchors = extractDrawingImageAnchors(textEntries);
       const images = [];
       for (const entry of zipEntries) {
         const fileName = entry.name;
@@ -5555,7 +4108,6 @@ Return exactly this JSON shape:
     }
 
     async function readImageRowsWithGPT(file, status, context = {}) {
-      if (new URLSearchParams(location.search).get("engine") === "ocr") throw new Error("OCR diagnostic mode");
       let config = getSavedGptConfig();
       try {
         const response = await fetch("/api/client-config");
@@ -5579,19 +4131,13 @@ Return exactly this JSON shape:
       for (const target of imageBackendTargets) {
         try {
           if (status) status.textContent = "Reading image with local backend...";
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 12000);
           const response = await fetch(`${target}/api/read-image-data`, {
             method: "POST",
-            signal: controller.signal,
             headers: { "Content-Type": "application/json", ...sharedHeaders() },
             body: JSON.stringify({ image: dataUrl, context })
-          }).finally(() => clearTimeout(timeout));
+          });
           const result = await response.json();
-          if (result.ok && Array.isArray(result.rows) && result.rows.length) {
-            state.importEngine = "GPT Vision (backend)";
-            return result.rows;
-          }
+          if (result.ok && Array.isArray(result.rows) && result.rows.length) return result.rows;
         } catch (error) {
           // Backend may be unavailable; direct GPT request is tried below.
         }
@@ -5601,11 +4147,8 @@ Return exactly this JSON shape:
       let lastError = "";
       for (const model of modelCandidates) {
         if (status) status.textContent = `Reading image with GPT (${model})...`;
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 25000);
         const response = await fetch(`${baseUrl}/chat/completions`, {
           method: "POST",
-          signal: controller.signal,
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${config.openaiApiKey}`
@@ -5626,7 +4169,7 @@ Return exactly this JSON shape:
             max_tokens: 1800,
             stream: false
           })
-        }).catch((error) => ({ ok: false, status: "network", error })).finally(() => clearTimeout(timeout));
+        }).catch((error) => ({ ok: false, status: "network", error }));
         if (!response.ok) {
           lastError = `${model}: ${await readGptError(response)}`;
           continue;
@@ -5639,7 +4182,6 @@ Return exactly this JSON shape:
         const parsed = parseJsonObject(data.choices?.[0]?.message?.content || "");
         const rows = Array.isArray(parsed?.rows) ? parsed.rows : [];
         if (!rows.length) throw new Error("Gorselden kullanilabilir satir bulunamadi.");
-        state.importEngine = "GPT Vision (browser)";
         return rows;
       }
       throw new Error(`GPT image read failed: ${lastError}`);
@@ -5804,17 +4346,6 @@ Return exactly this JSON shape:
       } : {};
     }
 
-    function cleanOcrCreatorCandidate(value) {
-      const original = String(value || "").trim();
-      const normalized = original.replace(/[~|¦]+/g, " ").replace(/[^\p{L}\p{N}._' -]+/gu, " ").replace(/\s+/g, " ").trim();
-      if (!normalized) return original;
-      if (/[~|¦]/.test(original)) {
-        const latin = normalized.split(/\s+/).filter((token) => /^[A-Za-z][A-Za-z0-9._'-]{3,}$/.test(token));
-        if (latin.length) return latin.sort((a, b) => b.length - a.length)[0];
-      }
-      return normalized.replace(/^(?:[A-Za-z]\s+)(?=[A-Z][a-z])/u, "").trim();
-    }
-
     function rowsFromOcrText(textValue, context = {}, visualMetrics = {}) {
       const lines = String(textValue || "").replace(/\r/g, "\n").split("\n").map((line) => line.trim()).filter(Boolean);
       const rows = [];
@@ -5828,9 +4359,8 @@ Return exactly this JSON shape:
         const hasMetrics = /\b\d+(?:[.,]\d+)?\s*[KMB]?\b/i.test(line) && /(views?|followers?|subscribers?|avg|yorum|comment|takip)/i.test(line);
         if (link || handle || hasMetrics) {
           const cleaned = line.replace(link, "").replace(handle, "").replace(/\s{2,}/g, " ").trim();
-          const creatorName = cleanOcrCreatorCandidate(cleaned.split(/[|,\t]/)[0] || cleaned || handle || link);
           rows.push({
-            "Channel Name": contextName || creatorName || `Image row ${rows.length + 1}`,
+            "Channel Name": contextName || cleaned.split(/[|,\t]/)[0] || cleaned || handle || link || `Image row ${rows.length + 1}`,
             "Link": contextLink || link || (handle.startsWith("@") ? `https://www.youtube.com/${handle}` : ""),
             "GEO": scrumball.geo || "",
             "Gender": scrumball.genderApprox || "",
@@ -5850,24 +4380,6 @@ Return exactly this JSON shape:
           "Subscribers": scrumball.subscribers || "",
           "Comments": [scrumball.avgEngagement ? `Avg engagement: ${scrumball.avgEngagement}` : "", scrumball.avgViewRate ? `Avg view rate: ${scrumball.avgViewRate}` : "", scrumball.monthlyPost ? `Monthly post: ${scrumball.monthlyPost}` : "", scrumball.audienceLocation ? `Audience location: ${scrumball.audienceLocation}` : "", scrumball.ageGenderApprox ? `Age/gender approx: ${scrumball.ageGenderApprox}` : "", scrumball.demographicsSource ? `Demographics source: ${scrumball.demographicsSource}` : ""].filter(Boolean).join("; ")
         });
-      }
-      if (!rows.length) {
-        const ignored = /^(youtube|studio|dashboard|analytics|content|audience|overview|channel|home|search|views?|subscribers?|followers?|comments?|likes?|settings|customization|copyright|earn|monetization|translations?)$/i;
-        const candidateName = lines.find((line) => {
-          const clean = line.replace(/[|•·]/g, " ").replace(/\s+/g, " ").trim();
-          return clean.length >= 2 && clean.length <= 80 && /[\p{L}]/u.test(clean) && !ignored.test(clean) && !/^\d/.test(clean) && !/%/.test(clean);
-        });
-        if (candidateName) {
-          rows.push({
-            "Channel Name": cleanOcrCreatorCandidate(candidateName),
-            "Link": "",
-            "GEO": scrumball.geo || "",
-            "Gender": scrumball.genderApprox || "",
-            "Age": scrumball.ageGenderApprox || "",
-            "Subscribers": scrumball.subscribers || "",
-            "Comments": "Channel name inferred from screenshot OCR; searched automatically on YouTube."
-          });
-        }
       }
       if (rows.length) return rows;
       const joined = lines.join("\n");
@@ -5899,13 +4411,12 @@ Return exactly this JSON shape:
       const combinedText = [enhanced.data?.text || "", original.data?.text || ""].join("\n");
       const rows = rowsFromOcrText(combinedText, context, visualMetrics);
       if (!rows.length) throw new Error("OCR read text but no usable creator rows or YouTube links were found.");
-      state.importEngine = "OCR (Tesseract)";
       return rows;
     }
 
     async function uploadImageData() {
       const status = $("imageStatus");
-      const file = $("imageDataFile")?.files?.[0] || pendingImportFile;
+      const file = $("imageDataFile").files?.[0];
       const channelLink = $("imageChannelLink")?.value?.trim() || "";
       if (!channelLink) {
         if (status) status.textContent = "A channel link or @handle is required before reading the image.";
@@ -5943,59 +4454,6 @@ Return exactly this JSON shape:
       };
     }
 
-    function isGenericImageCreatorName(value) {
-      const normalized = String(value || "").trim().toLowerCase();
-      return !normalized || /^(creator from screenshot|screenshot attached|unknown|n\/a|na|-|—)$/i.test(normalized);
-    }
-
-    function selectedInfluencerContext() {
-      const current = state.influencers[state.selected] || state.influencers[0] || null;
-      if (!current) return {};
-      return {
-        channelName: current.name || "",
-        channelLink: current.link || current.handle || "",
-        handle: current.handle || "",
-        selectedIndex: state.selected
-      };
-    }
-
-    function attachKnownInfluencerIdentity(rows = [], context = {}, options = {}) {
-      const allowSelectedFallback = options.allowSelectedFallback !== false;
-      const selectedContext = context.channelName || context.channelLink ? context : selectedInfluencerContext();
-      return rows.map((row) => {
-        const name = fieldFromRow(row, ["channel name", "name", "creator", "influencer", "kanal", "influencer name", "达人", "達人", "达人名称", "達人名稱", "频道", "頻道", "频道名称", "頻道名稱", "账号", "帳號", "账号名称", "帳號名稱", "名称", "名稱"]);
-        const link = fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url", "链接", "連結", "频道链接", "頻道連結", "频道网址", "頻道網址"]);
-        const candidate = { name, link };
-        const matchIndex = findInfluencerMatchIndex(candidate);
-        const matched = matchIndex >= 0 ? state.influencers[matchIndex] : null;
-        const canUseSelectedFallback = allowSelectedFallback && isGenericImageCreatorName(name) && !cleanYouTubeSeedLink(link) && Number.isInteger(selectedContext.selectedIndex);
-        const contextualIdentity = allowSelectedFallback && !cleanYouTubeSeedLink(link) && (selectedContext.channelName || selectedContext.channelLink)
-          ? {
-              name: selectedContext.channelName,
-              link: selectedContext.channelLink,
-              handle: selectedContext.handle || ""
-            }
-          : null;
-        const fallbackSelected = !matched && canUseSelectedFallback ? state.influencers[selectedContext.selectedIndex] || null : null;
-        const identity = matched || fallbackSelected || contextualIdentity;
-        if (!identity) {
-          if (!isGenericImageCreatorName(name) || (!selectedContext.channelName && !selectedContext.channelLink)) return row;
-          return {
-            ...row,
-            "Channel Name": name || selectedContext.channelName || "",
-            "Link": cleanYouTubeSeedLink(link) || selectedContext.channelLink || link,
-            "Comments": fieldFromRow(row, ["comments", "notes", "comment"])
-          };
-        }
-        return {
-          ...row,
-          "Channel Name": matched ? (isGenericImageCreatorName(name) ? (identity.name || selectedContext.channelName || "") : name) : (identity.name || selectedContext.channelName || name),
-          "Link": cleanYouTubeSeedLink(link) || identity.link || identity.handle || selectedContext.channelLink || link,
-          "Comments": [fieldFromRow(row, ["comments", "notes", "comment"]), !matched && name && !isGenericImageCreatorName(name) ? `Visible screenshot name: ${name}` : "", identity.name ? `Matched existing row: ${identity.name}` : ""].filter(Boolean).join("; ")
-        };
-      });
-    }
-
     async function processImageDataFile(file, sourceLabel = "image") {
       const status = $("imageStatus");
       const channelLink = $("imageChannelLink")?.value?.trim() || "";
@@ -6004,7 +4462,6 @@ Return exactly this JSON shape:
         channelName: channelLink ? "" : ""
       };
       try {
-        state.importEngine = "";
         if (status) status.textContent = `Reading ${sourceLabel} data...`;
         let rows = [];
         let readError = "";
@@ -6048,7 +4505,6 @@ Return exactly this JSON shape:
         }
         state.pendingImageDataUrl = await fileToDataUrl(file);
         state.pendingImageName = `Pasted image (${Math.round(file.size / 1024)} KB)`;
-        pendingImportFile = file;
         saveState();
         $("imagePasteZone").textContent = `Pasted image: ${file.type || "image"} (${Math.round(file.size / 1024)} KB)`;
         if (status) status.textContent = "Screenshot is ready. Enter the channel link, then press Read image data.";
@@ -6063,21 +4519,6 @@ Return exactly this JSON shape:
         return;
       }
       if (status) status.textContent = "Paste a screenshot image or text rows.";
-    }
-
-    async function handleImportDrop(event) {
-      event.preventDefault();
-      const file = Array.from(event.dataTransfer?.files || [])[0];
-      if (!file) {
-        updateImportStatus("Bırakılan içerikte dosya bulunamadı.");
-        return;
-      }
-      pendingImportFile = file;
-      state.importFileName = file.name || "Sürüklenen dosya";
-      const selectedLabel = $("selectedImportFile");
-      if (selectedLabel) selectedLabel.textContent = `Seçili dosya: ${state.importFileName}`;
-      updateImportStatus(`${state.importFileName} alındı. Otomatik analiz başlıyor...`);
-      await uploadUnifiedImportFile();
     }
     function inferLocalizationGenre(source, selectedGenre) {
       if (selectedGenre && selectedGenre !== "auto") return selectedGenre;
@@ -6918,18 +5359,25 @@ ${copy}`;
             output = "";
           }
         }
+        if (!output) {
+          try {
+            $("locBatchStatus").textContent = `Localizing ${outputs.length + 1}/${items.length} with Google Translate...`;
+            output = await localizeWithBrowserGoogleTranslate({ source: item.source, lang, tone, genre, mode });
+          } catch (error) {
+            output = "";
+          }
+        }
         outputs.push({
           name: item.name || shortText(item.source, 42),
           genreLabel: localizationProfile(genre).label,
-          output: output ? improveLocalizationOutput(output, { source: item.source, lang, genre, tone, mode }) : "GPT çevirisi başarısız. API anahtarını, modeli ve krediyi kontrol et."
+          output: output ? improveLocalizationOutput(output, { source: item.source, lang, genre, tone, mode }) : localizationUnavailableMessage(item.source, lang)
         });
       }
       state.localizationBatch = outputs;
       state.localizationBatchSource = sourceType;
       saveState();
       $("locBatchOutput").innerHTML = renderLocalizationBatch(outputs);
-      const failedCount = outputs.filter((item) => /^GPT çevirisi başarısız/.test(item.output)).length;
-      $("locBatchStatus").textContent = outputs.length ? `${outputs.length - failedCount}/${outputs.length} satır GPT ile çevrildi.${failedCount ? ` ${failedCount} satır başarısız.` : ""}` : "No usable source text found.";
+      $("locBatchStatus").textContent = outputs.length ? `${outputs.length} row(s) localized.` : "No usable source text found.";
     }
 
     async function handleLocalizationExcel() {
@@ -7029,8 +5477,9 @@ ${source}`;
         body: JSON.stringify({ source, lang, tone, genre, mode, project: state.project })
       });
       const result = await response.json();
-      if (result?.source === "openai" && result?.text) return result.text;
-      throw new Error(result?.error || "Backend GPT çevirisi sonuç döndürmedi.");
+      if (!result?.text) return "";
+      if (["googletrans", "google-translate"].includes(result.source)) return "";
+      return ["openai", "curated"].includes(result.source) ? result.text : "";
     }
 
     async function localizeWithBrowserGoogleTranslate({ source, lang, tone, genre, mode }) {
@@ -7275,14 +5724,23 @@ ${labels.note}: ${labels.noteText}`;
           return;
         }
       } catch (directError) {
-        if (status) status.textContent = `GPT çevirisi başarısız: ${directError.message}`;
+        if (status) status.textContent = `GPT direct failed: ${directError.message}. Trying Google Translate fallback...`;
       }
-      if (status && !/başarısız/i.test(status.textContent || "")) {
-        status.textContent = "GPT çevirisi alınamadı. Ayarlar bölümündeki GPT API anahtarını ve modeli kontrol et.";
+      try {
+        const googleText = await localizeWithBrowserGoogleTranslate({ source, lang, tone, genre, mode });
+        if (googleText) {
+          state.localizationOutput = improveLocalizationOutput(googleText, { source, lang, genre, tone, mode });
+          saveState();
+          $("locOutput").innerHTML = formatLocalizationOutput(state.localizationOutput);
+          if (status) status.textContent = "Generated with Google Translate fallback.";
+          return;
+        }
+      } catch (googleError) {
+        if (status) status.textContent = `Translation failed: ${googleError.message}`;
       }
-      state.localizationOutput = "";
+      state.localizationOutput = localizationUnavailableMessage(source, lang);
       saveState();
-      $("locOutput").innerHTML = `<div class="ai-empty">GPT çevirisi alınamadı. OPENAI_API_KEY, model erişimi ve API kredilerini kontrol et.</div>`;
+      $("locOutput").innerHTML = formatLocalizationOutput(state.localizationOutput || "Output will appear here.");
     }
     function saveSettings() {
       state.project = { name: $("setName").value, genre: $("setGenre").value, markets: $("setMarkets").value, audience: $("setAudience").value, goal: $("setGoal").value, keywords: $("setKeywords").value };
@@ -8111,7 +6569,6 @@ ${labels.note}: ${labels.noteText}`;
 
     function render() {
       document.documentElement.lang = state.lang === "zh" ? "zh" : state.lang;
-      document.body.dataset.page = state.page;
       renderShell();
       const pages = { dashboard: dashboardPage, search: searchPage, list: listPage, localization: localizationPage, competitors: competitorsPage, aiReviews: aiReviewsPage, aiSocial: aiSocialPage, aiLocQa: aiLocQaPage, aiCampaign: aiCampaignPage, aiReport: aiWeeklyReportPage, aiWorkspace: aiWorkspacePage, aiSettings: aiSettingsPage, settings: settingsPage, help: helpPage };
       (pages[state.page] || dashboardPage)();
@@ -8128,11 +6585,6 @@ ${labels.note}: ${labels.noteText}`;
     $("accountLogoutBtn").addEventListener("click", logoutAccount);
     $("accountModal").addEventListener("click", (event) => {
       if (event.target.id === "accountModal") closeAccountModal();
-    });
-    document.addEventListener("paste", (event) => {
-      if (state.page !== "search" || event.defaultPrevented) return;
-      const hasImage = Array.from(event.clipboardData?.items || []).some((item) => item.type.startsWith("image/"));
-      if (hasImage) handleImagePaste(event);
     });
     render();
     loadSharedState();

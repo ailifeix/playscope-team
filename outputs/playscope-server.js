@@ -12,19 +12,16 @@ try {
 const root = path.resolve(__dirname, "..");
 const publicDir = __dirname;
 const envPath = path.join(root, ".env.local");
-const parentEnvPath = path.resolve(root, "..", ".env.local");
 const dataDir = path.join(root, "work");
 const sharedStatePath = path.join(dataDir, "playscope-shared-state.json");
 const appVersion = "social-ai-text-fallback-2026-06-17-1";
 
 function readEnv() {
   const env = { ...process.env };
-  for (const candidate of [parentEnvPath, envPath]) {
-    if (!fs.existsSync(candidate)) continue;
-    for (const line of fs.readFileSync(candidate, "utf8").split(/\r?\n/)) {
-      const match = line.match(/^\uFEFF?([A-Z0-9_]+)=(.*)$/);
-      if (match) env[match[1]] = match[2];
-    }
+  if (!fs.existsSync(envPath)) return env;
+  for (const line of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
+    const match = line.match(/^([A-Z0-9_]+)=(.*)$/);
+    if (match) env[match[1]] = match[2];
   }
   return env;
 }
@@ -187,7 +184,6 @@ async function callAiModuleModel(model, module, prompt) {
 }
 
 async function callVisionJsonModel(model, systemText, promptText, imageDataUrl) {
-  const imageDataUrls = (Array.isArray(imageDataUrl) ? imageDataUrl : [imageDataUrl]).filter(Boolean);
   const wireApi = getAiModuleWireApi();
   const baseUrl = getAiModuleBaseUrl();
   const headers = {
@@ -203,7 +199,7 @@ async function callVisionJsonModel(model, systemText, promptText, imageDataUrl) 
           role: "user",
           content: [
             { type: "input_text", text: promptText },
-            ...imageDataUrls.map((url) => ({ type: "input_image", image_url: url }))
+            { type: "input_image", image_url: imageDataUrl }
           ]
         }
       ],
@@ -238,7 +234,7 @@ async function callVisionJsonModel(model, systemText, promptText, imageDataUrl) 
           role: "user",
           content: [
             { type: "text", text: promptText },
-            ...imageDataUrls.map((url) => ({ type: "image_url", image_url: { url } }))
+            { type: "image_url", image_url: { url: imageDataUrl } }
           ]
         }
       ],
@@ -293,138 +289,6 @@ function readJson(req) {
   });
 }
 
-function xmlText(value) {
-  return String(value || "")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;|&apos;/g, "'")
-    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(Number.parseInt(code, 16)))
-    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)));
-}
-
-function xlsxColumnIndex(reference) {
-  const letters = String(reference || "A").match(/^[A-Z]+/i)?.[0]?.toUpperCase() || "A";
-  let value = 0;
-  for (const letter of letters) value = value * 26 + letter.charCodeAt(0) - 64;
-  return Math.max(0, value - 1);
-}
-
-function xlsxColumnName(index) {
-  let value = Number(index || 0) + 1;
-  let name = "";
-  while (value > 0) {
-    const remainder = (value - 1) % 26;
-    name = String.fromCharCode(65 + remainder) + name;
-    value = Math.floor((value - 1) / 26);
-  }
-  return name || "A";
-}
-
-function expandXlsxCellRef(ref) {
-  const text = String(ref || "").trim();
-  if (!text) return [];
-  const [start, end = start] = text.split(":");
-  const startCol = xlsxColumnIndex(start);
-  const endCol = xlsxColumnIndex(end);
-  const startRow = Number(start.match(/\d+/)?.[0] || 0);
-  const endRow = Number(end.match(/\d+/)?.[0] || startRow);
-  if (!startRow || !endRow) return [text];
-  const refs = [];
-  for (let row = Math.min(startRow, endRow); row <= Math.max(startRow, endRow); row += 1) {
-    for (let col = Math.min(startCol, endCol); col <= Math.max(startCol, endCol); col += 1) refs.push(`${xlsxColumnName(col)}${row}`);
-  }
-  return refs;
-}
-
-function readZipEntries(buffer) {
-  let eocd = -1;
-  for (let offset = buffer.length - 22; offset >= 0 && offset > buffer.length - 66000; offset -= 1) {
-    if (buffer.readUInt32LE(offset) === 0x06054b50) { eocd = offset; break; }
-  }
-  if (eocd < 0) throw new Error("Invalid XLSX file.");
-  const count = buffer.readUInt16LE(eocd + 10);
-  let cdOffset = buffer.readUInt32LE(eocd + 16);
-  const entries = new Map();
-  for (let index = 0; index < count; index += 1) {
-    if (buffer.readUInt32LE(cdOffset) !== 0x02014b50) break;
-    const method = buffer.readUInt16LE(cdOffset + 10);
-    const compressedSize = buffer.readUInt32LE(cdOffset + 20);
-    const nameLength = buffer.readUInt16LE(cdOffset + 28);
-    const extraLength = buffer.readUInt16LE(cdOffset + 30);
-    const commentLength = buffer.readUInt16LE(cdOffset + 32);
-    const localOffset = buffer.readUInt32LE(cdOffset + 42);
-    const name = buffer.subarray(cdOffset + 46, cdOffset + 46 + nameLength).toString("utf8").replace(/\\/g, "/");
-    cdOffset += 46 + nameLength + extraLength + commentLength;
-    if (buffer.readUInt32LE(localOffset) !== 0x04034b50) continue;
-    const localNameLength = buffer.readUInt16LE(localOffset + 26);
-    const localExtraLength = buffer.readUInt16LE(localOffset + 28);
-    const dataOffset = localOffset + 30 + localNameLength + localExtraLength;
-    const compressed = buffer.subarray(dataOffset, dataOffset + compressedSize);
-    const raw = method === 0 ? compressed : method === 8 ? zlib.inflateRawSync(compressed) : null;
-    if (raw) entries.set(name, raw);
-  }
-  return entries;
-}
-
-function parseXlsxRows(buffer) {
-  const entries = readZipEntries(buffer);
-  const sharedXml = entries.get("xl/sharedStrings.xml")?.toString("utf8") || "";
-  const shared = [...sharedXml.matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>/gi)]
-    .map((match) => [...match[1].matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/gi)].map((part) => xmlText(part[1])).join(""));
-  const sheetNames = [...entries.keys()].filter((name) => /^xl\/worksheets\/sheet\d+\.xml$/i.test(name)).sort();
-  if (!sheetNames.length) throw new Error("Excel worksheet not found.");
-  const allRows = [];
-  for (const sheetName of sheetNames) {
-    const sheet = entries.get(sheetName).toString("utf8");
-    const relName = sheetName.replace(/^xl\/worksheets\//i, "xl/worksheets/_rels/") + ".rels";
-    const relXml = entries.get(relName)?.toString("utf8") || "";
-    const rels = new Map();
-    for (const rel of relXml.matchAll(/<Relationship\b([^>]*)\/?>/gi)) {
-      const attrs = rel[1] || "";
-      const id = attrs.match(/\bId="([^"]+)"/i)?.[1] || "";
-      const target = attrs.match(/\bTarget="([^"]+)"/i)?.[1] || "";
-      const type = attrs.match(/\bType="([^"]+)"/i)?.[1] || "";
-      if (id && target && /hyperlink/i.test(type)) rels.set(id, xmlText(target));
-    }
-    const hyperlinks = new Map();
-    for (const link of sheet.matchAll(/<hyperlink\b([^>]*)\/?>/gi)) {
-      const attrs = link[1] || "";
-      const ref = attrs.match(/\bref="([^"]+)"/i)?.[1] || "";
-      const rid = attrs.match(/\br:id="([^"]+)"/i)?.[1] || "";
-      const location = attrs.match(/\blocation="([^"]+)"/i)?.[1] || "";
-      const target = rels.get(rid) || xmlText(location);
-      if (ref && target) expandXlsxCellRef(ref).forEach((cellRef) => hyperlinks.set(cellRef, target));
-    }
-    for (const rowMatch of sheet.matchAll(/<row\b[^>]*>([\s\S]*?)<\/row>/gi)) {
-      const row = [];
-      for (const cellMatch of rowMatch[1].matchAll(/<c\b((?:(?!\/>)[^>])*)>([\s\S]*?)<\/c>/gi)) {
-        const attrs = cellMatch[1];
-        const body = cellMatch[2];
-        const reference = attrs.match(/\br="([^"]+)"/i)?.[1] || "A";
-        const type = attrs.match(/\bt="([^"]+)"/i)?.[1] || "";
-        const raw = body.match(/<v\b[^>]*>([\s\S]*?)<\/v>/i)?.[1] || "";
-        const inline = [...body.matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/gi)].map((part) => xmlText(part[1])).join("");
-        const display = type === "s" ? (shared[Number(raw)] || "") : type === "inlineStr" ? inline : xmlText(raw);
-        const link = hyperlinks.get(reference);
-        row[xlsxColumnIndex(reference)] = link ? [display, link].filter(Boolean).join(" ") : display;
-      }
-      const values = row.map((value) => value ?? "");
-      if (values.some((value) => String(value || "").trim())) allRows.push(values);
-    }
-  }
-  return allRows;
-}
-
-function parseDelimitedRowsServer(raw) {
-  const text = String(raw || "").replace(/^\uFEFF/, "").replace(/\r/g, "").trim();
-  if (!text) return [];
-  const separator = text.includes("\t") ? "\t" : (text.includes(";") && !text.includes(",") ? ";" : ",");
-  return text.split("\n").map((line) => line.split(separator).map((cell) => cell.trim().replace(/^"|"$/g, ""))).filter((row) => row.some(Boolean));
-}
-
 function readSharedState() {
   if (!fs.existsSync(sharedStatePath)) return {};
   try {
@@ -462,86 +326,22 @@ function demoInfluencer(input, reason = "Real API was unavailable or the API req
   };
 }
 
-function parseYouTubeDurationSeconds(value) {
-  const match = String(value || "").match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
-  if (!match) return 0;
-  return Number(match[1] || 0) * 3600 + Number(match[2] || 0) * 60 + Number(match[3] || 0);
-}
-
-function formatDurationSeconds(seconds) {
-  const total = Math.round(Number(seconds || 0));
-  if (!total) return "-";
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  const secs = total % 60;
-  if (hours) return `${hours}h${String(minutes).padStart(2, "0")}m`;
-  if (minutes) return `${minutes}m${String(secs).padStart(2, "0")}s`;
-  return `${secs}s`;
-}
-
-function serverVideoKind(video) {
-  const seconds = parseYouTubeDurationSeconds(video.contentDetails?.duration);
-  const title = String(video.snippet?.title || "").toLowerCase();
-  if (seconds > 0 && seconds < 60) return "Short video";
-  if (video.liveStreamingDetails?.actualStartTime || /\b(vod|live|stream|yayın|yayin|replay|tekrar)\b/i.test(title)) return "Stream replay video";
-  if (seconds >= 180 && seconds <= 2400) return "Edited long video";
-  if (seconds >= 60 && seconds < 180) return "Short edited video";
-  if (seconds > 2400) return "Long uploaded video";
-  return "Latest YouTube video";
-}
-
-function averageServerDuration(videoItems = []) {
-  const durations = videoItems
-    .map((video) => parseYouTubeDurationSeconds(video.contentDetails?.duration))
-    .filter((seconds) => seconds >= 60);
-  if (!durations.length) return 0;
-  return Math.round(durations.reduce((sum, seconds) => sum + seconds, 0) / durations.length);
-}
-
-function dominantServerFormat(videoItems = []) {
-  const counts = new Map();
-  videoItems.forEach((video) => {
-    const kind = serverVideoKind(video);
-    counts.set(kind, (counts.get(kind) || 0) + 1);
-  });
-  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || "Latest YouTube videos";
-}
-
 async function youtubeResearch(input) {
   if (!env.YOUTUBE_API_KEY || typeof fetch !== "function") return demoInfluencer(input, "YouTube API key is missing or the runtime cannot make external requests.");
-  const lookupValue = String(input.name || "").trim();
-  const channelMatch = lookupValue.match(/youtube\.com\/channel\/(UC[\w-]{20,})/i) || lookupValue.match(/\b(UC[\w-]{20,})\b/);
-  const handleMatch = lookupValue.match(/youtube\.com\/@([A-Za-z0-9._-]+)/i) || lookupValue.match(/^@([A-Za-z0-9._-]+)$/);
-  const videoMatch = lookupValue.match(/[?&]v=([A-Za-z0-9_-]{6,})/i) || lookupValue.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/i);
-  let channelId = channelMatch?.[1] || "";
-  if (!channelId && handleMatch) {
-    const handleUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${encodeURIComponent(handleMatch[1])}&key=${env.YOUTUBE_API_KEY}`;
-    const handleResponse = await fetch(handleUrl).catch(() => null);
-    const handleData = handleResponse ? await handleResponse.json().catch(() => ({})) : {};
-    channelId = handleData.items?.[0]?.id || "";
-  }
-  if (!channelId && videoMatch) {
-    const videoUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${encodeURIComponent(videoMatch[1])}&key=${env.YOUTUBE_API_KEY}`;
-    const videoResponse = await fetch(videoUrl).catch(() => null);
-    const videoData = videoResponse ? await videoResponse.json().catch(() => ({})) : {};
-    channelId = videoData.items?.[0]?.snippet?.channelId || "";
-  }
-  const query = encodeURIComponent(input.fallbackName || lookupValue.replace(/^@/, ""));
-  const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&maxResults=3&q=${query}&key=${env.YOUTUBE_API_KEY}`;
+  const query = encodeURIComponent(input.name || "");
+  const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&maxResults=1&q=${query}&key=${env.YOUTUBE_API_KEY}`;
   let searchResponse;
-  if (!channelId) {
-    try {
-      searchResponse = await fetch(searchUrl);
-    } catch (error) {
-      return demoInfluencer(input, `Could not connect to YouTube Data API: ${error.message}. Check network/VPN/proxy access to www.googleapis.com.`);
-    }
-    const search = await searchResponse.json();
-    if (!searchResponse.ok) {
-      const reason = search.error?.errors?.[0]?.reason || search.error?.message || `YouTube returned HTTP ${searchResponse.status}.`;
-      return demoInfluencer(input, `YouTube API error: ${reason}`);
-    }
-    channelId = search.items?.[0]?.snippet?.channelId || "";
+  try {
+    searchResponse = await fetch(searchUrl);
+  } catch (error) {
+    return demoInfluencer(input, `Could not connect to YouTube Data API: ${error.message}. Check network/VPN/proxy access to www.googleapis.com.`);
   }
+  const search = await searchResponse.json();
+  if (!searchResponse.ok) {
+    const reason = search.error?.errors?.[0]?.reason || search.error?.message || `YouTube returned HTTP ${searchResponse.status}.`;
+    return demoInfluencer(input, `YouTube API error: ${reason}`);
+  }
+  const channelId = search.items?.[0]?.snippet?.channelId;
   if (!channelId) return demoInfluencer(input, "No matching YouTube channel was found. Try the exact YouTube channel name or channel URL.");
 
   const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${env.YOUTUBE_API_KEY}`;
@@ -549,23 +349,15 @@ async function youtubeResearch(input) {
   const channel = channelData.items?.[0];
   if (!channel) return demoInfluencer(input, "YouTube channel lookup returned no details.");
 
-  const videoSearchUrl = `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${channelId}&order=date&type=video&maxResults=10&key=${env.YOUTUBE_API_KEY}`;
+  const videoSearchUrl = `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${channelId}&order=date&type=video&maxResults=8&key=${env.YOUTUBE_API_KEY}`;
   const videoSearch = await fetch(videoSearchUrl).then((res) => res.json());
   const ids = (videoSearch.items || []).map((item) => item.id?.videoId).filter(Boolean);
   let avgViews = Number(input.views) || 0;
-  let avgComments = 0;
-  let duration = "-";
-  let format = "-";
   if (ids.length) {
-    const videosUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails,liveStreamingDetails&id=${ids.join(",")}&key=${env.YOUTUBE_API_KEY}`;
+    const videosUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${ids.join(",")}&key=${env.YOUTUBE_API_KEY}`;
     const videoData = await fetch(videosUrl).then((res) => res.json());
-    const videos = videoData.items || [];
-    const counts = videos.map((item) => Number(item.statistics?.viewCount || 0)).filter(Boolean);
-    const commentCounts = videos.map((item) => Number(item.statistics?.commentCount || 0)).filter((value) => Number.isFinite(value));
+    const counts = (videoData.items || []).map((item) => Number(item.statistics?.viewCount || 0)).filter(Boolean);
     if (counts.length) avgViews = Math.round(counts.reduce((sum, value) => sum + value, 0) / counts.length);
-    if (commentCounts.length) avgComments = Math.round(commentCounts.reduce((sum, value) => sum + value, 0) / commentCounts.length);
-    duration = formatDurationSeconds(averageServerDuration(videos));
-    format = dominantServerFormat(videos);
   }
 
   const genres = String(input.genres || "game mobile").split(/[,\s]+/).filter(Boolean);
@@ -576,12 +368,7 @@ async function youtubeResearch(input) {
     country: input.country || "Unknown",
     flag: input.country === "Germany" ? "DE" : input.country === "USA" ? "US" : "TR",
     channel: "YouTube",
-    link: `https://www.youtube.com/channel/${channelId}`,
     views: avgViews || Number(channel.statistics?.viewCount || 0),
-    avgComments,
-    subscribers: channel.statistics?.hiddenSubscriberCount ? "hidden" : channel.statistics?.subscriberCount || "",
-    format,
-    duration,
     match: genres.includes("strategy") || genres.includes("space") ? 88 : 70,
     genres,
     tone: "youtube researched",
@@ -717,8 +504,7 @@ async function readImageData(input) {
   if (!env.OPENAI_API_KEY || typeof fetch !== "function") {
     return { ok: false, error: "GPT API key is missing or backend cannot make external requests." };
   }
-  const images = (Array.isArray(input.images) ? input.images : [input.image]).filter((value) => String(value || "").startsWith("data:image/"));
-  if (!images.length) {
+  if (!input.image || !String(input.image).startsWith("data:image/")) {
     return { ok: false, error: "No image received." };
   }
   const modelCandidates = getAiModuleModelCandidates("vision");
@@ -729,7 +515,7 @@ async function readImageData(input) {
       model,
       "Extract influencer research table data from images. Return strict JSON only. Do not invent missing values.",
       prompt,
-      images
+      input.image
     ).catch((error) => ({ response: { ok: false, status: "network", error }, text: "" }));
     const response = result.response;
     if (!response.ok) {
@@ -1095,10 +881,33 @@ Project: ${input.project?.name || "Game"}.
 Source: ${input.source || ""}`;
   const ai = await openAiText(prompt);
   if (ai) return { source: "openai", text: ai };
+  const source = String(input.source || "").trim();
+  const manual = manualLocalizationOutput({
+    source,
+    lang: input.lang || "en",
+    genre,
+    mode,
+    tone: input.tone || "Store-ready"
+  });
+  if (manual) return { source: "curated", text: manual };
+  const googleText = await googleTranslateText(source, input.lang || "en").catch(() => "");
+  if (googleText && googleText.toLowerCase() !== source.toLowerCase()) {
+    return {
+      source: "googletrans",
+      text: formatGoogleTranslateLocalization({
+        source,
+        translated: googleText,
+        lang: input.lang || "en",
+        genre,
+        mode,
+        tone: input.tone || "Store-ready"
+      })
+    };
+  }
   return {
     source: "unavailable",
     text: "",
-    error: "GPT localization failed. Check OPENAI_API_KEY, model access, and API credits."
+    error: "No translation provider available. Configure GPT or allow Google Translate fallback from the backend."
   };
 }
 
@@ -2113,17 +1922,6 @@ const server = http.createServer(async (req, res) => {
       const body = await readJson(req);
       writeSharedState(body.state || {});
       return send(res, 200, { ok: true });
-    }
-    if (req.method === "POST" && req.url === "/api/import-file") {
-      const body = await readJson(req);
-      const name = String(body.name || body.fileName || "");
-      const encoded = String(body.data || body.dataUrl || "").replace(/^data:[^,]+,/, "");
-      if (!encoded) return send(res, 400, { ok: false, error: "File data is required." });
-      const fileBuffer = Buffer.from(encoded, "base64");
-      const rows = /\.xlsx?$/i.test(name)
-        ? parseXlsxRows(fileBuffer)
-        : parseDelimitedRowsServer(fileBuffer.toString("utf8"));
-      return send(res, 200, { ok: true, rows });
     }
     if (req.method === "POST" && req.url === "/api/extension-import") {
       const body = await readJson(req);
