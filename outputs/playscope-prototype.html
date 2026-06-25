@@ -3805,13 +3805,14 @@ Return exactly this JSON shape:
       const text = String(value || "").trim().replace(/^＠/, "@");
       if (!text || text === "@" || /^@[\W_]*$/u.test(text)) return true;
       if (/^@/.test(text)) return !/^@[\p{L}\p{N}._-]{2,}$/u.test(text);
-      return !/youtube\.com|youtu\.be/i.test(text);
+      return !/youtube\.com|youtu\.be|twitch\.tv/i.test(text);
     }
 
     function cleanYouTubeSeedLink(value) {
       const text = String(value || "").trim().replace(/^＠/, "@");
       if (isInvalidYouTubeSeedLink(text)) return "";
       if (/^www\.youtube\.com/i.test(text)) return `https://${text}`;
+      if (/^www\.twitch\.tv/i.test(text)) return `https://${text}`;
       return text;
     }
 
@@ -3935,7 +3936,7 @@ Return exactly this JSON shape:
       return rows;
     }
 
-    function rowHasYouTubeLink(row) {
+    function rowHasCreatorLink(row) {
       return Boolean(fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url"]) || Object.values(row || {}).find((value) => cleanYouTubeSeedLink(value)));
     }
 
@@ -3962,7 +3963,7 @@ Return exactly this JSON shape:
           const sheet = workbook.Sheets[firstSheet];
           const sheetRows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
           rows = attachExcelHyperlinks(sheet, rowsToObjects(sheetRows));
-          if (rows.some(rowHasYouTubeLink)) rows = rows.filter(rowHasYouTubeLink);
+          if (rows.some(rowHasCreatorLink)) rows = rows.filter(rowHasCreatorLink);
         }
         await analyzeInfluencerRows(rows, "excelStatus");
         if (xlsxBuffer) {
@@ -3971,7 +3972,7 @@ Return exactly this JSON shape:
             const anchored = imageFiles.filter((imageFile) => imageFile.__excelRow).map((imageFile) => `row ${imageFile.__excelRow}`).join(", ");
             if (status) status.textContent = `Excel image found. Reading ${imageFiles.length} embedded image(s)${anchored ? ` (${anchored})` : ""}...`;
             const imageRows = [];
-            for (const imageFile of imageFiles.slice(0, 3)) {
+            for (const imageFile of imageFiles.slice(0, 30)) {
               try {
                 const linkedRow = closestExcelRow(rows, imageFile.__excelRow);
                 const imageContext = imageContextFromExcelRow(linkedRow, {
@@ -3986,7 +3987,11 @@ Return exactly this JSON shape:
                   if (status) status.textContent = `Excel image GPT failed, trying OCR: ${gptError.message}`;
                   rowsFromImage = await readImageRowsWithOcr(imageFile, status, imageContext);
                 }
-                imageRows.push(...rowsFromImage);
+                imageRows.push(...rowsFromImage.map((row) => ({
+                  ...row,
+                  "Channel Name": fieldFromRow(row, ["channel name", "name", "creator", "influencer"]) || imageContext.channelName || "",
+                  "Link": fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url"]) || imageContext.channelLink || ""
+                })));
               } catch (imageError) {
                 if (status) status.textContent = `Excel image OCR failed: ${imageError.message}`;
               }
@@ -4067,6 +4072,40 @@ Return exactly this JSON shape:
       return anchors;
     }
 
+    function extractCellImageAnchors(entriesByName) {
+      const anchors = new Map();
+      const cellImagesXml = entriesByName.get("xl/cellimages.xml") || "";
+      const relXml = entriesByName.get("xl/_rels/cellimages.xml.rels") || "";
+      if (!cellImagesXml || !relXml) return anchors;
+      const rels = new Map();
+      for (const rel of relXml.matchAll(/<Relationship\b[^>]*Id="([^"]+)"[^>]*Target="([^"]+)"/gi)) {
+        rels.set(rel[1], resolveZipTarget("xl/cellimages.xml", rel[2]));
+      }
+      const imageById = new Map();
+      const blocks = cellImagesXml.match(/<etc:cellImage\b[\s\S]*?<\/etc:cellImage>/gi) || [];
+      for (const block of blocks) {
+        const nameMatch = block.match(/<xdr:cNvPr\b[^>]*name="([^"]+)"/i);
+        const embedMatch = block.match(/(?:r:)?embed="([^"]+)"/i);
+        if (!nameMatch || !embedMatch) continue;
+        const mediaPath = rels.get(embedMatch[1]);
+        if (mediaPath) imageById.set(nameMatch[1], mediaPath);
+      }
+      const worksheetXml = entriesByName.get("xl/worksheets/sheet1.xml") || "";
+      const cells = worksheetXml.match(/<c\b[^>]*r="[^"]+"[\s\S]*?<\/c>/gi) || [];
+      for (const cell of cells) {
+        const cellRef = cell.match(/\br="([A-Z]+)(\d+)"/i);
+        const idMatch = cell.match(/DISPIMG\((?:&quot;|")([^"&]+)(?:&quot;|")/i);
+        if (!cellRef || !idMatch) continue;
+        const mediaPath = imageById.get(idMatch[1]);
+        if (!mediaPath) continue;
+        anchors.set(mediaPath, {
+          excelRow: Number(cellRef[2]),
+          drawingPath: "xl/cellimages.xml"
+        });
+      }
+      return anchors;
+    }
+
     async function extractImagesFromXlsxBuffer(buffer) {
       const view = new DataView(buffer);
       let eocd = -1;
@@ -4103,7 +4142,7 @@ Return exactly this JSON shape:
       zipEntries.forEach((entry) => {
         if (/\.(xml|rels)$/i.test(entry.name)) textEntries.set(entry.name, new TextDecoder().decode(entry.raw));
       });
-      const anchors = extractDrawingImageAnchors(textEntries);
+      const anchors = new Map([...extractDrawingImageAnchors(textEntries), ...extractCellImageAnchors(textEntries)]);
       const images = [];
       for (const entry of zipEntries) {
         const fileName = entry.name;
