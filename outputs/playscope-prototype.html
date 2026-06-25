@@ -1225,7 +1225,7 @@
       googlePlayLang: "en",
       googlePlayResults: [],
       selectedCompetitor: 0,
-      api: { youtube: "", openai: "", googleSecret: "", openaiBaseUrl: "https://api.1475258.xyz/v1", openaiModel: "auto" }
+      api: { youtube: "", openai: "", googleSecret: "", openaiBaseUrl: "https://api.xai.kg/v1", openaiModel: "gpt-5.5" }
     };
     state.ai = state.ai || {};
     state.ai.review = state.ai.review || null;
@@ -2670,7 +2670,7 @@ Return exactly this JSON shape:
         ${pageHead(tr("settings"), "Project and app preferences.")}
         <div class="grid half">
           ${panel(tr("brief"), `<div class="form-grid"><div><div class="field-label">${tr("projectName")}</div><input id="setName" value="${esc(state.project.name)}"></div><div><div class="field-label">${tr("genre")}</div><input id="setGenre" value="${esc(state.project.genre)}"></div><div><div class="field-label">${tr("markets")}</div><input id="setMarkets" value="${esc(state.project.markets)}"></div><div><div class="field-label">${tr("audience")}</div><input id="setAudience" value="${esc(state.project.audience)}"></div></div><div class="field-label">${tr("goal")}</div><input id="setGoal" value="${esc(state.project.goal)}"><div class="field-label" style="margin-top:12px">Keywords</div><input id="setKeywords" value="${esc(state.project.keywords)}"><button class="primary" id="saveSettingsBtn" style="margin-top:12px">${tr("save")}</button>`)}
-          ${panel(tr("apiStatus"), `<div class="form-grid"><div><div class="field-label">YouTube API Key</div><input id="apiYoutube" type="password" autocomplete="off" placeholder="${state.api.youtube ? "Saved" : "Paste key"}"></div><div><div class="field-label">GPT API Key</div><input id="apiOpenai" type="password" autocomplete="off" placeholder="${state.api.openai ? "Saved" : "Paste sk key"}"></div><div><div class="field-label">GPT API Endpoint</div><input id="apiOpenaiBaseUrl" autocomplete="off" value="${esc(state.api.openaiBaseUrl || "https://api.1475258.xyz/v1")}"></div><div><div class="field-label">GPT Model</div><input id="apiOpenaiModel" autocomplete="off" value="${esc(state.api.openaiModel || "auto")}"></div><div><div class="field-label">SerpAPI Key</div><input id="apiSerpapi" type="password" autocomplete="off" placeholder="${state.api.serpapi ? "Saved" : "Paste SerpAPI key"}"></div><div><div class="field-label">Apify API Token</div><input id="apiApify" type="password" autocomplete="off" placeholder="${state.api.apify ? "Saved" : "Paste Apify token"}"></div></div><div class="field-label">Team Password</div><input id="teamPassword" type="password" autocomplete="off" placeholder="Optional shared password"><div class="field-label" style="margin-top:12px">Google Client Secret</div><input id="apiGoogleSecret" type="password" autocomplete="off" placeholder="${state.api.googleSecret ? "Saved" : "Paste secret"}"><p class="note">Team mode: API keys and shared list can live on the server. Apify is used for Instagram social post analysis.</p><button class="primary" id="saveApiBtn" style="margin-top:12px">${tr("save")}</button><button id="clearApiBtn" style="margin-top:12px;margin-left:8px">Clear API keys</button><div class="task-list" style="margin-top:14px">${apiRows}<div class="task"><div><strong>Team sharing</strong><span>Shared state is saved on the local/backend server when available.</span></div><span class="tag good">${tr("ready")}</span></div></div>`)}
+          ${panel(tr("apiStatus"), `<div class="form-grid"><div><div class="field-label">YouTube API Key</div><input id="apiYoutube" type="password" autocomplete="off" placeholder="${state.api.youtube ? "Saved" : "Paste key"}"></div><div><div class="field-label">GPT API Key</div><input id="apiOpenai" type="password" autocomplete="off" placeholder="${state.api.openai ? "Saved" : "Paste sk key"}"></div><div><div class="field-label">GPT API Endpoint</div><input id="apiOpenaiBaseUrl" autocomplete="off" value="${esc(state.api.openaiBaseUrl || "https://api.xai.kg/v1")}"></div><div><div class="field-label">GPT Model</div><input id="apiOpenaiModel" autocomplete="off" value="${esc(state.api.openaiModel || "auto")}"></div><div><div class="field-label">SerpAPI Key</div><input id="apiSerpapi" type="password" autocomplete="off" placeholder="${state.api.serpapi ? "Saved" : "Paste SerpAPI key"}"></div><div><div class="field-label">Apify API Token</div><input id="apiApify" type="password" autocomplete="off" placeholder="${state.api.apify ? "Saved" : "Paste Apify token"}"></div></div><div class="field-label">Team Password</div><input id="teamPassword" type="password" autocomplete="off" placeholder="Optional shared password"><div class="field-label" style="margin-top:12px">Google Client Secret</div><input id="apiGoogleSecret" type="password" autocomplete="off" placeholder="${state.api.googleSecret ? "Saved" : "Paste secret"}"><p class="note">Team mode: API keys and shared list can live on the server. Apify is used for Instagram social post analysis.</p><button class="primary" id="saveApiBtn" style="margin-top:12px">${tr("save")}</button><button id="clearApiBtn" style="margin-top:12px;margin-left:8px">Clear API keys</button><div class="task-list" style="margin-top:14px">${apiRows}<div class="task"><div><strong>Team sharing</strong><span>Shared state is saved on the local/backend server when available.</span></div><span class="tag good">${tr("ready")}</span></div></div>`)}
         </div>`;
       $("saveSettingsBtn").addEventListener("click", saveSettings);
       $("saveApiBtn").addEventListener("click", saveApiSettings);
@@ -3435,7 +3435,7 @@ Return exactly this JSON shape:
       try {
         let config = {
           openaiApiKey: state.api?.openai || "",
-          openaiBaseUrl: state.api?.openaiBaseUrl || "https://api.1475258.xyz/v1",
+          openaiBaseUrl: state.api?.openaiBaseUrl || "https://api.xai.kg/v1",
           openaiModel: state.api?.openaiModel || "auto"
         };
         try {
@@ -4068,7 +4068,7 @@ Return exactly this JSON shape:
     function getSavedGptConfig() {
       return {
         openaiApiKey: state.api?.openai || "",
-        openaiBaseUrl: state.api?.openaiBaseUrl || "https://api.1475258.xyz/v1",
+        openaiBaseUrl: state.api?.openaiBaseUrl || "https://api.xai.kg/v1",
         openaiModel: state.api?.openaiModel || "auto"
       };
     }
@@ -5747,7 +5747,7 @@ ${labels.note}: ${labels.noteText}`;
       saveState(); render();
     }
     async function saveApiSettings() {
-      state.api = state.api || { youtube: "", openai: "", googleSecret: "", serpapi: "", apify: "", openaiBaseUrl: "https://api.1475258.xyz/v1", openaiModel: "auto" };
+      state.api = state.api || { youtube: "", openai: "", googleSecret: "", serpapi: "", apify: "", openaiBaseUrl: "https://api.xai.kg/v1", openaiModel: "gpt-5.5" };
       const youtube = $("apiYoutube").value.trim();
       const openai = $("apiOpenai").value.trim();
       const openaiBaseUrl = normalizeGptBaseUrl($("apiOpenaiBaseUrl").value.trim());
@@ -5785,7 +5785,7 @@ ${labels.note}: ${labels.noteText}`;
       render();
     }
     function clearApiSettings() {
-      state.api = { youtube: "", openai: "", googleSecret: "", serpapi: "", apify: "", openaiBaseUrl: "https://api.1475258.xyz/v1", openaiModel: "auto" };
+      state.api = { youtube: "", openai: "", googleSecret: "", serpapi: "", apify: "", openaiBaseUrl: "https://api.xai.kg/v1", openaiModel: "gpt-5.5" };
       localStorage.removeItem("playscope-serpapi-key");
       saveState();
       render();
