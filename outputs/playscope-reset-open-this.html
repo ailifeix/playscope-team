@@ -3529,6 +3529,26 @@ Return exactly this JSON shape:
       return { source: "local", name: input.name || "Creator", link: "", handle: "@" + String(input.name || "creator").toLowerCase().replace(/[^a-z0-9]/g, ""), country: input.country || "Turkey", geo: input.country || "Turkey", category: "Unclear", subcategory: "Needs YouTube API analysis", subscribers: "-", gender: "Missing", age: "Missing", avgComments: 0, flag: "TR", channel: input.channel || "YouTube", views: Number(input.views) || 0, match: 45, format: "-", duration: "-", keywords: genres.join(", "), comments: "YouTube API unavailable", genres, tone: "research", audience: "estimated players", notes: "YouTube API unavailable", shortlisted: false, note: "" };
     }
 
+    function compactCreatorText(value) {
+      return String(value || "").toLowerCase().replace(/^https?:\/\/(www\.)?/i, "").replace(/youtube\.com\/(channel\/|c\/|user\/|@)?/i, "").replace(/youtu\.be\//i, "").replace(/^@/, "").replace(/[^a-z0-9]/g, "");
+    }
+
+    function extensionItemMatchesCurrentInput(item, currentInput) {
+      const wanted = compactCreatorText(currentInput);
+      if (!wanted || wanted === "newcreator") return true;
+      const candidates = [
+        item.name,
+        item.title,
+        item.channelTitle,
+        item.channelName,
+        item.handle,
+        item.link,
+        item.url,
+        item.channelUrl
+      ].map(compactCreatorText).filter(Boolean);
+      return candidates.some((candidate) => candidate.includes(wanted) || wanted.includes(candidate));
+    }
+
     async function importExtensionData() {
       const status = $("researchStatus");
       if (status) status.textContent = "Checking extension import...";
@@ -3537,6 +3557,12 @@ Return exactly this JSON shape:
         const data = await response.json();
         if (!data.item) {
           if (status) status.textContent = "No extension data found yet. Use the PlayScope Collector extension on a YouTube channel page first.";
+          return;
+        }
+        const currentInput = $("researchName")?.value?.trim() || "";
+        if (!extensionItemMatchesCurrentInput(data.item, currentInput)) {
+          const importedName = data.item.name || data.item.title || data.item.channelTitle || data.item.handle || data.item.link || "another channel";
+          if (status) status.textContent = `Extension data is for ${importedName}, not ${currentInput || "the current input"}. Open the right YouTube page with the Collector, or press Analyze to search by name.`;
           return;
         }
         let item = normalizeInfluencer({
