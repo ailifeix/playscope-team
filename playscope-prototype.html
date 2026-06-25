@@ -1,0 +1,1095 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PlayScope Design Preview</title>
+  <style>
+    :root {
+      --bg: #f7f3ff;
+      --surface: #ffffff;
+      --surface-2: #fbf8ff;
+      --ink: #20152f;
+      --muted: #756982;
+      --line: #e4d9f3;
+      --teal: #7c3aed;
+      --teal-2: #f0e7ff;
+      --blue: #4f46e5;
+      --amber: #b56a22;
+      --red: #b42318;
+      --green: #16735b;
+      --violet: #8b5cf6;
+      --pink: #d946ef;
+      --deep: #2b1746;
+      --shadow: 0 18px 46px rgba(74, 39, 122, .13);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background:
+      radial-gradient(circle at 20% 0%, rgba(217, 70, 239, .16), transparent 32%),
+      linear-gradient(180deg, #fbf8ff 0%, var(--bg) 42%, #f4effc 100%);
+      color: var(--ink);
+    }
+    body { overflow-x: hidden; }
+    button, input, select, textarea { font: inherit; }
+    button, input, select, textarea {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+    }
+    button {
+      min-height: 38px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
+    }
+    button:hover { transform: translateY(-1px); }
+    input, select, textarea { width: 100%; padding: 10px 11px; outline: none; }
+    textarea { min-height: 150px; resize: vertical; }
+    input:focus, select:focus, textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(124, 58, 237, .14); }
+
+    .app {
+      display: grid;
+      grid-template-columns: 238px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    .sidebar {
+      background: linear-gradient(180deg, #2b1746 0%, #241239 54%, #1b102a 100%);
+      border-right: 1px solid rgba(255,255,255,.12);
+      padding: 20px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+    .brand { display: flex; align-items: center; gap: 11px; padding: 4px 7px 12px; }
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, #a78bfa, #f0abfc);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-weight: 900;
+    }
+    .brand strong { display: block; font-size: 19px; line-height: 1; color: #fff; }
+    .brand span { display: block; color: #c9b8e6; font-size: 12px; margin-top: 4px; }
+    .nav { display: grid; gap: 5px; }
+    .nav button {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 10px;
+      border: 0;
+      background: transparent;
+      color: #d9cced;
+      min-height: 42px;
+      text-align: left;
+      padding: 10px 11px;
+    }
+    .nav button:hover { background: rgba(255,255,255,.07); color: #fff; }
+    .nav button.active { background: linear-gradient(135deg, rgba(167,139,250,.22), rgba(217,70,239,.16)); color: #fff; border: 1px solid rgba(255,255,255,.12); }
+    .nav .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #8c7aa8;
+      flex: 0 0 auto;
+    }
+    .nav button.active .dot { background: #f0abfc; }
+    .sidebar-status {
+      margin-top: auto;
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 8px;
+      padding: 12px;
+      background: rgba(255,255,255,.07);
+      display: grid;
+      gap: 8px;
+    }
+    .sidebar-status strong { font-size: 13px; color: #fff; }
+    .sidebar-status span { font-size: 12px; color: #c9b8e6; line-height: 1.4; }
+
+    main {
+      min-width: 0;
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+    .topbar {
+      background: linear-gradient(135deg, rgba(255,255,255,.94), rgba(250,245,255,.9));
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .topbar:after {
+      content: "";
+      position: absolute;
+      right: -80px;
+      top: -90px;
+      width: 260px;
+      height: 260px;
+      background: radial-gradient(circle, rgba(217,70,239,.18), transparent 68%);
+      pointer-events: none;
+    }
+    .topbar-head { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+    .project-title { display: flex; align-items: center; gap: 13px; }
+    .game-tile {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #4c1d95, #a855f7 58%, #f0abfc);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-weight: 900;
+      box-shadow: 0 14px 30px rgba(124,58,237,.22);
+      flex: 0 0 auto;
+    }
+    .title { margin: 0; font-size: 22px; letter-spacing: 0; }
+    .subtitle { margin: 5px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .brief-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+      gap: 10px;
+    }
+    .brief-item {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #fff, #fbf8ff);
+      border-radius: 8px;
+      padding: 10px;
+      min-width: 0;
+    }
+    .brief-item span { display: block; color: var(--muted); font-size: 11px; margin-bottom: 5px; }
+    .brief-item strong { display: block; font-size: 13px; overflow-wrap: anywhere; }
+
+    .page { display: none; gap: 14px; }
+    .page.active { display: grid; }
+    .page-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 14px;
+      margin-top: 4px;
+    }
+    .page-head h2 { margin: 0; font-size: 21px; }
+    .page-head p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+    .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .primary { background: linear-gradient(135deg, #7c3aed, #c026d3); border-color: #8b5cf6; color: #fff; box-shadow: 0 10px 22px rgba(124,58,237,.18); }
+    .quiet { background: #fff; color: #344054; }
+    .danger { color: var(--red); border-color: #f1b8b2; background: #fff7f5; }
+
+    .grid { display: grid; gap: 14px; }
+    .grid.metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .grid.two { grid-template-columns: minmax(0, 1fr) 390px; align-items: start; }
+    .grid.half { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.thirds { grid-template-columns: 1.2fr .8fr .8fr; }
+    .panel {
+      background: rgba(255,255,255,.92);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .panel:hover { box-shadow: 0 20px 48px rgba(74, 39, 122, .16); }
+    .panel-head {
+      padding: 14px 15px 12px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .panel-head h3 { margin: 0; font-size: 16px; }
+    .panel-body { padding: 15px; }
+    .metric { padding: 15px; }
+    .metric.accent { background: linear-gradient(135deg, #ffffff, #f7edff); }
+    .metric span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+    .metric strong { display: block; font-size: 30px; }
+    .metric small { color: #7c3aed; font-size: 12px; font-weight: 800; }
+    .form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .form-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .label { color: var(--muted); font-size: 12px; margin-bottom: 5px; }
+    .note { color: var(--muted); font-size: 12px; line-height: 1.45; margin: 8px 0 0; }
+
+    .table-wrap { max-width: 100%; overflow-x: auto; }
+    table { width: 100%; min-width: 860px; border-collapse: collapse; font-size: 13px; }
+    th {
+      text-align: left;
+      font-size: 11px;
+      color: #536172;
+      background: #fbf8ff;
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      white-space: nowrap;
+    }
+    td {
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      line-height: 1.4;
+    }
+    tr.selected { background: linear-gradient(90deg, rgba(124, 58, 237, .10), rgba(217, 70, 239, .04)); outline: 1px solid #c4b5fd; outline-offset: -1px; }
+    tbody tr { transition: background .16s ease; }
+    tbody tr:hover { background: rgba(124,58,237,.045); }
+    .muted { color: var(--muted); font-size: 12px; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 5px;
+      border: 1px solid;
+      padding: 3px 7px;
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .tag.good { color: #6d28d9; background: #f4ecff; border-color: #c4b5fd; }
+    .tag.warn { color: var(--amber); background: #fff8ed; border-color: #f0bb78; }
+    .tag.blue { color: var(--blue); background: #f0f5ff; border-color: #aec5ed; }
+    .tag.pink { color: #a21caf; background: #fdf4ff; border-color: #f0abfc; }
+    .score { color: #7c3aed; font-size: 23px; font-weight: 900; }
+    .score-bar {
+      width: 92px;
+      height: 6px;
+      border-radius: 99px;
+      background: #eee7f8;
+      overflow: hidden;
+      margin-top: 5px;
+    }
+    .score-bar span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #7c3aed, #d946ef);
+    }
+    .detail { position: sticky; top: 18px; }
+    .detail-title { display: flex; gap: 12px; align-items: center; }
+    .avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #6d28d9, #d946ef);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+    .detail h3 { margin: 0; font-size: 17px; }
+    .detail-list { margin: 14px 0 0; padding-left: 18px; color: #344054; line-height: 1.7; font-size: 13px; }
+    .detail-list li::marker { color: var(--teal); }
+    .description-box {
+      background: linear-gradient(180deg, #fff, #fbf8ff);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      line-height: 1.55;
+      min-height: 160px;
+      font-size: 13px;
+    }
+    .keyword-cloud { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+    .keyword {
+      border: 1px solid #d8c7f4;
+      background: #faf5ff;
+      color: #6d28d9;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .empty-state {
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 36px 16px;
+      color: var(--muted);
+    }
+    .empty-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #ede9fe, #fae8ff);
+      display: grid;
+      place-items: center;
+      color: #7c3aed;
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+    .skeleton-row {
+      height: 12px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #f0e8fb, #fff, #f0e8fb);
+      background-size: 220% 100%;
+      animation: shimmer 1.6s infinite linear;
+    }
+    @keyframes shimmer {
+      from { background-position: 220% 0; }
+      to { background-position: -220% 0; }
+    }
+    .action-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: linear-gradient(180deg, #fff, #fbf8ff);
+      display: grid;
+      gap: 7px;
+    }
+    .action-card strong { font-size: 13px; }
+    .action-card span { color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .split-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+    @media (max-width: 1120px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: sticky; z-index: 4; height: auto; flex-direction: row; overflow-x: auto; }
+      .brand { flex: 0 0 auto; padding-bottom: 4px; }
+      .nav { display: flex; flex-direction: row; }
+      .nav button { white-space: nowrap; }
+      .sidebar-status { display: none; }
+      .brief-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .grid.two, .grid.thirds { grid-template-columns: 1fr; }
+      .detail { position: static; }
+    }
+    @media (max-width: 760px) {
+      main { padding: 12px; }
+      .topbar-head, .page-head { flex-direction: column; align-items: stretch; }
+      .brief-grid, .grid.metrics, .grid.half, .form-grid, .form-grid.two { grid-template-columns: 1fr; }
+      .brand span { display: none; }
+      .actions button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">P</div>
+        <div><strong>PlayScope</strong><span>Creator & Store Intelligence</span></div>
+      </div>
+      <nav class="nav" aria-label="Preview navigation">
+        <button class="active" data-page="dashboard"><span class="dot"></span>Dashboard</button>
+        <button data-page="influencers"><span class="dot"></span>Influencer Research</button>
+        <button data-page="stores"><span class="dot"></span>Store Research</button>
+        <button data-page="localization"><span class="dot"></span>Localization</button>
+        <button data-page="settings"><span class="dot"></span>Settings</button>
+      </nav>
+      <div class="sidebar-status">
+        <strong>Connection Status</strong>
+        <span>YouTube and SerpAPI are ready. GPT localization is waiting for review.</span>
+      </div>
+    </aside>
+
+    <main>
+      <section class="topbar">
+        <div class="topbar-head">
+          <div class="project-title">
+            <div class="game-tile">GR</div>
+            <div>
+              <h1 class="title">Galaxy Raiders</h1>
+              <p class="subtitle">Marketing workspace for influencer fit, Google Play/App Store research, and localization review.</p>
+            </div>
+          </div>
+          <div class="actions">
+            <span class="tag good">API Ready</span>
+            <span class="tag pink">Launch Mode</span>
+            <select id="siteLanguage" aria-label="Language">
+              <option value="tr">Turkce</option>
+              <option value="en">English</option>
+              <option value="zh">中文</option>
+            </select>
+            <button class="quiet">Edit Brief</button>
+            <button class="primary">Export</button>
+          </div>
+        </div>
+        <div class="brief-grid">
+          <div class="brief-item"><span>Genre</span><strong>Space Strategy</strong></div>
+          <div class="brief-item"><span>Markets</span><strong>TR, DE, FR, BR, JP</strong></div>
+          <div class="brief-item"><span>Audience</span><strong>18-34, male 68%</strong></div>
+          <div class="brief-item"><span>Campaign</span><strong>Global Launch</strong></div>
+          <div class="brief-item"><span>Keywords</span><strong>space, strategy, mobile</strong></div>
+        </div>
+      </section>
+
+      <section class="page active" id="dashboard">
+        <div class="page-head">
+          <div><h2>Dashboard</h2><p>Daily operating view for influencer and store research.</p></div>
+          <div class="actions"><button class="quiet">Clear Filters</button><button class="primary">New Research</button></div>
+        </div>
+        <div class="grid metrics">
+          <div class="panel metric accent"><span>Influencers checked</span><strong>42</strong><small>+8 this week</small></div>
+          <div class="panel metric"><span>Recommended</span><strong>17</strong><small>Fit score 82+</small></div>
+          <div class="panel metric"><span>Avg views</span><strong>184K</strong><small>Latest YouTube data</small></div>
+          <div class="panel metric accent"><span>Store matches</span><strong>23</strong><small>Google Play + App Store</small></div>
+        </div>
+        <div class="grid two">
+          <section class="panel">
+            <div class="panel-head"><h3>Recent Research</h3><span class="tag good">Live workflow</span></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Name</th><th>Source</th><th>Category</th><th>Avg Views</th><th>Fit</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr class="selected"><td>RRaenee</td><td>YouTube</td><td>Gaming / Horror</td><td>399K</td><td><span class="score">88</span></td><td><span class="tag good">Recommended</span></td></tr>
+                  <tr><td>Silkroad Online</td><td>Google Play</td><td>Role Playing</td><td>-</td><td><span class="score">76</span></td><td><span class="tag warn">Review</span></td></tr>
+                  <tr><td>Need for Speed No Limits</td><td>Google Play</td><td>Racing</td><td>-</td><td><span class="score">64</span></td><td><span class="tag warn">Adjacent</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <aside class="panel detail">
+            <div class="panel-body">
+              <div class="detail-title"><div class="avatar">RR</div><div><h3>RRaenee</h3><div class="muted">Gaming creator, Turkey-heavy audience</div></div></div>
+              <ul class="detail-list">
+                <li>Strong fit for horror and community-driven game content.</li>
+                <li>Audience overlap is strongest in TR market.</li>
+                <li>Recommended next step: shortlist and add campaign note.</li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+        <div class="grid thirds">
+          <div class="action-card"><strong>Next best action</strong><span>Shortlist 3 TR creators with strong strategy/gaming overlap before localization review.</span><button class="quiet">Open shortlist</button></div>
+          <div class="action-card"><strong>Missing data</strong><span>5 creators need updated average comments and duration from latest YouTube videos.</span><button class="quiet">Fix missing data</button></div>
+          <div class="action-card"><strong>Store keywords to test</strong><span>fleet, commander, alliance, space battle, real-time strategy</span><button class="quiet">Copy keywords</button></div>
+        </div>
+      </section>
+
+      <section class="page" id="influencers">
+        <div class="page-head">
+          <div><h2>Influencer Research</h2><p>Search creators, upload Excel rows, and review YouTube performance in one workflow.</p></div>
+          <div class="actions"><button class="quiet">Clear List</button><button class="primary">Analyze</button></div>
+        </div>
+        <section class="panel">
+          <div class="panel-head"><h3>Input</h3><span class="tag blue">YouTube API</span></div>
+          <div class="panel-body">
+            <div class="form-grid">
+              <div><div class="label">Channel link or handle</div><input value="@RRaenee"></div>
+              <div><div class="label">Excel / CSV file</div><input type="file"></div>
+              <div><div class="label">Screenshot import</div><input type="file"></div>
+            </div>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h3>Influencer Table</h3><div class="actions"><select><option>All statuses</option><option>Recommended</option><option>Review</option></select></div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Channel</th><th>Link</th><th>Geo</th><th>Category</th><th>Subscribers</th><th>Avg Views</th><th>Avg Comments</th><th>Duration</th><th>Fit</th></tr></thead>
+              <tbody>
+                <tr class="selected"><td><strong>RRaenee</strong><div class="muted">@rraenee</div></td><td class="muted">youtube.com/@RRaenee</td><td>TR 92%</td><td><span class="tag blue">Gaming</span> <span class="tag pink">Horror</span></td><td>1.9M</td><td>399K</td><td>162</td><td>33m</td><td><span class="score">88</span><div class="score-bar"><span style="width:88%"></span></div></td></tr>
+                <tr><td><strong>Elraenn</strong><div class="muted">@elraenn</div></td><td class="muted">youtube.com/@Elraenn</td><td>TR 98%</td><td><span class="tag blue">Gaming</span> <span class="tag good">Variety</span></td><td>3.6M</td><td>888K</td><td>310</td><td>2h13m</td><td><span class="score">91</span><div class="score-bar"><span style="width:91%"></span></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="page" id="stores">
+        <div class="page-head">
+          <div><h2>Store Research</h2><p>Search Google Play and App Store, compare descriptions, categories, and keywords.</p></div>
+          <div class="actions"><button class="quiet">Back to Sample</button><button class="primary">Export Store CSV</button></div>
+        </div>
+        <section class="panel">
+          <div class="panel-head"><h3>Search</h3><span class="tag good">SerpAPI + App Store</span></div>
+          <div class="panel-body">
+            <div class="form-grid thirds">
+              <div><div class="label">Store search</div><input value="youtube"></div>
+              <div><div class="label">Store</div><select><option>Both stores</option><option>Google Play</option><option>App Store</option></select></div>
+              <div><div class="label">Language</div><select><option>Turkce</option><option>English</option><option>中文</option></select></div>
+            </div>
+            <div class="split-actions"><button class="primary">Search Google Play</button><button class="primary">Search App Store</button><button class="quiet">Analyze Keywords</button><button class="quiet">Compare with Galaxy Raiders</button></div>
+            <div class="keyword-cloud">
+              <span class="keyword">video</span>
+              <span class="keyword">creators</span>
+              <span class="keyword">streaming</span>
+              <span class="keyword">subscriptions</span>
+              <span class="keyword">watch</span>
+            </div>
+          </div>
+        </section>
+        <div class="grid two">
+          <section class="panel">
+            <div class="panel-head"><h3>Store Results</h3><div class="actions"><select><option>All categories</option><option>Racing</option><option>Strategy</option></select></div></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Game</th><th>Store</th><th>Category</th><th>Downloads</th><th>Rating</th><th>Main Message</th><th>Keywords</th></tr></thead>
+                <tbody>
+                  <tr class="selected"><td>YouTube<div class="muted">Google LLC</div></td><td><span class="tag good">Google Play</span></td><td>Video Players</td><td>10B+</td><td>4.1</td><td>Official YouTube app for Android.</td><td>video, creators, streaming</td></tr>
+                  <tr><td>YouTube<div class="muted">Google</div></td><td><span class="tag warn">App Store</span></td><td>Photo & Video</td><td>-</td><td>4.7</td><td>Get the official YouTube app on iPhones and iPads.</td><td>video, subscriptions, watch</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <aside class="panel detail">
+            <div class="panel-head"><h3>Selected App</h3><span class="tag good">Google Play</span></div>
+            <div class="panel-body">
+              <div class="description-box">Get the official YouTube app on Android phones and tablets. See what the world is watching, from the hottest music videos to what is popular in gaming, fashion, beauty, news, learning and more.</div>
+              <div class="keyword-cloud">
+                <span class="keyword">video</span>
+                <span class="keyword">music</span>
+                <span class="keyword">gaming</span>
+                <span class="keyword">learning</span>
+                <span class="keyword">creators</span>
+              </div>
+              <ul class="detail-list">
+                <li>Opening uses brand authority and device availability.</li>
+                <li>Keyword cluster: video, music, gaming, learning, creators.</li>
+                <li>For game competitors, extract category + first-sentence hook.</li>
+              </ul>
+              <div class="split-actions"><button class="primary">Copy keywords</button><button class="quiet">Export selected</button></div>
+            </div>
+          </aside>
+        </div>
+        <div class="grid half">
+          <section class="panel">
+            <div class="panel-head"><h3>Loading State</h3><span class="tag blue">Preview</span></div>
+            <div class="panel-body">
+              <div class="skeleton-row" style="width:72%"></div>
+              <div class="skeleton-row" style="width:94%; margin-top:12px"></div>
+              <div class="skeleton-row" style="width:61%; margin-top:12px"></div>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="empty-state">
+              <div class="empty-icon">?</div>
+              <strong>No store result selected</strong>
+              <p class="note">Search Google Play or App Store, then select an app to inspect description, keywords, category, rating, and downloads.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="page" id="localization">
+        <div class="page-head">
+          <div><h2>Localization</h2><p>Translate, localize, and prepare store copy for each target market.</p></div>
+          <div class="actions"><span class="tag good">TR ready</span><span class="tag warn">ZH review</span><button class="primary">Generate</button></div>
+        </div>
+        <div class="grid half">
+          <section class="panel">
+            <div class="panel-head"><h3>Source Copy</h3><span class="tag blue">Store text</span></div>
+            <div class="panel-body">
+              <textarea>Build your fleet, explore unknown galaxies, and outsmart rival commanders in fast mobile strategy battles.</textarea>
+              <div class="form-grid two" style="margin-top:10px">
+                <div><div class="label">Target language</div><select><option>Turkce</option><option>English</option><option>中文</option></select></div>
+                <div><div class="label">Tone</div><select><option>Energetic</option><option>Premium</option><option>Friendly</option></select></div>
+              </div>
+              <div class="grid half" style="margin-top:12px">
+                <div class="action-card"><strong>Market fit</strong><span>Compare wording against local competitor store pages.</span><span class="tag blue">Auto check</span></div>
+                <div class="action-card"><strong>Term guard</strong><span>Keep genre keywords consistent across app stores.</span><span class="tag good">Active</span></div>
+              </div>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>Localized Output</h3><span class="tag warn">Needs review</span></div>
+            <div class="panel-body">
+              <div class="description-box">Filonu kur, bilinmeyen galaksileri kesfet ve hizli mobil strateji savaslarinda rakip komutanlari alt et.</div>
+              <div class="keyword-cloud">
+                <span class="keyword">filo</span>
+                <span class="keyword">galaksi</span>
+                <span class="keyword">strateji</span>
+                <span class="keyword">komutan</span>
+                <span class="keyword">uzay savasi</span>
+                <span class="keyword">ittifak</span>
+              </div>
+              <div class="grid half" style="margin-top:12px">
+                <div class="action-card"><strong>Review notes</strong><span>CTA can be stronger for Turkish store copy.</span><span class="tag warn">Edit</span></div>
+                <div class="action-card"><strong>Store keywords</strong><span>Filo, strateji, galaksi, savas, ittifak.</span><span class="tag good">6 found</span></div>
+              </div>
+              <div class="actions" style="margin-top:14px"><button class="ghost">Copy</button><button class="ghost">Send to review</button></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="page" id="settings">
+        <div class="page-head">
+          <div><h2>Settings</h2><p>Project brief and shared API configuration.</p></div>
+          <div class="actions"><span class="tag good">Team mode</span><button class="primary">Save Settings</button></div>
+        </div>
+        <div class="grid half">
+          <section class="panel">
+            <div class="panel-head"><h3>Project Brief</h3><span class="tag blue">Default context</span></div>
+            <div class="panel-body">
+              <div class="form-grid two">
+                <div><div class="label">Project name</div><input value="Galaxy Raiders"></div>
+                <div><div class="label">Genre</div><input value="Space Strategy"></div>
+                <div><div class="label">Markets</div><input value="TR, DE, FR, BR, JP"></div>
+                <div><div class="label">Audience</div><input value="18-34, male 68%"></div>
+              </div>
+              <div class="grid half" style="margin-top:12px">
+                <div class="action-card"><strong>Influencer fit rule</strong><span>Gaming, entertainment, anime, and strategy audiences score higher.</span><span class="tag good">On</span></div>
+                <div class="action-card"><strong>Export format</strong><span>Channel table, store copy table, and review notes.</span><span class="tag blue">Excel ready</span></div>
+              </div>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>API Keys</h3><span class="tag good">Backend protected</span></div>
+            <div class="panel-body">
+              <div class="form-grid two">
+                <div><div class="label">YouTube API Key</div><input type="password" placeholder="Saved"></div>
+                <div><div class="label">SerpAPI Key</div><input type="password" placeholder="Saved"></div>
+                <div><div class="label">GPT API Key</div><input type="password" placeholder="Saved"></div>
+                <div><div class="label">GPT Endpoint</div><input value="https://api.1475258.xyz/v1"></div>
+              </div>
+              <p class="note">Shared keys live on the backend in production. Do not upload local env files to GitHub.</p>
+              <div class="grid half" style="margin-top:12px">
+                <div class="action-card"><strong>Google Play</strong><span>SerpAPI connected for Google Play search and description extraction.</span><span class="tag good">Ready</span></div>
+                <div class="action-card"><strong>YouTube</strong><span>YouTube Data API connected for channel/video metrics.</span><span class="tag good">Ready</span></div>
+              </div>
+              <div class="grid half" style="margin-top:12px">
+                <div class="action-card"><strong>App Store</strong><span>Public search reads iOS descriptions and keyword signals.</span><span class="tag good">Ready</span></div>
+                <div class="action-card"><strong>GPT analysis</strong><span>Used for category, subcategory, localization, and image notes.</span><span class="tag warn">Review cost</span></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const pages = document.querySelectorAll(".page");
+    const buttons = document.querySelectorAll(".nav button");
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        buttons.forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        pages.forEach((page) => page.classList.toggle("active", page.id === button.dataset.page));
+      });
+    });
+
+    const translations = {
+      tr: {
+        "Creator & Store Intelligence": "Creator ve Store Zekasi",
+        "Dashboard": "Panel",
+        "Influencer Research": "Influencer Arastirmasi",
+        "Store Research": "Store Arastirmasi",
+        "Localization": "Lokalizasyon",
+        "Settings": "Ayarlar",
+        "Connection Status": "Baglanti Durumu",
+        "YouTube and SerpAPI are ready. GPT localization is waiting for review.": "YouTube ve SerpAPI hazir. GPT lokalizasyonu inceleme bekliyor.",
+        "Marketing workspace for influencer fit, Google Play/App Store research, and localization review.": "Influencer uyumu, Google Play/App Store arastirmasi ve lokalizasyon kontrolu icin marketing calisma alani.",
+        "API Ready": "API Hazir",
+        "Launch Mode": "Lansman Modu",
+        "Turkce": "Turkce",
+        "English": "Ingilizce",
+        "Edit Brief": "Brief Duzenle",
+        "Export": "Disa Aktar",
+        "Genre": "Tur",
+        "Space Strategy": "Uzay Strateji",
+        "Markets": "Pazarlar",
+        "Audience": "Kitle",
+        "18-34, male 68%": "18-34, erkek %68",
+        "Campaign": "Kampanya",
+        "Global Launch": "Global Lansman",
+        "Keywords": "Anahtar Kelimeler",
+        "space, strategy, mobile": "uzay, strateji, mobil",
+        "Daily operating view for influencer and store research.": "Influencer ve store arastirmasi icin gunluk operasyon gorunumu.",
+        "Clear Filters": "Filtreleri Temizle",
+        "New Research": "Yeni Arastirma",
+        "Influencers checked": "Kontrol edilen influencer",
+        "+8 this week": "bu hafta +8",
+        "Recommended": "Onerilen",
+        "Fit score 82+": "Uyum skoru 82+",
+        "Avg views": "Ort. izlenme",
+        "Latest YouTube data": "Guncel YouTube verisi",
+        "Store matches": "Store eslesmeleri",
+        "Google Play + App Store": "Google Play + App Store",
+        "Recent Research": "Son Arastirmalar",
+        "Live workflow": "Canli akis",
+        "Name": "Ad",
+        "Source": "Kaynak",
+        "Category": "Kategori",
+        "Avg Views": "Ort. Izlenme",
+        "Fit": "Uyum",
+        "Status": "Durum",
+        "YouTube": "YouTube",
+        "Gaming / Horror": "Oyun / Korku",
+        "Role Playing": "Rol Yapma",
+        "Review": "Incele",
+        "Racing": "Yaris",
+        "Adjacent": "Yakin",
+        "Gaming creator, Turkey-heavy audience": "Oyun creatoru, Turkiye agirlikli kitle",
+        "Strong fit for horror and community-driven game content.": "Korku ve topluluk odakli oyun icerigi icin guclu uyum.",
+        "Audience overlap is strongest in TR market.": "Kitle kesismesi en guclu TR pazarinda.",
+        "Recommended next step: shortlist and add campaign note.": "Onerilen sonraki adim: kisa listeye al ve kampanya notu ekle.",
+        "Next best action": "Sonraki en iyi aksiyon",
+        "Shortlist 3 TR creators with strong strategy/gaming overlap before localization review.": "Lokalizasyon kontrolunden once strateji/oyun kesismesi guclu 3 TR creatoru kisa listeye al.",
+        "Open shortlist": "Kisa listeyi ac",
+        "Missing data": "Eksik veri",
+        "5 creators need updated average comments and duration from latest YouTube videos.": "5 creator icin guncel ortalama yorum ve sure verisi gerekiyor.",
+        "Fix missing data": "Eksik veriyi tamamla",
+        "Store keywords to test": "Test edilecek store kelimeleri",
+        "fleet, commander, alliance, space battle, real-time strategy": "filo, komutan, ittifak, uzay savasi, gercek zamanli strateji",
+        "Copy keywords": "Kelimeleri kopyala",
+        "Search creators, upload Excel rows, and review YouTube performance in one workflow.": "Creator ara, Excel satirlari yukle ve YouTube performansini tek akista incele.",
+        "Clear List": "Listeyi Temizle",
+        "Analyze": "Analiz Et",
+        "Input": "Girdi",
+        "YouTube API": "YouTube API",
+        "Channel link or handle": "Kanal linki veya handle",
+        "Excel / CSV file": "Excel / CSV dosyasi",
+        "Screenshot import": "Gorsel ice aktarma",
+        "Influencer Table": "Influencer Tablosu",
+        "All statuses": "Tum durumlar",
+        "Channel": "Kanal",
+        "Link": "Link",
+        "Geo": "Geo",
+        "Subscribers": "Abone",
+        "Avg Comments": "Ort. Yorum",
+        "Duration": "Sure",
+        "Variety": "Cesitli",
+        "Search Google Play and App Store, compare descriptions, categories, and keywords.": "Google Play ve App Store'da ara; aciklamalari, kategorileri ve kelimeleri karsilastir.",
+        "Back to Sample": "Ornege Don",
+        "Export Store CSV": "Store CSV Disa Aktar",
+        "Search": "Ara",
+        "SerpAPI + App Store": "SerpAPI + App Store",
+        "Store search": "Store aramasi",
+        "Store": "Store",
+        "Both stores": "Iki store",
+        "App Store": "App Store",
+        "Language": "Dil",
+        "Search Google Play": "Google Play Ara",
+        "Search App Store": "App Store Ara",
+        "Analyze Keywords": "Kelimeleri Analiz Et",
+        "Compare with Galaxy Raiders": "Galaxy Raiders ile Karsilastir",
+        "video": "video",
+        "creators": "creatorlar",
+        "streaming": "yayin",
+        "subscriptions": "abonelikler",
+        "watch": "izle",
+        "Store Results": "Store Sonuclari",
+        "All categories": "Tum kategoriler",
+        "Strategy": "Strateji",
+        "Game": "Oyun",
+        "Downloads": "Indirme",
+        "Rating": "Puan",
+        "Main Message": "Ana Mesaj",
+        "Video Players": "Video Oynaticilar",
+        "Official YouTube app for Android.": "Android icin resmi YouTube uygulamasi.",
+        "video, creators, streaming": "video, creatorlar, yayin",
+        "Photo & Video": "Fotograf ve Video",
+        "Get the official YouTube app on iPhones and iPads.": "iPhone ve iPad icin resmi YouTube uygulamasini edinin.",
+        "video, subscriptions, watch": "video, abonelikler, izle",
+        "Selected App": "Secili Uygulama",
+        "Get the official YouTube app on Android phones and tablets. See what the world is watching, from the hottest music videos to what is popular in gaming, fashion, beauty, news, learning and more.": "Android telefon ve tabletlerde resmi YouTube uygulamasini kullanin. Muzik videolarindan oyun, moda, guzellik, haber, ogrenme ve daha fazlasinda dunyanin ne izledigini gorun.",
+        "music": "muzik",
+        "gaming": "oyun",
+        "learning": "ogrenme",
+        "Opening uses brand authority and device availability.": "Acilis, marka gucunu ve cihaz erisimini kullaniyor.",
+        "Keyword cluster: video, music, gaming, learning, creators.": "Kelime kumesi: video, muzik, oyun, ogrenme, creatorlar.",
+        "For game competitors, extract category + first-sentence hook.": "Oyun rakipleri icin kategori ve ilk cumle hook'unu cikar.",
+        "Export selected": "Secileni disa aktar",
+        "Loading State": "Yuklenme Durumu",
+        "Preview": "Onizleme",
+        "No store result selected": "Store sonucu secilmedi",
+        "Search Google Play or App Store, then select an app to inspect description, keywords, category, rating, and downloads.": "Google Play veya App Store'da ara, sonra aciklama, kelimeler, kategori, puan ve indirmeleri incelemek icin bir uygulama sec.",
+        "Translate, localize, and prepare store copy for each target market.": "Her hedef pazar icin store metnini cevir, yerlilestir ve hazirla.",
+        "TR ready": "TR hazir",
+        "ZH review": "ZH inceleme",
+        "Generate": "Uret",
+        "Source Copy": "Kaynak Metin",
+        "Store text": "Store metni",
+        "Build your fleet, explore unknown galaxies, and outsmart rival commanders in fast mobile strategy battles.": "Filonu kur, bilinmeyen galaksileri kesfet ve hizli mobil strateji savaslarinda rakip komutanlari alt et.",
+        "Target language": "Hedef dil",
+        "Tone": "Ton",
+        "Energetic": "Enerjik",
+        "Premium": "Premium",
+        "Friendly": "Samimi",
+        "Market fit": "Pazar uyumu",
+        "Compare wording against local competitor store pages.": "Metni yerel rakip store sayfalariyla karsilastir.",
+        "Auto check": "Otomatik kontrol",
+        "Term guard": "Terim korumasi",
+        "Keep genre keywords consistent across app stores.": "Tur kelimelerini store'lar arasinda tutarli tut.",
+        "Active": "Aktif",
+        "Localized Output": "Lokalize Cikti",
+        "Needs review": "Inceleme gerekiyor",
+        "Filonu kur, bilinmeyen galaksileri kesfet ve hizli mobil strateji savaslarinda rakip komutanlari alt et.": "Filonu kur, bilinmeyen galaksileri kesfet ve hizli mobil strateji savaslarinda rakip komutanlari alt et.",
+        "filo": "filo",
+        "galaksi": "galaksi",
+        "strateji": "strateji",
+        "komutan": "komutan",
+        "uzay savasi": "uzay savasi",
+        "ittifak": "ittifak",
+        "Review notes": "Inceleme notlari",
+        "CTA can be stronger for Turkish store copy.": "Turkce store metni icin CTA daha guclu olabilir.",
+        "Edit": "Duzenle",
+        "Store keywords": "Store kelimeleri",
+        "Filo, strateji, galaksi, savas, ittifak.": "Filo, strateji, galaksi, savas, ittifak.",
+        "6 found": "6 bulundu",
+        "Copy": "Kopyala",
+        "Send to review": "Incelemeye gonder",
+        "Project brief and shared API configuration.": "Proje brief'i ve ortak API ayarlari.",
+        "Team mode": "Takim modu",
+        "Save Settings": "Ayarlari Kaydet",
+        "Project Brief": "Proje Brief'i",
+        "Default context": "Varsayilan baglam",
+        "Project name": "Proje adi",
+        "Influencer fit rule": "Influencer uyum kurali",
+        "Gaming, entertainment, anime, and strategy audiences score higher.": "Oyun, eglence, anime ve strateji kitleleri daha yuksek skor alir.",
+        "On": "Acik",
+        "Export format": "Disa aktarma formati",
+        "Channel table, store copy table, and review notes.": "Kanal tablosu, store metni tablosu ve inceleme notlari.",
+        "Excel ready": "Excel hazir",
+        "API Keys": "API Anahtarlari",
+        "Backend protected": "Backend korumali",
+        "YouTube API Key": "YouTube API Anahtari",
+        "SerpAPI Key": "SerpAPI Anahtari",
+        "GPT API Key": "GPT API Anahtari",
+        "GPT Endpoint": "GPT Endpoint",
+        "Shared keys live on the backend in production. Do not upload local env files to GitHub.": "Ortak anahtarlar production'da backend'de durur. Lokal env dosyalarini GitHub'a yukleme.",
+        "SerpAPI connected for Google Play search and description extraction.": "Google Play aramasi ve aciklama cekimi icin SerpAPI bagli.",
+        "Ready": "Hazir",
+        "YouTube Data API connected for channel/video metrics.": "Kanal/video metrikleri icin YouTube Data API bagli.",
+        "Public search reads iOS descriptions and keyword signals.": "Public arama iOS aciklamalarini ve kelime sinyallerini okur.",
+        "GPT analysis": "GPT analizi",
+        "Used for category, subcategory, localization, and image notes.": "Kategori, alt kategori, lokalizasyon ve gorsel notlari icin kullanilir.",
+        "Review cost": "Maliyet kontrolu"
+      },
+      zh: {
+        "Creator & Store Intelligence": "创作者与商店情报",
+        "Dashboard": "仪表盘",
+        "Influencer Research": "红人调研",
+        "Store Research": "商店调研",
+        "Localization": "本地化",
+        "Settings": "设置",
+        "Connection Status": "连接状态",
+        "YouTube and SerpAPI are ready. GPT localization is waiting for review.": "YouTube 和 SerpAPI 已就绪。GPT 本地化等待审核。",
+        "Marketing workspace for influencer fit, Google Play/App Store research, and localization review.": "用于红人匹配、Google Play/App Store 调研和本地化审核的营销工作台。",
+        "API Ready": "API 已就绪",
+        "Launch Mode": "上线模式",
+        "Turkce": "土耳其语",
+        "English": "英语",
+        "Edit Brief": "编辑简报",
+        "Export": "导出",
+        "Genre": "类型",
+        "Space Strategy": "太空策略",
+        "Markets": "市场",
+        "Audience": "受众",
+        "18-34, male 68%": "18-34，男性 68%",
+        "Campaign": "活动",
+        "Global Launch": "全球上线",
+        "Keywords": "关键词",
+        "space, strategy, mobile": "太空、策略、移动",
+        "Daily operating view for influencer and store research.": "红人与商店调研的日常运营视图。",
+        "Clear Filters": "清除筛选",
+        "New Research": "新调研",
+        "Influencers checked": "已检查红人",
+        "+8 this week": "本周 +8",
+        "Recommended": "推荐",
+        "Fit score 82+": "匹配分 82+",
+        "Avg views": "平均观看",
+        "Latest YouTube data": "最新 YouTube 数据",
+        "Store matches": "商店匹配",
+        "Google Play + App Store": "Google Play + App Store",
+        "Recent Research": "最近调研",
+        "Live workflow": "实时流程",
+        "Name": "名称",
+        "Source": "来源",
+        "Category": "类别",
+        "Avg Views": "平均观看",
+        "Fit": "匹配",
+        "Status": "状态",
+        "YouTube": "YouTube",
+        "Gaming / Horror": "游戏 / 恐怖",
+        "Role Playing": "角色扮演",
+        "Review": "审核",
+        "Racing": "竞速",
+        "Adjacent": "相近",
+        "Gaming creator, Turkey-heavy audience": "游戏创作者，土耳其受众占比较高",
+        "Strong fit for horror and community-driven game content.": "非常适合恐怖和社区驱动的游戏内容。",
+        "Audience overlap is strongest in TR market.": "受众重合在土耳其市场最强。",
+        "Recommended next step: shortlist and add campaign note.": "建议下一步：加入候选名单并添加活动备注。",
+        "Next best action": "下一步最佳动作",
+        "Shortlist 3 TR creators with strong strategy/gaming overlap before localization review.": "本地化审核前，筛选 3 位策略/游戏重合度高的土耳其创作者。",
+        "Open shortlist": "打开候选名单",
+        "Missing data": "缺失数据",
+        "5 creators need updated average comments and duration from latest YouTube videos.": "5 位创作者需要从最新 YouTube 视频更新平均评论和时长。",
+        "Fix missing data": "补全缺失数据",
+        "Store keywords to test": "待测试商店关键词",
+        "fleet, commander, alliance, space battle, real-time strategy": "舰队、指挥官、联盟、太空战、即时策略",
+        "Copy keywords": "复制关键词",
+        "Search creators, upload Excel rows, and review YouTube performance in one workflow.": "在一个流程中搜索创作者、上传 Excel 行并查看 YouTube 表现。",
+        "Clear List": "清空列表",
+        "Analyze": "分析",
+        "Input": "输入",
+        "YouTube API": "YouTube API",
+        "Channel link or handle": "频道链接或账号",
+        "Excel / CSV file": "Excel / CSV 文件",
+        "Screenshot import": "截图导入",
+        "Influencer Table": "红人表格",
+        "All statuses": "全部状态",
+        "Channel": "频道",
+        "Link": "链接",
+        "Geo": "地区",
+        "Subscribers": "订阅数",
+        "Avg Comments": "平均评论",
+        "Duration": "时长",
+        "Variety": "综合",
+        "Search Google Play and App Store, compare descriptions, categories, and keywords.": "搜索 Google Play 和 App Store，并比较描述、类别和关键词。",
+        "Back to Sample": "返回示例",
+        "Export Store CSV": "导出商店 CSV",
+        "Search": "搜索",
+        "SerpAPI + App Store": "SerpAPI + App Store",
+        "Store search": "商店搜索",
+        "Store": "商店",
+        "Both stores": "两个商店",
+        "App Store": "App Store",
+        "Language": "语言",
+        "Search Google Play": "搜索 Google Play",
+        "Search App Store": "搜索 App Store",
+        "Analyze Keywords": "分析关键词",
+        "Compare with Galaxy Raiders": "与 Galaxy Raiders 对比",
+        "video": "视频",
+        "creators": "创作者",
+        "streaming": "流媒体",
+        "subscriptions": "订阅",
+        "watch": "观看",
+        "Store Results": "商店结果",
+        "All categories": "全部类别",
+        "Strategy": "策略",
+        "Game": "游戏",
+        "Downloads": "下载量",
+        "Rating": "评分",
+        "Main Message": "核心信息",
+        "Video Players": "视频播放器",
+        "Official YouTube app for Android.": "Android 官方 YouTube 应用。",
+        "video, creators, streaming": "视频、创作者、流媒体",
+        "Photo & Video": "照片与视频",
+        "Get the official YouTube app on iPhones and iPads.": "在 iPhone 和 iPad 上获取官方 YouTube 应用。",
+        "video, subscriptions, watch": "视频、订阅、观看",
+        "Selected App": "已选应用",
+        "Get the official YouTube app on Android phones and tablets. See what the world is watching, from the hottest music videos to what is popular in gaming, fashion, beauty, news, learning and more.": "在 Android 手机和平板上使用官方 YouTube 应用。查看全球正在观看的音乐视频、游戏、时尚、美妆、新闻、学习等内容。",
+        "music": "音乐",
+        "gaming": "游戏",
+        "learning": "学习",
+        "Opening uses brand authority and device availability.": "开头利用品牌权威和设备覆盖。",
+        "Keyword cluster: video, music, gaming, learning, creators.": "关键词簇：视频、音乐、游戏、学习、创作者。",
+        "For game competitors, extract category + first-sentence hook.": "针对游戏竞品，提取类别和首句卖点。",
+        "Export selected": "导出所选",
+        "Loading State": "加载状态",
+        "Preview": "预览",
+        "No store result selected": "未选择商店结果",
+        "Search Google Play or App Store, then select an app to inspect description, keywords, category, rating, and downloads.": "搜索 Google Play 或 App Store，然后选择应用查看描述、关键词、类别、评分和下载量。",
+        "Translate, localize, and prepare store copy for each target market.": "为每个目标市场翻译、本地化并准备商店文案。",
+        "TR ready": "土耳其语已就绪",
+        "ZH review": "中文审核",
+        "Generate": "生成",
+        "Source Copy": "源文案",
+        "Store text": "商店文案",
+        "Build your fleet, explore unknown galaxies, and outsmart rival commanders in fast mobile strategy battles.": "建立舰队，探索未知星系，在快节奏移动策略战斗中智胜敌方指挥官。",
+        "Target language": "目标语言",
+        "Tone": "语气",
+        "Energetic": "有活力",
+        "Premium": "高级",
+        "Friendly": "友好",
+        "Market fit": "市场匹配",
+        "Compare wording against local competitor store pages.": "将措辞与本地竞品商店页面对比。",
+        "Auto check": "自动检查",
+        "Term guard": "术语保护",
+        "Keep genre keywords consistent across app stores.": "保持各商店中的类型关键词一致。",
+        "Active": "已启用",
+        "Localized Output": "本地化输出",
+        "Needs review": "需要审核",
+        "Filonu kur, bilinmeyen galaksileri kesfet ve hizli mobil strateji savaslarinda rakip komutanlari alt et.": "建立舰队，探索未知星系，在快节奏移动策略战斗中击败敌方指挥官。",
+        "filo": "舰队",
+        "galaksi": "星系",
+        "strateji": "策略",
+        "komutan": "指挥官",
+        "uzay savasi": "太空战",
+        "ittifak": "联盟",
+        "Review notes": "审核备注",
+        "CTA can be stronger for Turkish store copy.": "土耳其语商店文案的 CTA 可以更强。",
+        "Edit": "编辑",
+        "Store keywords": "商店关键词",
+        "Filo, strateji, galaksi, savas, ittifak.": "舰队、策略、星系、战斗、联盟。",
+        "6 found": "找到 6 个",
+        "Copy": "复制",
+        "Send to review": "发送审核",
+        "Project brief and shared API configuration.": "项目简报和共享 API 配置。",
+        "Team mode": "团队模式",
+        "Save Settings": "保存设置",
+        "Project Brief": "项目简报",
+        "Default context": "默认上下文",
+        "Project name": "项目名称",
+        "Influencer fit rule": "红人匹配规则",
+        "Gaming, entertainment, anime, and strategy audiences score higher.": "游戏、娱乐、动漫和策略受众得分更高。",
+        "On": "开启",
+        "Export format": "导出格式",
+        "Channel table, store copy table, and review notes.": "频道表、商店文案表和审核备注。",
+        "Excel ready": "Excel 已就绪",
+        "API Keys": "API 密钥",
+        "Backend protected": "后端保护",
+        "YouTube API Key": "YouTube API 密钥",
+        "SerpAPI Key": "SerpAPI 密钥",
+        "GPT API Key": "GPT API 密钥",
+        "GPT Endpoint": "GPT Endpoint",
+        "Shared keys live on the backend in production. Do not upload local env files to GitHub.": "共享密钥在生产环境后端保存。不要将本地 env 文件上传到 GitHub。",
+        "SerpAPI connected for Google Play search and description extraction.": "SerpAPI 已连接，用于 Google Play 搜索和描述提取。",
+        "Ready": "已就绪",
+        "YouTube Data API connected for channel/video metrics.": "YouTube Data API 已连接，用于频道/视频指标。",
+        "Public search reads iOS descriptions and keyword signals.": "公开搜索读取 iOS 描述和关键词信号。",
+        "GPT analysis": "GPT 分析",
+        "Used for category, subcategory, localization, and image notes.": "用于类别、子类别、本地化和图片备注。",
+        "Review cost": "成本审核"
+      }
+    };
+
+    const originalText = new WeakMap();
+    const originalAttrs = new WeakMap();
+
+    function textNodes(root) {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+          const parent = node.parentElement;
+          if (!parent || ["SCRIPT", "STYLE"].includes(parent.tagName)) return NodeFilter.FILTER_REJECT;
+          return node.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+        }
+      });
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      return nodes;
+    }
+
+    function translateText(value, lang) {
+      const clean = value.replace(/\s+/g, " ").trim();
+      if (lang === "en") return clean;
+      return translations[lang][clean] || clean;
+    }
+
+    function applyLanguage(lang) {
+      textNodes(document.body).forEach((node) => {
+        if (!originalText.has(node)) originalText.set(node, node.nodeValue.replace(/\s+/g, " ").trim());
+        node.nodeValue = translateText(originalText.get(node), lang);
+      });
+
+      document.querySelectorAll("input[placeholder], textarea[placeholder], select[aria-label]").forEach((el) => {
+        if (!originalAttrs.has(el)) {
+          originalAttrs.set(el, {
+            placeholder: el.getAttribute("placeholder"),
+            ariaLabel: el.getAttribute("aria-label")
+          });
+        }
+        const original = originalAttrs.get(el);
+        if (original.placeholder) el.setAttribute("placeholder", translateText(original.placeholder, lang));
+        if (original.ariaLabel) el.setAttribute("aria-label", translateText(original.ariaLabel, lang));
+      });
+
+      document.documentElement.lang = lang === "zh" ? "zh" : lang;
+    }
+
+    const languageSelect = document.getElementById("siteLanguage");
+    languageSelect.addEventListener("change", (event) => applyLanguage(event.target.value));
+    applyLanguage(languageSelect.value);
+  </script>
+</body>
+</html>
