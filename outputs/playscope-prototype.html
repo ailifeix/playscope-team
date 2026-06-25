@@ -3660,11 +3660,13 @@ Return exactly this JSON shape:
     function getImportedRowHints(row) {
       const combinedAudienceText = Object.entries(row || {}).map(([key, value]) => `${key}: ${value}`).join("\n");
       const audienceHints = extractAudienceHintsFromText(combinedAudienceText);
+      const values = Object.values(row || {}).map((value) => String(value || "").trim()).filter(Boolean);
+      const fallbackFollower = values.find((value) => /^\d+(?:[.,]\d+)?\s*[KMBkmb]$/.test(value)) || "";
       return {
         geo: fieldFromRow(row, ["geo", "country", "market", "ülke", "ulke"]),
         gender: fieldFromRow(row, ["gender", "cinsiyet", "audience gender", "gender split", "female male", "female/male", "demographics"]) || audienceHints.gender,
         age: fieldFromRow(row, ["age", "yas", "yaş", "audience age", "age gender", "age/gender", "age distribution", "audience age gender", "audience age&gender analysis", "age gender analysis"]) || audienceHints.age,
-        subscribers: fieldFromRow(row, ["subscribers", "followers", "takipci", "takipçi", "subs"]),
+        subscribers: fieldFromRow(row, ["subscribers", "followers", "takipci", "takipçi", "subs"]) || fallbackFollower,
         views: fieldFromRow(row, ["avg views", "views", "average views", "avg view", "izlenme"]),
         avgComments: fieldFromRow(row, ["avg comments", "average comments", "yorum ortalama"]),
         category: fieldFromRow(row, ["category", "kategori"]),
@@ -3808,6 +3810,15 @@ Return exactly this JSON shape:
       return !/youtube\.com|youtu\.be|twitch\.tv/i.test(text);
     }
 
+    function isYouTubeSeedLink(value) {
+      const text = String(value || "");
+      return /youtube\.com|youtu\.be|^@[\p{L}\p{N}._-]{2,}$/iu.test(text);
+    }
+
+    function isTwitchSeedLink(value) {
+      return /twitch\.tv/i.test(String(value || ""));
+    }
+
     function cleanYouTubeSeedLink(value) {
       const text = String(value || "").trim().replace(/^＠/, "@");
       if (isInvalidYouTubeSeedLink(text)) return "";
@@ -3859,7 +3870,8 @@ Return exactly this JSON shape:
           comments: "Imported from Excel/list.",
           notes: "Imported from Excel/list."
         };
-        if (state.api?.youtube) {
+        const shouldAnalyzeWithYouTube = state.api?.youtube && (!seed.link || isYouTubeSeedLink(seed.link));
+        if (shouldAnalyzeWithYouTube) {
           live = await youtubeFromBrowser({
             name: seed.link || seed.name,
             fallbackName: seed.name,
@@ -3873,6 +3885,15 @@ Return exactly this JSON shape:
             comments: `Imported from Excel/list. YouTube API failed: ${error.message}`,
             notes: `Imported from Excel/list. YouTube API failed: ${error.message}`
           }));
+        } else if (isTwitchSeedLink(seed.link)) {
+          live = {
+            ...live,
+            channel: "Twitch",
+            category: "Unclear",
+            subcategory: "Twitch profile - needs screenshot/manual category",
+            comments: "Imported from Excel/list. Twitch link kept; YouTube API is skipped for Twitch.",
+            notes: "Imported from Excel/list. Twitch link kept; YouTube API is skipped for Twitch."
+          };
         }
         const extraNotes = Object.entries(hints).filter(([, value]) => value).map(([key, value]) => `${key}: ${value}`).join("; ");
         const importedComment = fieldFromRow(seed.raw || {}, ["comments", "notes", "comment"]) || "";
@@ -3928,7 +3949,7 @@ Return exactly this JSON shape:
         for (let colIndex = range.s.c; colIndex <= range.e.c; colIndex += 1) {
           const cell = sheet[XLSX.utils.encode_cell({ r: excelRow - 1, c: colIndex })];
           const target = cell?.l?.Target || cell?.l?.target || "";
-          if (/youtube\.com|youtu\.be/i.test(target) && !fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url"])) {
+          if (/youtube\.com|youtu\.be|twitch\.tv/i.test(target) && !fieldFromRow(row, ["link", "url", "youtube", "youtube link", "channel url"])) {
             row.Link = target;
           }
         }
