@@ -2,6 +2,7 @@
 const fs = require("fs");
 const path = require("path");
 const zlib = require("zlib");
+const { spawnSync } = require("child_process");
 let googlePlayScraper = null;
 try {
   googlePlayScraper = require("google-play-scraper");
@@ -531,6 +532,60 @@ async function readImageData(input) {
   return { ok: false, error: `GPT image read failed: ${lastError}` };
 }
 
+
+function imageFileToDataUrl(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const mime = ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : ext === ".webp" ? "image/webp" : "image/png";
+  return `data:${mime};base64,${fs.readFileSync(filePath).toString("base64")}`;
+}
+
+async function captureScrumballPanel(input = {}) {
+  const url = String(input.url || input.youtubeUrl || "").trim();
+  if (!url || !/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//i.test(url)) {
+    return { ok: false, code: "INVALID_URL", error: "Paste a valid YouTube link first." };
+  }
+  if (process.platform !== "win32") {
+    return { ok: false, code: "LOCAL_WINDOWS_REQUIRED", error: "Automatic Scrumball screenshot capture works only on the local Windows backend, not on Render." };
+  }
+  const scriptPath = path.join(root, "scripts", "playscope-capture-screen.ps1");
+  if (!fs.existsSync(scriptPath)) {
+    return { ok: false, code: "CAPTURE_SCRIPT_MISSING", error: "Local capture script is missing from the scripts folder." };
+  }
+  const outputRoot = path.join(root, "Screenshots");
+  fs.mkdirSync(outputRoot, { recursive: true });
+  const waitSeconds = Math.max(3, Math.min(Number(input.waitSeconds || 15), 60));
+  const cropRightPercent = Math.max(10, Math.min(Number(input.cropRightPercent || 42), 90));
+  const cropTopPixels = Math.max(0, Math.min(Number(input.cropTopPixels || 70), 400));
+  const result = spawnSync("powershell.exe", [
+    "-NoProfile",
+    "-ExecutionPolicy", "Bypass",
+    "-File", scriptPath,
+    "-OutputRoot", outputRoot,
+    "-Url", url,
+    "-WaitSeconds", String(waitSeconds),
+    "-CropMode", "ScrumballPanel",
+    "-CropRightPercent", String(cropRightPercent),
+    "-CropTopPixels", String(cropTopPixels)
+  ], { encoding: "utf8", timeout: (waitSeconds + 30) * 1000 });
+  if (result.error) return { ok: false, code: "CAPTURE_FAILED", error: result.error.message };
+  if (result.status !== 0) return { ok: false, code: "CAPTURE_FAILED", error: (result.stderr || result.stdout || "Capture failed.").trim() };
+  const combined = `${result.stdout || ""}\n${result.stderr || ""}`;
+  const panelMatch = combined.match(/Saved Scrumball panel crop:\s*(.+scrumball-panel\.png)/i);
+  const fullMatch = combined.match(/Saved screenshot:\s*(.+full-screen\.png)/i);
+  const panelPath = panelMatch?.[1]?.trim();
+  const fullPath = fullMatch?.[1]?.trim();
+  if (!panelPath || !fs.existsSync(panelPath)) {
+    return { ok: false, code: "PANEL_NOT_FOUND", error: "The screen was captured, but the Scrumball panel crop was not found." };
+  }
+  const context = { channelLink: url, channelName: "", source: "auto-scrumball-capture", screenshotPath: panelPath };
+  const vision = await readImageData({ image: imageFileToDataUrl(panelPath), context }).catch((error) => ({ ok: false, error: error.message }));
+  const rows = Array.isArray(vision.rows) ? vision.rows.map((row) => ({
+    ...row,
+    Link: row.Link || row.link || row.URL || url,
+    Comments: [row.Comments || row.comments || "", `Auto Scrumball screenshot: ${path.basename(panelPath)}`].filter(Boolean).join("; ")
+  })) : [];
+  return { ok: true, source: "auto-scrumball-capture", panelPath, fullPath: fullPath || "", rows, vision };
+}
 function demoLocalizeGameText(source = "", lang = "en") {
   let text = String(source || "").trim();
   if (!text) return lang === "tr" ? "Filonu kur" : lang === "zh" ? "缁勫缓鑸伴槦" : "Build your fleet";
@@ -1776,7 +1831,11 @@ const server = http.createServer(async (req, res) => {
       const result = await ocrScreenshot(body).catch((error) => ({ ok: false, error: error.message }));
       return send(res, 200, result);
     }
-    if (req.method === "POST" && req.url === "/api/read-image-data") {
+    if (req.method === "POST" && req.url === "/api/capture-scrumball") {
+      const body = await readJson(req);
+      const result = await captureScrumballPanel(body).catch((error) => ({ ok: false, code: "CAPTURE_FAILED", error: error.message }));
+      return send(res, 200, result);
+    }    if (req.method === "POST" && req.url === "/api/read-image-data") {
       const body = await readJson(req);
       const result = await readImageData(body).catch((error) => ({ ok: false, error: error.message }));
       return send(res, 200, result);
@@ -1857,6 +1916,7 @@ const port = Number(process.env.PORT || 5177);
 server.listen(port, "0.0.0.0", () => {
   console.log(`PlayScope running at http://0.0.0.0:${port}`);
 });
+
 
 
 
