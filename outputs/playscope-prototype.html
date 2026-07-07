@@ -1818,7 +1818,7 @@
             <div><div class="field-label">${tr("country")}</div><input id="researchCountry" value="Turkey"></div>
             <div><div class="field-label">${tr("channel")}</div><select id="researchChannel"><option>YouTube</option><option>Twitch</option><option>TikTok</option></select></div>
             <div><div class="field-label">${tr("avgViews")}</div><input id="researchViews" type="number" value="88000"></div>
-          </div><div class="field-label">Genres</div><input id="researchGenres" value="strategy mobile space"><button class="primary" id="addResearchBtn" type="button" style="margin-top:12px">${tr("analyze")}</button><button class="coral" id="importExtensionBtn" type="button" style="margin-top:12px;margin-left:8px">Import Extension Data</button><p class="note" id="researchStatus">${tr("apiSafe")}</p><p class="note">For extension import, open a YouTube channel or video page. Public stats are calculated from YouTube API.</p>`)}
+          </div><div class="field-label">Genres</div><input id="researchGenres" value="strategy mobile space"><button class="primary" id="addResearchBtn" type="button" style="margin-top:12px">${tr("analyze")}</button><button class="coral" id="importExtensionBtn" type="button" style="margin-top:12px;margin-left:8px">Import Extension Data</button><div class="field-label" style="margin-top:14px">YouTube + Scrumball auto OCR</div><input id="scrumballYoutubeUrl" placeholder="Paste YouTube channel/video link"><button class="primary" id="autoScrumballBtn" type="button" style="margin-top:12px">Open, screenshot Scrumball, analyze</button><p class="note" id="researchStatus">${tr("apiSafe")}</p><p class="note">Auto Scrumball OCR works when PlayScope is running locally on Windows. Render cannot capture your computer screen.</p>`)}
           ${panel("Excel / Copy-paste import", `<div class="form-grid">
             <div>
               <div class="field-label">Excel / CSV file</div>
@@ -1846,6 +1846,7 @@
       bindTable();
       $("addResearchBtn").addEventListener("click", addResearchInfluencer);
       $("importExtensionBtn").addEventListener("click", importExtensionData);
+      $("autoScrumballBtn").addEventListener("click", autoScrumballResearch);
       $("excelUploadBtn").addEventListener("click", uploadExcelFile);
       $("bulkAddBtn").addEventListener("click", addBulkInfluencers);
       $("imageImportBtn").addEventListener("click", uploadImageData);
@@ -2727,6 +2728,34 @@ Return exactly this JSON shape:
       state.influencers[state.selected] = updated;
       saveState();
       render();
+    }
+
+    async function autoScrumballResearch() {
+      const status = $("researchStatus");
+      const url = $("scrumballYoutubeUrl")?.value.trim() || $("researchName")?.value.trim() || "";
+      if (!url) {
+        if (status) status.textContent = "Paste a YouTube link first.";
+        return;
+      }
+      try {
+        if (status) status.textContent = "Opening YouTube and waiting for Scrumball panel...";
+        const response = await fetchTeamApi("/api/capture-scrumball", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...sharedHeaders() },
+          body: JSON.stringify({ url, waitSeconds: 15, cropRightPercent: 42, cropTopPixels: 70 })
+        });
+        const result = await response.json();
+        if (!result.ok) throw new Error(result.error || "Scrumball capture failed.");
+        const rows = Array.isArray(result.rows) ? result.rows : [];
+        if (!rows.length) {
+          if (status) status.textContent = "Scrumball screenshot was saved, but GPT could not extract usable rows. Try uploading the saved scrumball-panel.png in Image data import.";
+          return;
+        }
+        if (status) status.textContent = `Scrumball panel read: ${rows.length} row(s). Checking YouTube API...`;
+        await analyzeInfluencerRows(rows, "researchStatus");
+      } catch (error) {
+        if (status) status.textContent = error.message;
+      }
     }
     async function addResearchInfluencer() {
       const name = $("researchName").value.trim() || "NewCreator";
@@ -6349,6 +6378,8 @@ ${labels.note}: ${labels.noteText}`;
   </script>
 </body>
 </html>
+
+
 
 
 
