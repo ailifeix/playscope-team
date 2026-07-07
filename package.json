@@ -1,34 +1,35 @@
 {
-  "name": "playscope-team",
-  "version": "0.1.0",
-  "private": true,
-  "description": "PlayScope influencer, store, localization, and social content analysis prototype",
-  "main": "outputs/playscope-server.js",
-  "scripts": {
-    "start": "node outputs/playscope-server.js",
-    "start:windows": "outputs\\start-playscope.bat"
-  },
-  "keywords": [
-    "playscope",
-    "mobile-games",
-    "influencer-research",
-    "social-analysis",
-    "instagram",
-    "apify",
-    "localization"
-  ],
-  "dependencies": {
-    "google-play-scraper": "^10.0.0"
-  },
-  "optionalEnv": {
-    "OPENAI_API_KEY": "Enables AI reports and vision analysis.",
-    "APIFY_TOKEN": "Enables Instagram post collection through Apify.",
-    "APIFY_ACTOR_ID": "Optional Apify actor override. Defaults to apify/instagram-post-scraper.",
-    "YOUTUBE_API_KEY": "Enables YouTube creator lookup.",
-    "SERPAPI_KEY": "Enables Google Play web search fallback.",
-    "TEAM_PASSWORD": "Optional local team password."
-  },
-  "engines": {
-    "node": ">=20"
-  }
+    "name":  "playscope-team",
+    "version":  "0.1.0",
+    "private":  true,
+    "description":  "PlayScope influencer, store, localization, and social content analysis prototype",
+    "main":  "outputs/playscope-server.js",
+    "scripts":  {
+                    "start":  "node outputs/playscope-server.js",
+                    "start:windows":  "outputs\\start-playscope.bat",
+                    "screenshot":  "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/playscope-capture-screen.ps1 -OpenFolder"
+                },
+    "keywords":  [
+                     "playscope",
+                     "mobile-games",
+                     "influencer-research",
+                     "social-analysis",
+                     "instagram",
+                     "apify",
+                     "localization"
+                 ],
+    "dependencies":  {
+                         "google-play-scraper":  "^10.0.0"
+                     },
+    "optionalEnv":  {
+                        "APIFY_TOKEN":  "Enables Instagram post collection through Apify.",
+                        "APIFY_ACTOR_ID":  "Optional Apify actor override. Defaults to apify/instagram-post-scraper.",
+                        "YOUTUBE_API_KEY":  "Enables YouTube creator lookup.",
+                        "SERPAPI_KEY":  "Enables Google Play web search fallback.",
+                        "TEAM_PASSWORD":  "Optional local team password.",
+                        "OPENAI_API_KEY":  "Render/server-only AI key. Never entered in the browser UI."
+                    },
+    "engines":  {
+                    "node":  "\u003e=20"
+                }
 }

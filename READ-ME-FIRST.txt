@@ -1,0 +1,18 @@
+﻿PlayScope 2026-07-07 Update
+
+Bu klasor bugun guncellenen temiz pakettir.
+
+Render/GitHub icin ana dosyalar:
+- package.json
+- render.yaml
+- outputs/playscope-server.js
+- outputs/playscope-prototype.html
+
+Yerel Scrumball screenshot araci:
+- scripts/capture-youtube-scrumball.bat
+- scripts/playscope-capture-screen.ps1
+
+Notlar:
+- .env.local, work klasoru, eski state dosyalari ve secret degerleri bu pakete konmadi.
+- OpenAI/GPT key tarayici ayarlarindan kaldirildi. AI sadece Render/server environment uzerinden calisir.
+- YouTube linki + Scrumball panel screenshot icin scripts/capture-youtube-scrumball.bat dosyasini calistir.
