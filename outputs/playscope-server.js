@@ -1,4 +1,4 @@
-const http = require("http");
+﻿const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const zlib = require("zlib");
@@ -30,7 +30,7 @@ let env = readEnv();
 
 function writeEnv(updates) {
   env = { ...env, ...updates };
-  const order = ["YOUTUBE_API_KEY", "OPENAI_API_KEY", "GPT_API_BASE_URL", "GPT_MODEL", "AI_API_BASE_URL", "AI_MODEL", "REVIEW_MODEL", "OPENAI_WIRE_API", "MODEL_REASONING_EFFORT", "DISABLE_RESPONSE_STORAGE", "SERPAPI_KEY", "APIFY_TOKEN", "APIFY_ACTOR_ID", "GOOGLE_CLIENT_SECRET", "TEAM_PASSWORD"];
+  const order = ["YOUTUBE_API_KEY", "SERPAPI_KEY", "APIFY_TOKEN", "APIFY_ACTOR_ID", "GOOGLE_CLIENT_SECRET", "TEAM_PASSWORD"];
   const keys = order.filter((key) => env[key] !== undefined && env[key] !== "");
   fs.writeFileSync(envPath, keys.map((key) => `${key}=${env[key]}`).join("\n"), "utf8");
 }
@@ -47,8 +47,16 @@ function getAiModel() {
 }
 
 function getAiModelCandidates() {
-  const preferred = env.GPT_MODEL && env.GPT_MODEL !== "auto" ? env.GPT_MODEL : "gpt-5.5";
-  return [preferred];
+  const preferred = env.GPT_MODEL && env.GPT_MODEL !== "auto" ? env.GPT_MODEL : "";
+  return [...new Set([
+    preferred,
+    "gpt-4o-mini",
+    "gpt-4o",
+    "gpt-4.1-mini",
+    "gpt-4.1",
+    "gpt-3.5-turbo",
+    "chatgpt-4o-latest"
+  ].filter(Boolean))];
 }
 
 function getAiModuleBaseUrl() {
@@ -59,24 +67,32 @@ function getAiModuleBaseUrl() {
 }
 
 function hasOpenAiKey() {
-  return Boolean(env.OPENAI_API_KEY || env.GPT_API_KEY || env.AI_API_KEY);
+  return Boolean(env.OPENAI_API_KEY);
 }
 
 function getOpenAiKey() {
-  return env.OPENAI_API_KEY || env.GPT_API_KEY || env.AI_API_KEY || "";
+  return env.OPENAI_API_KEY || "";
 }
 
 function getAiModuleWireApi() {
-  const value = String(env.OPENAI_WIRE_API || env.GPT_WIRE_API || env.AI_WIRE_API || env.WIRE_API || "chat").trim().toLowerCase();
+  const value = String(env.OPENAI_WIRE_API || env.GPT_WIRE_API || env.AI_WIRE_API || env.WIRE_API || "responses").trim().toLowerCase();
   return value === "responses" ? "responses" : "chat";
 }
 
 function getAiModuleModelCandidates(module) {
   const preferred = module === "review"
-    ? (env.REVIEW_MODEL || env.AI_REVIEW_MODEL || env.AI_MODEL || env.GPT_MODEL || "gpt-5.5")
-    : (env.AI_MODEL || env.GPT_MODEL || "gpt-5.5");
-
-  return [preferred && preferred !== "auto" ? preferred : "gpt-5.5"];
+    ? (env.REVIEW_MODEL || env.AI_REVIEW_MODEL || env.AI_MODEL || "")
+    : (env.AI_MODEL || "");
+  const legacyModel = env.GPT_MODEL && env.GPT_MODEL !== "auto" ? env.GPT_MODEL : "";
+  return [...new Set([
+    preferred && preferred !== "auto" ? preferred : "",
+    "gpt-5.5",
+    legacyModel,
+    "gpt-4o-mini",
+    "gpt-4o",
+    "gpt-4.1-mini",
+    "gpt-4.1"
+  ].filter(Boolean))];
 }
 
 function getAiReasoningEffort() {
@@ -109,7 +125,7 @@ async function callAiModuleModel(model, module, prompt) {
   const baseUrl = getAiModuleBaseUrl();
   const headers = {
     "Content-Type": "application/json",
-    "Authorization": `Bearer ${env.OPENAI_API_KEY}`
+    "Authorization": `Bearer ${getOpenAiKey()}`
   };
   const systemText = "You are PlayScope AI for game marketing, localization, review analysis, and professional reports. Return structured JSON only.";
 
@@ -172,7 +188,7 @@ async function callVisionJsonModel(model, systemText, promptText, imageDataUrl) 
   const baseUrl = getAiModuleBaseUrl();
   const headers = {
     "Content-Type": "application/json",
-    "Authorization": `Bearer ${env.OPENAI_API_KEY}`
+    "Authorization": `Bearer ${getOpenAiKey()}`
   };
   if (wireApi === "responses") {
     const baseBody = {
@@ -364,13 +380,13 @@ async function youtubeResearch(input) {
 }
 
 async function openAiText(prompt) {
-  if (!env.OPENAI_API_KEY || typeof fetch !== "function") return null;
+  if (!getOpenAiKey() || typeof fetch !== "function") return null;
   for (const model of getAiModelCandidates()) {
     const response = await fetch(`${getAiBaseUrl()}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${env.OPENAI_API_KEY}`
+        "Authorization": `Bearer ${getOpenAiKey()}`
       },
       body: JSON.stringify({
         model,
@@ -440,7 +456,7 @@ function cleanOcrInfluencer(raw, current = {}) {
 }
 
 async function ocrScreenshot(input) {
-  if (!env.OPENAI_API_KEY || typeof fetch !== "function") {
+  if (!getOpenAiKey() || typeof fetch !== "function") {
     return { ok: false, error: "OpenAI API key is missing or backend cannot make external requests." };
   }
   if (!input.image || !String(input.image).startsWith("data:image/")) {
@@ -485,7 +501,7 @@ Rules:
 }
 
 async function readImageData(input) {
-  if (!env.OPENAI_API_KEY || typeof fetch !== "function") {
+  if (!getOpenAiKey() || typeof fetch !== "function") {
     return { ok: false, error: "GPT API key is missing or backend cannot make external requests." };
   }
   if (!input.image || !String(input.image).startsWith("data:image/")) {
@@ -517,64 +533,64 @@ async function readImageData(input) {
 
 function demoLocalizeGameText(source = "", lang = "en") {
   let text = String(source || "").trim();
-  if (!text) return lang === "tr" ? "Filonu kur" : lang === "zh" ? "组建舰队" : "Build your fleet";
+  if (!text) return lang === "tr" ? "Filonu kur" : lang === "zh" ? "缁勫缓鑸伴槦" : "Build your fleet";
   const dictionaries = {
     tr: {
-      "build your fleet, explore unknown galaxies, and outsmart rival commanders in fast mobile strategy battles.": "Filonu kur, bilinmeyen galaksileri keşfet ve hızlı mobil strateji savaşlarında rakip komutanları zekânla alt et.",
-      "explore unknown galaxies": "bilinmeyen galaksileri keşfet",
-      "outsmart rival commanders": "rakip komutanları zekânla alt et",
-      "fast mobile strategy battles": "hızlı mobil strateji savaşları",
+      "build your fleet, explore unknown galaxies, and outsmart rival commanders in fast mobile strategy battles.": "Filonu kur, bilinmeyen galaksileri ke艧fet ve h谋zl谋 mobil strateji sava艧lar谋nda rakip komutanlar谋 zek芒nla alt et.",
+      "explore unknown galaxies": "bilinmeyen galaksileri ke艧fet",
+      "outsmart rival commanders": "rakip komutanlar谋 zek芒nla alt et",
+      "fast mobile strategy battles": "h谋zl谋 mobil strateji sava艧lar谋",
       "rival commanders": "rakip komutanlar",
       "unknown galaxies": "bilinmeyen galaksiler",
       "build your fleet": "Filonu kur",
-      "join a guild": "Bir loncaya katıl",
-      "upgrade your hero": "Kahramanını geliştir",
-      "claim rewards": "Ödülleri topla",
-      "start battle": "Savaşı başlat",
-      "tap to continue": "Devam etmek için dokun",
-      "daily quest": "Günlük görev",
+      "join a guild": "Bir loncaya kat谋l",
+      "upgrade your hero": "Kahraman谋n谋 geli艧tir",
+      "claim rewards": "脰d眉lleri topla",
+      "start battle": "Sava艧谋 ba艧lat",
+      "tap to continue": "Devam etmek i莽in dokun",
+      "daily quest": "G眉nl眉k g枚rev",
       "victory": "Zafer",
       "defeat": "Yenilgi",
       "fleet": "Filo",
-      "explore": "keşfet",
+      "explore": "ke艧fet",
       "unknown": "bilinmeyen",
       "galaxies": "galaksiler",
-      "outsmart": "zekânla alt et",
+      "outsmart": "zek芒nla alt et",
       "rival": "rakip",
       "commanders": "komutanlar",
       "strategy": "strateji",
       "guild": "Lonca",
-      "quest": "Görev",
-      "reward": "Ödül",
-      "battle": "Savaş",
+      "quest": "G枚rev",
+      "reward": "脰d眉l",
+      "battle": "Sava艧",
       "build": "Kur",
-      "upgrade": "Geliştir",
+      "upgrade": "Geli艧tir",
       "collect": "Topla"
     },
     zh: {
       "build your fleet, explore unknown galaxies, and outsmart rival commanders in fast mobile strategy battles.": "组建舰队，探索未知星系，在快节奏移动策略战斗中智胜敌方指挥官。",
-      "explore unknown galaxies": "探索未知星系",
+      "explore unknown galaxies": "鎺㈢储鏈煡鏄熺郴",
       "outsmart rival commanders": "智胜敌方指挥官",
       "fast mobile strategy battles": "快节奏移动策略战斗",
       "rival commanders": "敌方指挥官",
-      "unknown galaxies": "未知星系",
-      "build your fleet": "组建舰队",
-      "join a guild": "加入公会",
-      "upgrade your hero": "升级英雄",
-      "claim rewards": "领取奖励",
+      "unknown galaxies": "鏈煡鏄熺郴",
+      "build your fleet": "缁勫缓鑸伴槦",
+      "join a guild": "鍔犲叆鍏細",
+      "upgrade your hero": "鍗囩骇鑻遍泟",
+      "claim rewards": "棰嗗彇濂栧姳",
       "start battle": "开始战斗",
-      "tap to continue": "点击继续",
-      "daily quest": "每日任务",
-      "victory": "胜利",
-      "defeat": "失败",
-      "fleet": "舰队",
-      "guild": "公会",
-      "quest": "任务",
-      "reward": "奖励",
-      "battle": "战斗",
+      "tap to continue": "鐐瑰嚮缁х画",
+      "daily quest": "姣忔棩浠诲姟",
+      "victory": "鑳滃埄",
+      "defeat": "澶辫触",
+      "fleet": "鑸伴槦",
+      "guild": "鍏細",
+      "quest": "浠诲姟",
+      "reward": "濂栧姳",
+      "battle": "鎴樻枟",
       "build": "建造",
-      "upgrade": "升级",
-      "collect": "收集"
+      "upgrade": "鍗囩骇",
+      "collect": "鏀堕泦"
     }
   };
   const dict = dictionaries[lang] || {};
@@ -604,16 +620,16 @@ function shortLocalizationText(text = "", lang = "en", source = "") {
   const clean = String(text || "").trim();
   const sourceText = String(source || "").trim();
   if (!clean) return "";
-  if (lang === "zh") return clean.split(/[，。！？]/)[0].slice(0, 8);
+  if (lang === "zh") return clean.split(/[，。！？.!?,]/)[0].slice(0, 8);
   if (lang === "tr") {
     if (/leader|lider/i.test(`${sourceText} ${clean}`)) return "Kendi liderin ol";
-    if (/Silahını kuşan, loncanla dünyayı fethet/i.test(clean)) return "Loncanla fethet";
-    if (/Silahını kuşan, hedefe kilitlen ve dünyayı fethet/i.test(clean)) return "Hedefe kilitlen";
-    if (/Ordunu hazırla ve dünyayı stratejinle fethet/i.test(clean)) return "Ordunu hazırla";
-    if (/Hazırlan ve dünyayı kazan/i.test(clean)) return "Hazırlan ve kazan";
-    if (/Silahını kuşan ve karanlığı alt et/i.test(clean)) return "Karanlığı alt et";
-    if (/Hazırlan ve zirveye çık/i.test(clean)) return "Zirveye çık";
-    if (/Düzenini kur ve kendi dünyanı inşa et/i.test(clean)) return "Dünyanı inşa et";
+    if (/Silah谋n谋 ku艧an, loncanla d眉nyay谋 fethet/i.test(clean)) return "Loncanla fethet";
+    if (/Silah谋n谋 ku艧an, hedefe kilitlen ve d眉nyay谋 fethet/i.test(clean)) return "Hedefe kilitlen";
+    if (/Ordunu haz谋rla ve d眉nyay谋 stratejinle fethet/i.test(clean)) return "Ordunu haz谋rla";
+    if (/Haz谋rlan ve d眉nyay谋 kazan/i.test(clean)) return "Haz谋rlan ve kazan";
+    if (/Silah谋n谋 ku艧an ve karanl谋臒谋 alt et/i.test(clean)) return "Karanl谋臒谋 alt et";
+    if (/Haz谋rlan ve zirveye 莽谋k/i.test(clean)) return "Zirveye 莽谋k";
+    if (/D眉zenini kur ve kendi d眉nyan谋 in艧a et/i.test(clean)) return "D眉nyan谋 in艧a et";
     if (clean.split(/\s+/).length <= 6) return clean;
   }
   if (lang === "en") {
@@ -637,32 +653,9 @@ function naturalLocalizationText(baseText = "", adaptedText = "", lang = "en", g
   if (!base && !adapted) return "";
   if (lang === "tr") {
     if (/leader|lider/i.test(`${sourceText} ${base} ${adapted}`)) return "Hazırlan, kendi liderin ol";
-    if (/^Silahını hazırla ve dünyayı fethet$/i.test(base)) {
-      if (genre === "mmo") return "Silahını kuşan ve loncanla dünyayı fethet";
-      if (genre === "fps") return "Silahını kuşan, hedefe kilitlen ve savaşı kazan";
-      if (genre === "strategy") return "Ordunu hazırla ve dünyayı stratejinle fethet";
-      if (genre === "casual") return "Hazırlan, dene ve dünyayı kazan";
-      if (genre === "horror") return "Silahını kuşan ve karanlığa meydan oku";
-      if (genre === "racing") return "Hazırlan ve zirveye doğru yarış";
-      if (genre === "simulation") return "Düzenini kur ve kendi dünyanı büyüt";
-    }
-    return adapted
-      .replace(/, loncanla /i, " ve loncanla ")
-      .replace(/hedefe kilitlen ve dünyayı fethet/i, "hedefe kilitlen ve savaşı kazan")
-      .replace(/dünyayı stratejinle fethet/i, "dünyayı stratejinle ele geçir");
+    return adapted || base;
   }
-  if (lang === "en") {
-    return adapted
-      .replace(/conquer the world with your guild/i, "conquer the world together with your guild")
-      .replace(/dominate the battlefield/i, "win every fight")
-      .replace(/conquer the world with strategy/i, "conquer through strategy");
-  }
-  if (lang === "zh") {
-    return adapted
-      .replace(/与公会一起征服世界/, "和公会一起征服世界")
-      .replace(/主宰战场/, "赢下战场")
-      .replace(/用策略征服世界/, "用策略拿下世界");
-  }
+  if (lang === "zh") return adapted || base;
   return adapted || base;
 }
 
@@ -670,117 +663,56 @@ function genreAdaptedGoogleText(text = "", lang = "en", genre = "") {
   const clean = String(text || "").trim();
   if (!clean) return "";
   if (lang === "tr") {
-    let out = clean;
-    if (/^Silahını hazırla ve dünyayı fethet$/i.test(out)) {
-      if (genre === "mmo") return "Silahını kuşan, loncanla dünyayı fethet";
-      if (genre === "fps") return "Silahını kuşan, hedefe kilitlen ve dünyayı fethet";
-      if (genre === "strategy") return "Ordunu hazırla ve dünyayı stratejinle fethet";
-      if (genre === "casual") return "Hazırlan ve dünyayı kazan";
-      if (genre === "horror") return "Silahını kuşan ve karanlığı alt et";
-      if (genre === "racing") return "Hazırlan ve zirveye çık";
-      if (genre === "simulation") return "Düzenini kur ve kendi dünyanı inşa et";
-    }
-    if (genre === "mmo") out = out.replace(/Silahını hazırla/i, "Silahını kuşan").replace(/dünyayı fethet/i, "loncanla dünyayı fethet");
-    if (genre === "fps") out = out.replace(/Silahını hazırla/i, "Silahını kuşan").replace(/dünyayı fethet/i, "hedefe kilitlen ve dünyayı fethet");
-    if (genre === "strategy") out = out.replace(/Silahını hazırla/i, "Ordunu hazırla").replace(/dünyayı fethet/i, "dünyayı stratejinle fethet");
-    if (genre === "casual") out = out.replace(/fethet/i, "kazan").replace(/kuşan/i, "hazırla");
-    if (genre === "horror") out = out.replace(/dünyayı fethet/i, "karanlığı alt et");
-    if (genre === "racing") out = out.replace(/dünyayı fethet/i, "zirveye çık");
-    if (genre === "simulation") out = out.replace(/fethet/i, "inşa et").replace(/Silahını/i, "Düzenini");
-    return out;
-  }
-  if (lang === "en") {
-    let out = clean;
-    if (genre === "mmo") out = out.replace(/Ready your weapon/i, "Equip your weapon").replace(/conquer the world/i, "conquer the world with your guild");
-    if (genre === "fps") out = out.replace(/Ready your weapon/i, "Lock and load").replace(/conquer the world/i, "dominate the battlefield");
-    if (genre === "strategy") out = out.replace(/Ready your weapon/i, "Ready your army").replace(/conquer the world/i, "conquer the world with strategy");
-    if (genre === "casual") out = out.replace(/conquer/i, "win").replace(/Ready your weapon/i, "Get ready");
-    if (genre === "horror") out = out.replace(/conquer the world/i, "survive the darkness");
-    if (genre === "racing") out = out.replace(/conquer the world/i, "race to the top");
-    if (genre === "simulation") out = out.replace(/conquer/i, "build").replace(/weapon/i, "world");
-    return out;
+    const presets = {
+      mmo: "Silahını kuşan, loncanla dünyayı fethet",
+      fps: "Silahını kuşan, hedefe kilitlen ve savaşı kazan",
+      strategy: "Ordunu hazırla ve dünyayı stratejinle fethet",
+      casual: "Hazırlan ve meydan okumayı kazan",
+      horror: "Silahını kuşan ve karanlığa meydan oku",
+      racing: "Hazırlan ve zirveye doğru yarış",
+      simulation: "Düzenini kur ve kendi dünyanı büyüt"
+    };
+    return presets[genre] || clean;
   }
   if (lang === "zh") {
-    let out = clean;
-    if (genre === "mmo") out = out.replace(/准备好武器/, "装备武器").replace(/征服世界/, "与公会一起征服世界");
-    if (genre === "fps") out = out.replace(/准备好武器/, "装弹上阵").replace(/征服世界/, "主宰战场");
-    if (genre === "strategy") out = out.replace(/准备好武器/, "集结军队").replace(/征服世界/, "用策略征服世界");
-    if (genre === "casual") out = out.replace(/征服世界/, "赢下挑战");
-    if (genre === "horror") out = out.replace(/征服世界/, "逃出黑暗");
-    if (genre === "racing") out = out.replace(/征服世界/, "冲上巅峰");
-    if (genre === "simulation") out = out.replace(/征服世界/, "打造你的世界");
-    return out;
+    const presets = {
+      mmo: "装备武器，和公会一起征服世界",
+      fps: "装弹上阵，锁定目标并赢下战斗",
+      strategy: "集结军队，用策略征服世界",
+      casual: "准备好，赢下挑战",
+      horror: "拿起武器，挑战黑暗",
+      racing: "准备出发，冲向巅峰",
+      simulation: "建立秩序，打造你的世界"
+    };
+    return presets[genre] || clean;
+  }
+  if (lang === "en") {
+    const presets = {
+      mmo: "Equip your weapon and conquer the world with your guild",
+      fps: "Lock and load, then win every fight",
+      strategy: "Ready your army and conquer through strategy",
+      casual: "Get ready and win the challenge",
+      horror: "Take up your weapon and face the darkness",
+      racing: "Get ready and race to the top",
+      simulation: "Build your world and grow your system"
+    };
+    return presets[genre] || clean;
   }
   return clean;
 }
 
-function formatGoogleTranslateLocalization({ source, translated, lang, genre, mode, tone }) {
+function formatGoogleTranslateLocalization({ source = "", translated = "", lang = "en", genre = "auto", mode = "game", tone = "Store-ready" }) {
   const adapted = genreAdaptedGoogleText(translated, lang, genre);
   const naturalText = naturalLocalizationText(translated, adapted, lang, genre, source);
-  const shortText = shortLocalizationText(adapted, lang, source);
+  const shortText = shortLocalizationText(naturalText || translated, lang, source);
   const labels = {
-    tr: {
-      gameType: "Oyun türü",
-      style: "Tarz analizi",
-      rule: "Dil kuralı",
-      tone: "Ton",
-      normal: "Normal çeviri",
-      option1: "Seçenek 1 - Oyun içi çeviri",
-      option2: "Seçenek 2 - Daha doğal",
-      option3: "Seçenek 3 - Kısa UI",
-      source: "Kaynak metin",
-      note: "Not",
-      noteText: "Google Translate fallback kullanıldı; oyun tonunu GPT kadar derin uyarlamayabilir."
-    },
-    en: {
-      gameType: "Game type",
-      style: "Style analysis",
-      rule: "Language rule",
-      tone: "Tone",
-      normal: "Normal translation",
-      option1: "Option 1 - In-game translation",
-      option2: "Option 2 - More natural",
-      option3: "Option 3 - Short UI",
-      source: "Source text",
-      note: "Note",
-      noteText: "Google Translate fallback was used; game tone may be less nuanced than GPT."
-    },
-    zh: {
-      gameType: "游戏类型",
-      style: "风格分析",
-      rule: "语言规则",
-      tone: "语气",
-      normal: "普通翻译",
-      option1: "选项 1 - 游戏内翻译",
-      option2: "选项 2 - 更自然",
-      option3: "选项 3 - 短 UI",
-      source: "源文本",
-      note: "备注",
-      noteText: "已使用 Google Translate fallback；游戏语气可能不如 GPT 细致。"
-    }
+    tr: { gameType: "Oyun türü", style: "Tarz analizi", rule: "Dil kuralı", tone: "Ton", normal: "Normal çeviri", option1: "Seçenek 1 - Oyun içi çeviri", option2: "Seçenek 2 - Daha doğal", option3: "Seçenek 3 - Kısa UI", source: "Kaynak metin", note: "Not", noteText: "Google Translate sonrası oyun lokalizasyonu düzeltmesi uygulandı." },
+    zh: { gameType: "游戏类型", style: "风格分析", rule: "语言规则", tone: "语气", normal: "普通翻译", option1: "选项 1 - 游戏内翻译", option2: "选项 2 - 更自然", option3: "选项 3 - 短 UI", source: "源文本", note: "备注", noteText: "已在 Google Translate 结果上进行游戏本地化修正。" },
+    en: { gameType: "Game type", style: "Style analysis", rule: "Language rule", tone: "Tone", normal: "Normal translation", option1: "Option 1 - In-game translation", option2: "Option 2 - More natural", option3: "Option 3 - Short UI", source: "Source text", note: "Note", noteText: "Game localization cleanup was applied after Google Translate." }
   }[lang] || {};
   const normalBlock = mode === "normal" || mode === "both" ? `${labels.normal}:\n${translated}\n\n` : "";
-  if (mode === "normal") {
-    return `${labels.normal}:\n${translated}\n\n${labels.source}:\n${source}\n\n${labels.note}: ${labels.noteText}`;
-  }
-  return `${labels.gameType}: ${genre}
-${labels.style}: ${lang === "zh" ? "先做基础翻译，再作为游戏内文本使用。" : lang === "tr" ? "Önce temel çeviri yapıldı, sonra oyun içi metin olarak kullanılabilir hale getirildi." : "Base translation first, then prepared as in-game text."}
-${labels.rule}: ${lang === "zh" ? "Anlamı koru, kısa ve doğal tut." : lang === "tr" ? "Anlamı koru, kısa ve doğal tut." : "Keep the meaning clear, short, and natural."}
-${labels.tone}: ${tone}
-
-${normalBlock}${labels.option1}:
-${adapted}
-
-${labels.option2}:
-${naturalText}
-
-${labels.option3}:
-${shortText}
-
-${labels.source}:
-${source}
-
-${labels.note}: ${labels.noteText}`;
+  if (mode === "normal") return `${labels.normal}:\n${translated}\n\n${labels.source}:\n${source}\n\n${labels.note}: ${labels.noteText}`;
+  return `${labels.gameType}: ${genre}\n${labels.style}: ${lang === "zh" ? "先做基础翻译，再调整为游戏内文本。" : lang === "tr" ? "Önce temel çeviri yapıldı, sonra oyun içi metne uygun hale getirildi." : "Base translation first, then prepared as in-game text."}\n${labels.rule}: ${lang === "zh" ? "保留含义，保持简短自然。" : lang === "tr" ? "Anlamı koru, kısa ve doğal tut." : "Keep the meaning clear, short, and natural."}\n${labels.tone}: ${tone}\n\n${normalBlock}${labels.option1}:\n${adapted}\n\n${labels.option2}:\n${naturalText}\n\n${labels.option3}:\n${shortText}\n\n${labels.source}:\n${source}\n\n${labels.note}: ${labels.noteText}`;
 }
 
 function manualLocalizationOutput({ source = "", lang = "en", tone = "Store-ready", genre = "auto", mode = "game" }) {
@@ -788,48 +720,27 @@ function manualLocalizationOutput({ source = "", lang = "en", tone = "Store-read
   const key = raw.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
   const labels = {
     tr: { gameType: "Oyun türü", style: "Tarz analizi", rule: "Dil kuralı", tone: "Ton", option1: "Seçenek 1 - Oyun içi çeviri", option2: "Seçenek 2 - Daha doğal", option3: "Seçenek 3 - Kısa UI", source: "Kaynak metin", note: "Not", noteText: "Kısa slogan için yerel oyun lokalizasyonu kullanıldı." },
-    en: { gameType: "Game type", style: "Style analysis", rule: "Language rule", tone: "Tone", option1: "Option 1 - In-game translation", option2: "Option 2 - More natural", option3: "Option 3 - Short UI", source: "Source text", note: "Note", noteText: "Curated game localization was used for this short slogan." },
-    zh: { gameType: "游戏类型", style: "风格分析", rule: "语言规则", tone: "语气", option1: "选项 1 - 游戏内翻译", option2: "选项 2 - 更自然", option3: "选项 3 - 短 UI", source: "源文本", note: "备注", noteText: "此短标语使用了游戏本地化表达。" }
+    zh: { gameType: "游戏类型", style: "风格分析", rule: "语言规则", tone: "语气", option1: "选项 1 - 游戏内翻译", option2: "选项 2 - 更自然", option3: "选项 3 - 短 UI", source: "源文本", note: "备注", noteText: "此短标语使用了游戏本地化表达。" },
+    en: { gameType: "Game type", style: "Style analysis", rule: "Language rule", tone: "Tone", option1: "Option 1 - In-game translation", option2: "Option 2 - More natural", option3: "Option 3 - Short UI", source: "Source text", note: "Note", noteText: "Curated game localization was used for this short slogan." }
   }[lang] || {};
   let options = null;
   if (/life is your|life is yours|either create|either conquer|create.*conquer|yarat.*fethet/.test(key)) {
     options = {
       tr: ["Hayat senin; ya yarat ya fethet", "Hayat senin. İster yarat, ister fethet", "Yarat ya da fethet"],
-      en: ["Life is yours: create or conquer", "Your life, your choice: create or conquer", "Create or conquer"],
-      zh: ["人生由你掌控：创造，或征服", "人生属于你，创造或征服", "创造或征服"]
+      zh: ["人生由你掌控：创造，或征服", "人生属于你，创造或征服", "创造或征服"],
+      en: ["Life is yours: create or conquer", "Your life, your choice: create or conquer", "Create or conquer"]
     }[lang];
   } else if (/be your own leader|own leader|kendi lider/.test(key)) {
     options = {
       tr: ["Hazırlan ve kendi liderin ol", "Hazırsan liderliği ele al", "Kendi liderin ol"],
-      en: ["Get ready and become your own leader", "Ready up and lead your own way", "Be your own leader"],
-      zh: ["准备好，成为自己的领袖", "准备出发，掌控自己的道路", "成为自己的领袖"]
+      zh: ["准备好，成为自己的领袖", "准备出发，掌控自己的道路", "成为自己的领袖"],
+      en: ["Get ready and become your own leader", "Ready up and lead your own way", "Be your own leader"]
     }[lang];
   }
   if (!options) return "";
-  const genreLabel = genre || "auto";
-  if (mode === "normal") {
-    return `${labels.option2}:\n${options[1]}\n\n${labels.source}:\n${raw}\n\n${labels.note}: ${labels.noteText}`;
-  }
-  return `${labels.gameType}: ${genreLabel}
-${labels.style}: ${lang === "zh" ? "短标语；优先保留力量感和选择感。" : lang === "tr" ? "Kısa slogan; anlam, güç ve seçim hissi korundu." : "Short slogan; preserves meaning, power, and choice."}
-${labels.rule}: ${lang === "zh" ? "自然、短、适合游戏内按钮或宣传句。" : lang === "tr" ? "Doğal, kısa ve oyun içi metne uygun." : "Natural, short, and ready for in-game use."}
-${labels.tone}: ${tone}
-
-${labels.option1}:
-${options[0]}
-
-${labels.option2}:
-${options[1]}
-
-${labels.option3}:
-${options[2]}
-
-${labels.source}:
-${raw}
-
-${labels.note}: ${labels.noteText}`;
+  if (mode === "normal") return `${labels.option2}:\n${options[1]}\n\n${labels.source}:\n${raw}\n\n${labels.note}: ${labels.noteText}`;
+  return `${labels.gameType}: ${genre}\n${labels.style}: ${lang === "zh" ? "短标语；保留力量感和选择感。" : lang === "tr" ? "Kısa slogan; anlam, güç ve seçim hissi korundu." : "Short slogan; preserves meaning, power, and choice."}\n${labels.rule}: ${lang === "zh" ? "自然、简短，适合游戏内按钮或宣传语。" : lang === "tr" ? "Doğal, kısa ve oyun içi metne uygun." : "Natural, short, and ready for in-game use."}\n${labels.tone}: ${tone}\n\n${labels.option1}:\n${options[0]}\n\n${labels.option2}:\n${options[1]}\n\n${labels.option3}:\n${options[2]}\n\n${labels.source}:\n${raw}\n\n${labels.note}: ${labels.noteText}`;
 }
-
 async function localize(input) {
   const languageName = input.lang === "zh" ? "Chinese" : input.lang === "tr" ? "Turkish" : "English";
   const genre = input.genre || input.project?.genre || "auto";
@@ -1131,7 +1042,7 @@ async function fetchInstagramPostsWithApify(input = {}) {
       ok: false,
       code: "APIFY_TIMEOUT",
       actor: actorName,
-      error: "Apify actor uzun sürdü veya cevap vermedi. Maksimum post sayısını azaltıp tekrar dene ya da Render deploy'un güncel mi kontrol et."
+      error: "Apify actor uzun s眉rd眉 veya cevap vermedi. Maksimum post say谋s谋n谋 azalt谋p tekrar dene ya da Render deploy'un g眉ncel mi kontrol et."
     };
   }
   const data = await responseJsonSafe(response, "Apify");
@@ -1155,7 +1066,7 @@ async function fetchInstagramPostsWithApify(input = {}) {
       ok: false,
       code: "PROFILE_ACTOR_NO_POSTS",
       actor: actorName,
-      error: "Bu Apify actor profil bilgisi döndürdü ama post/caption/görsel döndürmedi. Son gönderi analizi için APIFY_ACTOR_ID değerini apify/instagram-post-scraper yap."
+      error: "Bu Apify actor profil bilgisi d枚nd眉rd眉 ama post/caption/g枚rsel d枚nd眉rmedi. Son g枚nderi analizi i莽in APIFY_ACTOR_ID de臒erini apify/instagram-post-scraper yap."
     };
   }
   if (!posts.length || posts.every((post) => !post.caption && !post.shortcode && !post.imageUrl && !post.videoUrl)) {
@@ -1164,7 +1075,7 @@ async function fetchInstagramPostsWithApify(input = {}) {
       code: "NO_USABLE_POST_DATA",
       actor: actorName,
       rawCount: rawItems.length,
-      error: "Apify sonuç döndürdü ama kullanılabilir post/caption/görsel verisi yok. Render'da APIFY_ACTOR_ID değerini apify/instagram-post-scraper yapıp yeniden deploy et."
+      error: "Apify sonu莽 d枚nd眉rd眉 ama kullan谋labilir post/caption/g枚rsel verisi yok. Render'da APIFY_ACTOR_ID de臒erini apify/instagram-post-scraper yap谋p yeniden deploy et."
     };
   }
   return {
@@ -1204,7 +1115,7 @@ Return JSON only:
 
 async function analyzeSocialContent(collection = {}) {
   if (!hasOpenAiKey() || typeof fetch !== "function") {
-    return { ok: false, code: "AI_NOT_CONFIGURED", error: "OpenAI key is missing. Render'da OPENAI_API_KEY olarak ekli olduğundan emin ol." };
+    return { ok: false, code: "AI_NOT_CONFIGURED", error: "OpenAI key is missing. Render'da OPENAI_API_KEY olarak ekli oldu臒undan emin ol." };
   }
   const prompt = socialAnalysisPrompt(collection);
   const imageUrls = [...new Set((collection.posts || []).flatMap((post) => post.images || post.imageUrl || []).filter(Boolean))].slice(0, 8);
@@ -1393,7 +1304,7 @@ function mapSerpApiGooglePlay(item = {}) {
     desc: description || "Description was not included in this search result.",
     originalKeywords: keywordListSummary(`${title} ${item.author || ""} ${category} ${description}`),
     keywords: keywordSummary(`${title} ${item.author || ""} ${category} ${description}`),
-    meta: [item.author, item.rating ? `Rating ${item.rating}` : "", item.downloads ? `${item.downloads} downloads` : "", category].filter(Boolean).join(" · "),
+    meta: [item.author, item.rating ? `Rating ${item.rating}` : "", item.downloads ? `${item.downloads} downloads` : "", category].filter(Boolean).join(" 路 "),
     url
   };
 }
@@ -1592,7 +1503,7 @@ function storeCountry(value = "Turkey") {
   const key = String(value || "").trim().toLowerCase();
   const map = {
     turkey: "TR",
-    türkiye: "TR",
+    t眉rkiye: "TR",
     tr: "TR",
     china: "CN",
     cn: "CN",
@@ -1611,8 +1522,8 @@ function storeCountry(value = "Turkey") {
 
 function reviewLangCode(value = "Turkish") {
   const key = String(value || "").trim().toLowerCase();
-  if (/turkish|türk|tr/.test(key)) return "tr";
-  if (/chinese|中文|zh|cn/.test(key)) return "zh";
+  if (/turkish|t眉rk|tr/.test(key)) return "tr";
+  if (/chinese|涓枃|zh|cn/.test(key)) return "zh";
   if (/arabic|ar/.test(key)) return "ar";
   return "en";
 }
@@ -1753,7 +1664,7 @@ Reply as a practical project assistant. If route is code, answer like a code/deb
 
 async function aiModuleResponse(body = {}) {
   const module = normalizeAiModule(body.module);
-  const hasKey = Boolean(env.OPENAI_API_KEY);
+  const hasKey = hasOpenAiKey();
   console.log(`[ai] route reached module=${module} keyConfigured=${hasKey}`);
   if (module === "status") {
     return { ok: true, configured: hasKey, data: { configured: hasKey } };
@@ -1874,9 +1785,9 @@ const server = http.createServer(async (req, res) => {
       const body = await readJson(req);
       const updates = {};
       if (body.youtubeApiKey) updates.YOUTUBE_API_KEY = body.youtubeApiKey;
-      if (body.openaiApiKey) updates.OPENAI_API_KEY = body.openaiApiKey;
-      if (body.openaiBaseUrl) updates.GPT_API_BASE_URL = String(body.openaiBaseUrl).trim().replace(/\/+$/, "").replace(/\/chat\/completions$/i, "");
-      if (body.openaiModel) updates.GPT_MODEL = body.openaiModel;
+      // AI credentials are managed only through Render/server environment variables.
+
+
       if (body.serpapiKey) updates.SERPAPI_KEY = body.serpapiKey;
       if (body.apifyToken) updates.APIFY_TOKEN = body.apifyToken;
       if (body.googleSecret) updates.GOOGLE_CLIENT_SECRET = body.googleSecret;
@@ -1931,11 +1842,9 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && req.url === "/api/client-config") {
       return send(res, 200, {
         youtubeApiKey: env.YOUTUBE_API_KEY || "",
-        openaiApiKey: env.OPENAI_API_KEY || "",
+        openaiConfigured: hasOpenAiKey(),
         serpapiKey: getSerpApiKey(),
-        apifyConfigured: Boolean(getApifyToken()),
-        openaiBaseUrl: getAiBaseUrl(),
-        openaiModel: getAiModel()
+        apifyConfigured: Boolean(getApifyToken())
       });
     }
     return serveFile(req, res);
@@ -1948,3 +1857,9 @@ const port = Number(process.env.PORT || 5177);
 server.listen(port, "0.0.0.0", () => {
   console.log(`PlayScope running at http://0.0.0.0:${port}`);
 });
+
+
+
+
+
+

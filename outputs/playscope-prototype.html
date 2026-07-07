@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="tr">
 <head>
   <meta charset="utf-8" />
@@ -1225,7 +1225,7 @@
       googlePlayLang: "en",
       googlePlayResults: [],
       selectedCompetitor: 0,
-      api: { youtube: "", openai: "", googleSecret: "", openaiBaseUrl: "https://api.xai.kg/v1", openaiModel: "gpt-5.5" }
+      api: { youtube: "", googleSecret: "", serpapi: "", apify: "" }
     };
     state.ai = state.ai || {};
     state.ai.review = state.ai.review || null;
@@ -1510,8 +1510,20 @@
       });
       return uploadedVods.slice(0, 10);
     }
-    async function fetchYouTubeVideoIdsForMetrics(channelId, apiKey) {
+    async function fetchYouTubeVideoIdsForMetrics(channelId, apiKey, uploadsPlaylistId = "") {
       const ids = [];
+      if (uploadsPlaylistId) {
+        let playlistPageToken = "";
+        for (let page = 0; page < 3 && ids.length < 120; page++) {
+          const tokenPart = playlistPageToken ? `&pageToken=${encodeURIComponent(playlistPageToken)}` : "";
+          const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId=${encodeURIComponent(uploadsPlaylistId)}&maxResults=50${tokenPart}&key=${encodeURIComponent(apiKey)}`;
+          const data = await fetch(url).then((res) => res.json()).catch(() => ({ items: [] }));
+          ids.push(...(data.items || []).map((item) => item.contentDetails?.videoId).filter(Boolean));
+          playlistPageToken = data.nextPageToken || "";
+          if (!playlistPageToken) break;
+        }
+      }
+      if (ids.length) return [...new Set(ids)];
       let pageToken = "";
       for (let page = 0; page < 3 && ids.length < 120; page++) {
         const tokenPart = pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : "";
@@ -2491,36 +2503,7 @@ Return exactly this JSON shape:
     }
 
     async function analyzeCompetitorWithGpt(payload) {
-      const config = getSavedGptConfig();
-      if (!config.openaiApiKey) throw new Error("GPT key missing.");
-      const baseUrl = normalizeGptBaseUrl(config.openaiBaseUrl || "https://api.openai.com/v1");
-      const preferredModel = config.openaiModel && config.openaiModel !== "auto" ? config.openaiModel : "";
-      let lastError = "";
-      for (const model of gptModelCandidates(preferredModel)) {
-        const response = await fetch(`${baseUrl}/chat/completions`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.openaiApiKey}` },
-          body: JSON.stringify({
-            model,
-            messages: [
-              { role: "system", content: "You return strict JSON for mobile game store localization analysis. Never skip keywords." },
-              { role: "user", content: buildCompetitorPrompt(payload) }
-            ],
-            temperature: 0.1,
-            max_tokens: 2200,
-            stream: false
-          })
-        }).catch((error) => ({ ok: false, status: "network", error }));
-        if (!response.ok) {
-          lastError = `${model}: ${await readGptError(response)}`;
-          continue;
-        }
-        const data = await response.json().catch(() => null);
-        const parsed = parseJsonObject(data?.choices?.[0]?.message?.content || "");
-        if (parsed) return parsed;
-        lastError = `${model}: invalid JSON`;
-      }
-      throw new Error(lastError || "GPT competitor analysis failed.");
+      throw new Error("AI competitor analysis runs only through the backend/Render environment.");
     }
 
     async function loadSerpApiKey() {
@@ -2661,7 +2644,7 @@ Return exactly this JSON shape:
       state.api = state.api || { youtube: "", openai: "", googleSecret: "", serpapi: "", apify: "" };
       const apiRows = [
         ["YouTube Data API", state.api.youtube],
-        ["OpenAI API", state.api.openai],
+        ["Backend AI (Render)", state.api.openaiConfigured],
         ["SerpAPI Google Play", state.api.serpapi],
         ["Apify Instagram", state.api.apify],
         ["Google Client Secret", state.api.googleSecret]
@@ -2670,7 +2653,7 @@ Return exactly this JSON shape:
         ${pageHead(tr("settings"), "Project and app preferences.")}
         <div class="grid half">
           ${panel(tr("brief"), `<div class="form-grid"><div><div class="field-label">${tr("projectName")}</div><input id="setName" value="${esc(state.project.name)}"></div><div><div class="field-label">${tr("genre")}</div><input id="setGenre" value="${esc(state.project.genre)}"></div><div><div class="field-label">${tr("markets")}</div><input id="setMarkets" value="${esc(state.project.markets)}"></div><div><div class="field-label">${tr("audience")}</div><input id="setAudience" value="${esc(state.project.audience)}"></div></div><div class="field-label">${tr("goal")}</div><input id="setGoal" value="${esc(state.project.goal)}"><div class="field-label" style="margin-top:12px">Keywords</div><input id="setKeywords" value="${esc(state.project.keywords)}"><button class="primary" id="saveSettingsBtn" style="margin-top:12px">${tr("save")}</button>`)}
-          ${panel(tr("apiStatus"), `<div class="form-grid"><div><div class="field-label">YouTube API Key</div><input id="apiYoutube" type="password" autocomplete="off" placeholder="${state.api.youtube ? "Saved" : "Paste key"}"></div><div><div class="field-label">GPT API Key</div><input id="apiOpenai" type="password" autocomplete="off" placeholder="${state.api.openai ? "Saved" : "Paste sk key"}"></div><div><div class="field-label">GPT API Endpoint</div><input id="apiOpenaiBaseUrl" autocomplete="off" value="${esc(state.api.openaiBaseUrl || "https://api.xai.kg/v1")}"></div><div><div class="field-label">GPT Model</div><input id="apiOpenaiModel" autocomplete="off" value="${esc(state.api.openaiModel || "auto")}"></div><div><div class="field-label">SerpAPI Key</div><input id="apiSerpapi" type="password" autocomplete="off" placeholder="${state.api.serpapi ? "Saved" : "Paste SerpAPI key"}"></div><div><div class="field-label">Apify API Token</div><input id="apiApify" type="password" autocomplete="off" placeholder="${state.api.apify ? "Saved" : "Paste Apify token"}"></div></div><div class="field-label">Team Password</div><input id="teamPassword" type="password" autocomplete="off" placeholder="Optional shared password"><div class="field-label" style="margin-top:12px">Google Client Secret</div><input id="apiGoogleSecret" type="password" autocomplete="off" placeholder="${state.api.googleSecret ? "Saved" : "Paste secret"}"><p class="note">Team mode: API keys and shared list can live on the server. Apify is used for Instagram social post analysis.</p><button class="primary" id="saveApiBtn" style="margin-top:12px">${tr("save")}</button><button id="clearApiBtn" style="margin-top:12px;margin-left:8px">Clear API keys</button><div class="task-list" style="margin-top:14px">${apiRows}<div class="task"><div><strong>Team sharing</strong><span>Shared state is saved on the local/backend server when available.</span></div><span class="tag good">${tr("ready")}</span></div></div>`)}
+          ${panel(tr("apiStatus"), `<div class="form-grid"><div><div class="field-label">YouTube API Key</div><input id="apiYoutube" type="password" autocomplete="off" placeholder="${state.api.youtube ? "Saved" : "Paste key"}"></div><div><div class="field-label">SerpAPI Key</div><input id="apiSerpapi" type="password" autocomplete="off" placeholder="${state.api.serpapi ? "Saved" : "Paste SerpAPI key"}"></div><div><div class="field-label">Apify API Token</div><input id="apiApify" type="password" autocomplete="off" placeholder="${state.api.apify ? "Saved" : "Paste Apify token"}"></div></div><div class="field-label">Team Password</div><input id="teamPassword" type="password" autocomplete="off" placeholder="Optional shared password"><div class="field-label" style="margin-top:12px">Google Client Secret</div><input id="apiGoogleSecret" type="password" autocomplete="off" placeholder="${state.api.googleSecret ? "Saved" : "Paste secret"}"><p class="note">Team mode: YouTube, SerpAPI, Apify and shared list can live on the server. AI is configured only in Render/server environment variables.</p><button class="primary" id="saveApiBtn" style="margin-top:12px">${tr("save")}</button><button id="clearApiBtn" style="margin-top:12px;margin-left:8px">Clear API keys</button><div class="task-list" style="margin-top:14px">${apiRows}<div class="task"><div><strong>Team sharing</strong><span>Shared state is saved on the local/backend server when available.</span></div><span class="tag good">${tr("ready")}</span></div></div>`)}
         </div>`;
       $("saveSettingsBtn").addEventListener("click", saveSettings);
       $("saveApiBtn").addEventListener("click", saveApiSettings);
@@ -2804,6 +2787,9 @@ Return exactly this JSON shape:
         const lookup = parseYouTubeLookup(input.name || "");
         let channelId = lookup.channelId;
         let searchTitle = "";
+        if (!channelId && lookup.videoId) {
+          channelId = await channelIdFromVideo(lookup.videoId, apiKey);
+        }
         if (!channelId && lookup.handle) {
           const handleCandidates = [...new Set([lookup.handle.replace(/^@/, ""), lookup.handle])];
           for (const handleCandidate of handleCandidates) {
@@ -2843,7 +2829,7 @@ Return exactly this JSON shape:
         }
         if (!channelId) return { ...localResearchResult(input), notes: "No YouTube channel found. Try exact channel name, channel URL, channel ID, or @handle." };
 
-        const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${encodeURIComponent(apiKey)}`;
+        const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&id=${channelId}&key=${encodeURIComponent(apiKey)}`;
         const channelResponse = await fetch(channelUrl);
         const channelData = await channelResponse.json();
         if (!channelResponse.ok || !channelData.items?.[0]) {
@@ -2851,7 +2837,7 @@ Return exactly this JSON shape:
           return { ...localResearchResult(input), notes: `YouTube API error from browser: ${reason}` };
         }
         const channel = channelData.items[0];
-        const videoIds = await fetchYouTubeVideoIdsForMetrics(channelId, apiKey);
+        const videoIds = await fetchYouTubeVideoIdsForMetrics(channelId, apiKey, channel.contentDetails?.relatedPlaylists?.uploads || "");
         let avgViews = 0;
         let avgComments = 0;
         let avgDurationSeconds = 0;
@@ -2931,6 +2917,12 @@ Return exactly this JSON shape:
       if (handleMatch) return { handle: "@" + handleMatch[1], query: handleMatch[1] };
       const videoMatch = value.match(/[?&]v=([A-Za-z0-9_-]{6,})/i) || value.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/i);
       if (videoMatch) return { videoId: videoMatch[1], query: value };
+      const customMatch = value.match(/youtube\.com\/(?:c|user)\/([^/?#]+)/i);
+      if (customMatch) return { query: decodeURIComponent(customMatch[1]).replace(/[-_]+/g, " ") };
+      const bareYoutubePath = value.match(/youtube\.com\/([^/?#]+)/i);
+      if (bareYoutubePath && !/^(watch|shorts|playlist|feed)$/i.test(bareYoutubePath[1])) {
+        return { query: decodeURIComponent(bareYoutubePath[1]).replace(/^@/, "").replace(/[-_]+/g, " ") };
+      }
       return { query: value };
     }
 
@@ -3432,96 +3424,7 @@ Return exactly this JSON shape:
     }
 
     async function classifyCreatorContentWithGPT(channel, videoItems, fallback) {
-      try {
-        let config = {
-          openaiApiKey: state.api?.openai || "",
-          openaiBaseUrl: state.api?.openaiBaseUrl || "https://api.xai.kg/v1",
-          openaiModel: state.api?.openaiModel || "auto"
-        };
-        try {
-          const configResponse = await fetch("/api/client-config");
-          const backendConfig = await configResponse.json();
-          config = { ...config, ...backendConfig };
-        } catch (error) {
-          // file:// mode cannot read the local backend config; use saved browser settings if present.
-        }
-        if (!config.openaiApiKey) return { ...fallback, source: "rule-based YouTube metadata", reason: `${fallback.reason} GPT classifier unavailable: no GPT API key.` };
-        const baseUrl = String(config.openaiBaseUrl || "https://api.openai.com/v1").replace(/\/+$/, "");
-        const preferredModel = config.openaiModel && config.openaiModel !== "auto" ? config.openaiModel : "";
-        const sample = {
-          channelTitle: channel.snippet?.title || "",
-          channelDescription: String(channel.snippet?.description || "").slice(0, 1200),
-          latestVideos: videoItems.slice(0, 10).map((video) => ({
-            title: video.snippet?.title || "",
-            description: String(video.snippet?.description || "").slice(0, 900),
-            tags: (video.snippet?.tags || []).slice(0, 25),
-            youtubeCategoryId: video.snippet?.categoryId || "",
-            youtubeCategory: youtubeCategoryName(video.snippet?.categoryId),
-            publishedAt: video.snippet?.publishedAt || "",
-            duration: video.contentDetails?.duration || "",
-            viewCount: video.statistics?.viewCount || "",
-            commentCount: video.statistics?.commentCount || ""
-          }))
-        };
-        const modelCandidates = [...new Set([preferredModel, "gpt-5", "gpt-5-mini", "chatgpt-4o-latest", "gpt-4o", "gpt-4.1-mini", "gpt-4.1"].filter(Boolean))];
-        let response = null;
-        let usedModel = "";
-        let lastError = "";
-        for (const model of modelCandidates) {
-          response = await fetch(`${baseUrl}/chat/completions`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${config.openaiApiKey}`
-            },
-            body: JSON.stringify({
-              model,
-              messages: [
-                { role: "system", content: "You are a senior influencer research analyst. Classify creators from supplied YouTube metadata only. Prioritize latest video titles, tags, descriptions, YouTube video categories, recency, and repeated themes over the channel name or generic channel description. Do not guess. If a creator is mixed, identify the dominant recent content pattern. Never classify a TV series, drama, movie, trailer, episode, or show clip as Gaming just because a title contains the word Game, such as Squid Game. Return strict JSON." },
-                { role: "user", content: `Analyze this creator's latest videos deeply and return JSON with keys: category, subcategory, confidence, keywords, reason, evidence. Evidence must cite 2-4 specific latest video titles or tags that justify the classification. Category should be broad but not limited to Gaming, Entertainment, Food/Travel, Lifestyle, Beauty/Fashion, Music, Education, Technology, News, Sports, Comedy, Unclear. Subcategory should be specific and can be any accurate content type, such as Horror Gaming, Variety Gaming / Just Chatting, FPS/Shooter, Gameplay/Let's Play, TV Series / Drama / Clips, Film / Movie Clips, Anime / Animation, Comedy / Sketch, Daily Vlog / Lifestyle, Tech Review / Gadgets, Education / Explainer, News / Politics, Reaction / Commentary. Base the decision mainly on the latestVideos array. If evidence is weak or mixed, category must be Unclear and subcategory Needs manual content review. Metadata:\n${JSON.stringify(sample)}` }
-              ],
-              temperature: 0,
-              max_tokens: 700,
-              stream: false
-            })
-          }).catch((error) => ({ ok: false, status: "network", error }));
-          if (response.ok) {
-            usedModel = model;
-            break;
-          }
-          lastError = response.error?.message || `HTTP ${response.status}`;
-        }
-        if (!response?.ok) return { ...fallback, source: "rule-based YouTube metadata", reason: `${fallback.reason} GPT classifier failed: ${lastError}.` };
-        const data = await response.json();
-        const parsed = parseJsonObject(data.choices?.[0]?.message?.content || "");
-        if (!parsed) return { ...fallback, source: "rule-based YouTube metadata", reason: `${fallback.reason} GPT classifier returned unreadable JSON.` };
-        const confidence = Math.max(0, Math.min(100, Number(parsed.confidence || fallback.confidence || 0)));
-        if (confidence < 55) {
-          return {
-            category: "Unclear",
-            subcategory: "Needs manual content review",
-            confidence,
-            genres: [],
-            keywords: Array.isArray(parsed.keywords) ? parsed.keywords.slice(0, 10) : extractKeywords(JSON.stringify(sample)),
-            source: `GPT analysis of YouTube metadata (${usedModel})`,
-            reason: parsed.reason || "GPT marked the evidence as too weak for reliable classification.",
-            evidence: Array.isArray(parsed.evidence) ? parsed.evidence.map(String).slice(0, 4) : []
-          };
-        }
-        const keywords = Array.isArray(parsed.keywords) ? parsed.keywords.map(String).slice(0, 10) : extractKeywords(JSON.stringify(sample));
-        return {
-          category: sanitizeCategory(parsed.category),
-          subcategory: sanitizeCategory(parsed.subcategory),
-          confidence,
-          genres: keywords.length ? keywords : fallback.genres,
-          keywords,
-          source: `GPT analysis of YouTube metadata (${usedModel})`,
-          reason: `${parsed.reason || "GPT classified from channel/video metadata."} Evidence: ${Array.isArray(parsed.evidence) ? parsed.evidence.join("; ") : parsed.evidence || "metadata reviewed"}`,
-          evidence: Array.isArray(parsed.evidence) ? parsed.evidence.map(String).slice(0, 4) : []
-        };
-      } catch (error) {
-        return { ...fallback, source: "rule-based YouTube metadata", reason: `${fallback.reason} GPT classifier error: ${error.message}` };
-      }
+      return { ...fallback, source: "rule-based YouTube metadata", reason: `${fallback.reason} AI classifier runs only on the backend; browser-side GPT is disabled.` };
     }
 
     function localResearchResult(input) {
@@ -4066,32 +3969,7 @@ Return exactly this JSON shape:
     }
 
     function getSavedGptConfig() {
-      return {
-        openaiApiKey: state.api?.openai || "",
-        openaiBaseUrl: state.api?.openaiBaseUrl || "https://api.xai.kg/v1",
-        openaiModel: state.api?.openaiModel || "auto"
-      };
-    }
-
-    function normalizeGptBaseUrl(value) {
-      let base = String(value || "https://api.openai.com/v1").trim();
-      if (!base) base = "https://api.openai.com/v1";
-      base = base.replace(/\/+$/, "");
-      base = base.replace(/\/chat\/completions$/i, "");
-      if (/^https:\/\/api\.openai\.com$/i.test(base)) base += "/v1";
-      return base;
-    }
-
-    function gptModelCandidates(preferred) {
-      return [...new Set([
-        preferred && preferred !== "auto" ? preferred : "",
-        "gpt-4o-mini",
-        "gpt-4o",
-        "gpt-4.1-mini",
-        "gpt-4.1",
-        "gpt-3.5-turbo",
-        "chatgpt-4o-latest"
-      ].filter(Boolean))];
+      return { openaiConfigured: Boolean(state.api?.openaiConfigured) };
     }
 
     async function readGptError(response) {
@@ -4116,8 +3994,6 @@ Return exactly this JSON shape:
       } catch (error) {
         // file:// mode uses browser-saved API settings.
       }
-      const baseUrl = normalizeGptBaseUrl(config.openaiBaseUrl || "https://api.openai.com/v1");
-      const preferredModel = config.openaiModel && config.openaiModel !== "auto" ? config.openaiModel : "";
       const dataUrl = await fileToDataUrl(file);
       const imageBackendTargets = [...new Set([
         ...backendTargets(),
@@ -4142,49 +4018,7 @@ Return exactly this JSON shape:
           // Backend may be unavailable; direct GPT request is tried below.
         }
       }
-      if (!config.openaiApiKey) throw new Error("GPT API key gerekli. Settings sayfasina GPT key'i kaydet.");
-      const modelCandidates = gptModelCandidates(preferredModel);
-      let lastError = "";
-      for (const model of modelCandidates) {
-        if (status) status.textContent = `Reading image with GPT (${model})...`;
-        const response = await fetch(`${baseUrl}/chat/completions`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${config.openaiApiKey}`
-          },
-          body: JSON.stringify({
-            model,
-            messages: [
-              { role: "system", content: "Extract influencer research table data from images. Return strict JSON only. Do not invent missing values." },
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: `Read this image. It belongs to this creator/channel when provided: ${JSON.stringify(context)}. Extract every visible influencer/creator row as JSON. Return exactly: {\"rows\":[{\"Channel Name\":\"\",\"Link\":\"\",\"GEO\":\"\",\"Gender\":\"\",\"Age\":\"\",\"Category\":\"\",\"Subcategory\":\"\",\"Subscribers\":\"\",\"avg Views\":\"\",\"Format\":\"\",\"Duration\":\"\",\"Keywords\":\"\",\"Comments\":\"\"}]}. If a cell is not visible, leave it empty. Preserve YouTube links and names exactly. For Scrumball screenshots, include followers, avg engagement, avg view rate, monthly post, audience location countries, and visible age/gender analysis. If an age/gender bar chart is visible, calculate Age as total Female+Male per age group, formatted like "13-17: 14%; 18-24: 44%; 25-34: 25%". Calculate Gender separately as total Female vs Male, formatted like "F52% / M48%". Do not put gender percentages inside Age.` },
-                  { type: "image_url", image_url: { url: dataUrl } }
-                ]
-              }
-            ],
-            temperature: 0,
-            max_tokens: 1800,
-            stream: false
-          })
-        }).catch((error) => ({ ok: false, status: "network", error }));
-        if (!response.ok) {
-          lastError = `${model}: ${await readGptError(response)}`;
-          continue;
-        }
-        const data = await response.json().catch((error) => {
-          lastError = `${model}: GPT JSON parse failed (${error.message})`;
-          return null;
-        });
-        if (!data) continue;
-        const parsed = parseJsonObject(data.choices?.[0]?.message?.content || "");
-        const rows = Array.isArray(parsed?.rows) ? parsed.rows : [];
-        if (!rows.length) throw new Error("Gorselden kullanilabilir satir bulunamadi.");
-        return rows;
-      }
-      throw new Error(`GPT image read failed: ${lastError}`);
+      throw new Error("AI image reading is only available through the local or Render backend. Start PlayScope backend or deploy with the AI key configured on Render.");
     }
 
     function normalizeNumberText(value) {
@@ -5400,74 +5234,7 @@ ${copy}`;
     }
 
     async function localizeWithClientGpt({ source, lang, tone, genre, mode }) {
-      const config = getSavedGptConfig();
-      if (!config.openaiApiKey) return null;
-      const baseUrl = normalizeGptBaseUrl(config.openaiBaseUrl || "https://api.openai.com/v1");
-      const preferredModel = config.openaiModel && config.openaiModel !== "auto" ? config.openaiModel : "";
-      const modelCandidates = gptModelCandidates(preferredModel);
-      const languageName = localizationLanguageName(lang);
-      const prompt = `You are a senior mobile game in-game localization specialist.
-Translate and adapt the source text into ${languageName}.
-
-Important:
-- This is for game UI, in-game words, skill/item names, quest text, tutorial text, buttons, dialogue, rewards, and system messages.
-- If mode is normal, give a faithful normal translation.
-- If mode is game or both, still give one main translation; lightly adapt tone to the game genre without changing the meaning.
-- Do not leave source-language fragments untranslated.
-- Do not do broken word-by-word replacement.
-- Use natural target-language grammar and correct characters.
-- Keep short UI text short.
-- Do not return Option 1, Option 2, Option 3, variants, or duplicate alternatives.
-- Return one clean final translation only.
-- Under the translation, provide a glossary with reusable terms or phrase suggestions.
-- Preserve key meaning such as create, conquer, build, lead, reward, claim, upgrade, join, battle, survive, explore.
-- For Turkish, use Turkish characters.
-- For Chinese, use Simplified Chinese.
-- Genre: ${genre}.
-- Tone: ${tone}.
-- Mode: ${mode}.
-
-Return with clear headings in the target language:
-Game type/style analysis
-Translation
-Glossary / reusable suggestions
-Note
-Source text
-
-Source text:
-${source}`;
-      let lastError = "";
-      for (const model of modelCandidates) {
-        const response = await fetch(`${baseUrl}/chat/completions`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${config.openaiApiKey}`
-          },
-          body: JSON.stringify({
-            model,
-            messages: [
-              { role: "system", content: "You produce high-quality mobile game localization. Return only the requested localized output." },
-              { role: "user", content: prompt }
-            ],
-            temperature: 0.25,
-            max_tokens: 1200,
-            stream: false
-          })
-        }).catch((error) => ({ ok: false, status: "network", error }));
-        if (!response.ok) {
-          lastError = `${model}: ${await readGptError(response)}`;
-          continue;
-        }
-        const data = await response.json().catch((error) => {
-          lastError = `${model}: GPT JSON parse failed (${error.message})`;
-          return null;
-        });
-        if (!data) continue;
-        const text = data.choices?.[0]?.message?.content?.trim();
-        if (text) return { text, model };
-      }
-      throw new Error(lastError || "GPT localization failed.");
+      return null;
     }
 
     async function localizeWithBackend({ source, lang, tone, genre, mode }) {
@@ -5747,19 +5514,13 @@ ${labels.note}: ${labels.noteText}`;
       saveState(); render();
     }
     async function saveApiSettings() {
-      state.api = state.api || { youtube: "", openai: "", googleSecret: "", serpapi: "", apify: "", openaiBaseUrl: "https://api.xai.kg/v1", openaiModel: "gpt-5.5" };
+      state.api = state.api || { youtube: "", googleSecret: "", serpapi: "", apify: "" };
       const youtube = $("apiYoutube").value.trim();
-      const openai = $("apiOpenai").value.trim();
-      const openaiBaseUrl = normalizeGptBaseUrl($("apiOpenaiBaseUrl").value.trim());
-      const openaiModel = $("apiOpenaiModel").value.trim();
       const serpapi = $("apiSerpapi")?.value.trim() || "";
       const apify = $("apiApify")?.value.trim() || "";
       const googleSecret = $("apiGoogleSecret").value.trim();
       const teamPassword = $("teamPassword")?.value.trim() || "";
       if (youtube) state.api.youtube = youtube;
-      if (openai) state.api.openai = openai;
-      if (openaiBaseUrl) state.api.openaiBaseUrl = openaiBaseUrl;
-      if (openaiModel) state.api.openaiModel = openaiModel;
       if (serpapi) {
         state.api.serpapi = serpapi;
         localStorage.setItem("playscope-serpapi-key", serpapi);
@@ -5773,9 +5534,6 @@ ${labels.note}: ${labels.noteText}`;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           youtubeApiKey: youtube,
-          openaiApiKey: openai,
-          openaiBaseUrl: state.api.openaiBaseUrl,
-          openaiModel: state.api.openaiModel,
           serpapiKey: serpapi,
           apifyToken: apify,
           googleSecret,
@@ -5785,7 +5543,7 @@ ${labels.note}: ${labels.noteText}`;
       render();
     }
     function clearApiSettings() {
-      state.api = { youtube: "", openai: "", googleSecret: "", serpapi: "", apify: "", openaiBaseUrl: "https://api.xai.kg/v1", openaiModel: "gpt-5.5" };
+      state.api = { youtube: "", googleSecret: "", serpapi: "", apify: "" };
       localStorage.removeItem("playscope-serpapi-key");
       saveState();
       render();
@@ -6591,3 +6349,7 @@ ${labels.note}: ${labels.noteText}`;
   </script>
 </body>
 </html>
+
+
+
+
