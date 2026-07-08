@@ -85,14 +85,14 @@ function getAiModuleModelCandidates(module) {
     ? (env.REVIEW_MODEL || env.AI_REVIEW_MODEL || env.AI_MODEL || "")
     : (env.AI_MODEL || "");
   const legacyModel = env.GPT_MODEL && env.GPT_MODEL !== "auto" ? env.GPT_MODEL : "";
+  const configured = [preferred, legacyModel]
+    .map((value) => String(value || "").trim())
+    .filter((value) => value && value !== "auto" && !/^gpt-4\.1/i.test(value) && !/^gpt-5\.5/i.test(value));
   return [...new Set([
-    preferred && preferred !== "auto" ? preferred : "",
-    "gpt-5.5",
-    legacyModel,
-    "gpt-4o-mini",
+    ...configured,
     "gpt-4o",
-    "gpt-4.1-mini",
-    "gpt-4.1"
+    "gpt-4o-mini",
+    "chatgpt-4o-latest"
   ].filter(Boolean))];
 }
 
@@ -1916,6 +1916,7 @@ const port = Number(process.env.PORT || 5177);
 server.listen(port, "0.0.0.0", () => {
   console.log(`PlayScope running at http://0.0.0.0:${port}`);
 });
+
 
 
 
