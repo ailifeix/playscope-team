@@ -47,16 +47,26 @@ function getAiModel() {
   return env.GPT_MODEL && env.GPT_MODEL !== "auto" ? env.GPT_MODEL : "gpt-4o-mini";
 }
 
+function autoModelCandidates() {
+  const configured = String(env.AUTO_MODEL_CANDIDATES || "")
+    .split(/[;,\s]+/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const fallback = ["gpt-4o", "gpt-4o-mini"];
+  return [...new Set([...(configured.length ? configured : fallback), ...fallback])];
+}
+
+function allowedConfiguredModel(value) {
+  const model = String(value || "").trim();
+  if (!model || model === "auto") return "";
+  if (/^gpt-4\.1/i.test(model) || /^gpt-5/i.test(model) || /^chatgpt/i.test(model)) return "";
+  return model;
+}
 function getAiModelCandidates() {
-  const preferred = env.GPT_MODEL && env.GPT_MODEL !== "auto" ? env.GPT_MODEL : "";
+  const preferred = allowedConfiguredModel(env.GPT_MODEL);
   return [...new Set([
     preferred,
-    "gpt-4o-mini",
-    "gpt-4o",
-    "gpt-4.1-mini",
-    "gpt-4.1",
-    "gpt-3.5-turbo",
-    "chatgpt-4o-latest"
+    ...autoModelCandidates()
   ].filter(Boolean))];
 }
 
@@ -82,17 +92,13 @@ function getAiModuleWireApi() {
 
 function getAiModuleModelCandidates(module) {
   const preferred = module === "review"
-    ? (env.REVIEW_MODEL || env.AI_REVIEW_MODEL || env.AI_MODEL || "")
-    : (env.AI_MODEL || "");
-  const legacyModel = env.GPT_MODEL && env.GPT_MODEL !== "auto" ? env.GPT_MODEL : "";
-  const configured = [preferred, legacyModel]
-    .map((value) => String(value || "").trim())
-    .filter((value) => value && value !== "auto" && !/^gpt-4\.1/i.test(value) && !/^gpt-5\.5/i.test(value));
+    ? allowedConfiguredModel(env.REVIEW_MODEL || env.AI_REVIEW_MODEL || env.AI_MODEL)
+    : allowedConfiguredModel(env.AI_MODEL);
+  const legacyModel = allowedConfiguredModel(env.GPT_MODEL);
   return [...new Set([
-    ...configured,
-    "gpt-4o",
-    "gpt-4o-mini",
-    "chatgpt-4o-latest"
+    preferred,
+    legacyModel,
+    ...autoModelCandidates()
   ].filter(Boolean))];
 }
 
@@ -1916,6 +1922,8 @@ const port = Number(process.env.PORT || 5177);
 server.listen(port, "0.0.0.0", () => {
   console.log(`PlayScope running at http://0.0.0.0:${port}`);
 });
+
+
 
 
 
