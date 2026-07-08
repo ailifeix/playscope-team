@@ -15,7 +15,7 @@ const publicDir = __dirname;
 const envPath = path.join(root, ".env.local");
 const dataDir = path.join(root, "work");
 const sharedStatePath = path.join(dataDir, "playscope-shared-state.json");
-const appVersion = "social-ai-text-fallback-2026-06-17-1";
+const appVersion = "codex5-gpt54-model-2026-07-08-1";
 
 function readEnv() {
   const env = { ...process.env };
@@ -43,31 +43,17 @@ function getAiBaseUrl() {
   return base;
 }
 
-function getAiModel() {
-  return env.GPT_MODEL && env.GPT_MODEL !== "auto" ? env.GPT_MODEL : "gpt-4o-mini";
-}
-
-function autoModelCandidates() {
-  const configured = String(env.AUTO_MODEL_CANDIDATES || "")
-    .split(/[;,\s]+/)
-    .map((value) => value.trim())
-    .filter(Boolean);
-  const fallback = ["gpt-4o", "gpt-4o-mini"];
-  return [...new Set([...(configured.length ? configured : fallback), ...fallback])];
-}
-
-function allowedConfiguredModel(value) {
-  const model = String(value || "").trim();
-  if (!model || model === "auto") return "";
-  if (/^gpt-4\.1/i.test(model) || /^gpt-5/i.test(model) || /^chatgpt/i.test(model)) return "";
+function normalizeModelName(value) {
+  const model = String(value || "auto").trim() || "auto";
+  if (/^chatgpt/i.test(model)) return "auto";
   return model;
 }
+function getAiModel() {
+  return normalizeModelName(env.GPT_MODEL || env.AI_MODEL || "auto");
+}
+
 function getAiModelCandidates() {
-  const preferred = allowedConfiguredModel(env.GPT_MODEL);
-  return [...new Set([
-    preferred,
-    ...autoModelCandidates()
-  ].filter(Boolean))];
+  return [normalizeModelName(env.GPT_MODEL || env.AI_MODEL || "auto")];
 }
 
 function getAiModuleBaseUrl() {
@@ -91,15 +77,10 @@ function getAiModuleWireApi() {
 }
 
 function getAiModuleModelCandidates(module) {
-  const preferred = module === "review"
-    ? allowedConfiguredModel(env.REVIEW_MODEL || env.AI_REVIEW_MODEL || env.AI_MODEL)
-    : allowedConfiguredModel(env.AI_MODEL);
-  const legacyModel = allowedConfiguredModel(env.GPT_MODEL);
-  return [...new Set([
-    preferred,
-    legacyModel,
-    ...autoModelCandidates()
-  ].filter(Boolean))];
+  const model = module === "review"
+    ? (env.REVIEW_MODEL || env.AI_REVIEW_MODEL || env.AI_MODEL || env.GPT_MODEL || "auto")
+    : (env.AI_MODEL || env.GPT_MODEL || "auto");
+  return [normalizeModelName(model)];
 }
 
 function getAiReasoningEffort() {
@@ -1922,6 +1903,11 @@ const port = Number(process.env.PORT || 5177);
 server.listen(port, "0.0.0.0", () => {
   console.log(`PlayScope running at http://0.0.0.0:${port}`);
 });
+
+
+
+
+
 
 
 
