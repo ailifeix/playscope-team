@@ -1818,7 +1818,7 @@
             <div><div class="field-label">${tr("country")}</div><input id="researchCountry" value="Turkey"></div>
             <div><div class="field-label">${tr("channel")}</div><select id="researchChannel"><option>YouTube</option><option>Twitch</option><option>TikTok</option></select></div>
             <div><div class="field-label">${tr("avgViews")}</div><input id="researchViews" type="number" value="88000"></div>
-          </div><div class="field-label">Genres</div><input id="researchGenres" value="strategy mobile space"><button class="primary" id="addResearchBtn" type="button" style="margin-top:12px">${tr("analyze")}</button><button class="coral" id="importExtensionBtn" type="button" style="margin-top:12px;margin-left:8px">Import Extension Data</button><div class="field-label" style="margin-top:14px">YouTube + Scrumball auto OCR</div><input id="scrumballYoutubeUrl" placeholder="Paste YouTube channel/video link"><button class="primary" id="autoScrumballBtn" type="button" style="margin-top:12px">Open, screenshot Scrumball, analyze</button><p class="note" id="researchStatus">${tr("apiSafe")}</p><p class="note">Auto Scrumball OCR works when PlayScope is running locally on Windows. Render cannot capture your computer screen.</p>`)}
+          </div><div class="field-label">Genres</div><input id="researchGenres" value="strategy mobile space"><button class="primary" id="addResearchBtn" type="button" style="margin-top:12px">${tr("analyze")}</button><button class="coral" id="importExtensionBtn" type="button" style="margin-top:12px;margin-left:8px">Import Extension Data</button><div class="field-label" style="margin-top:14px">YouTube + Scrumball auto OCR</div><input id="scrumballYoutubeUrl" placeholder="Paste YouTube channel/video link"><button class="primary" id="autoScrumballBtn" type="button" style="margin-top:12px">Open, screenshot Scrumball, analyze</button><p class="note" id="researchStatus">${tr("apiSafe")}</p><p class="note">On Render, the browser will ask you to select the YouTube/Scrumball tab for capture. Local backend can capture automatically.</p>`)}
           ${panel("Excel / Copy-paste import", `<div class="form-grid">
             <div>
               <div class="field-label">Excel / CSV file</div>
@@ -2730,6 +2730,60 @@ Return exactly this JSON shape:
       render();
     }
 
+
+    async function captureScrumballFromBrowserTab(url, status) {
+      if (!navigator.mediaDevices?.getDisplayMedia) {
+        throw new Error("This browser does not support screen capture. Use Chrome/Edge and HTTPS Render URL.");
+      }
+      if (url && /^https?:\/\//i.test(url)) {
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
+      if (status) status.textContent = "Select the YouTube tab/window where Scrumball is visible.";
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "browser" }, audio: false });
+      try {
+        const video = document.createElement("video");
+        video.srcObject = stream;
+        video.muted = true;
+        await video.play();
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        const width = video.videoWidth || 1280;
+        const height = video.videoHeight || 720;
+        const fullCanvas = document.createElement("canvas");
+        fullCanvas.width = width;
+        fullCanvas.height = height;
+        const fullCtx = fullCanvas.getContext("2d");
+        fullCtx.drawImage(video, 0, 0, width, height);
+        const cropWidth = Math.max(1, Math.round(width * 0.42));
+        const cropX = Math.max(0, width - cropWidth);
+        const cropY = Math.min(70, height - 1);
+        const cropHeight = Math.max(1, height - cropY - 20);
+        const cropCanvas = document.createElement("canvas");
+        cropCanvas.width = cropWidth;
+        cropCanvas.height = cropHeight;
+        cropCanvas.getContext("2d").drawImage(fullCanvas, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+        return cropCanvas.toDataURL("image/png");
+      } finally {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    }
+
+    async function analyzeScrumballDataUrl(dataUrl, url, status) {
+      if (status) status.textContent = "Reading selected Scrumball panel with backend GPT...";
+      const response = await fetchTeamApi("/api/read-image-data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...sharedHeaders() },
+        body: JSON.stringify({ image: dataUrl, context: { channelLink: url, source: "browser-screen-capture" } })
+      });
+      const result = await response.json();
+      if (!result.ok) throw new Error(result.error || "GPT could not read the Scrumball panel.");
+      const rows = Array.isArray(result.rows) ? result.rows.map((row) => ({
+        ...row,
+        Link: fieldFromRow(row, ["link", "url", "youtube", "youtube link"]) || url,
+        Comments: [fieldFromRow(row, ["comments", "notes", "comment"]), "Browser Scrumball screen capture"].filter(Boolean).join("; ")
+      })) : [];
+      if (!rows.length) throw new Error("GPT read the screen but did not find usable influencer rows.");
+      return rows;
+    }
     async function autoScrumballResearch() {
       const status = $("researchStatus");
       const url = $("scrumballYoutubeUrl")?.value.trim() || $("researchName")?.value.trim() || "";
@@ -2737,6 +2791,7 @@ Return exactly this JSON shape:
         if (status) status.textContent = "Paste a YouTube link first.";
         return;
       }
+      let rows = [];
       try {
         if (status) status.textContent = "Opening YouTube and waiting for Scrumball panel...";
         const response = await fetchTeamApi("/api/capture-scrumball", {
@@ -2746,16 +2801,23 @@ Return exactly this JSON shape:
         });
         const result = await response.json();
         if (!result.ok) throw new Error(result.error || "Scrumball capture failed.");
-        const rows = Array.isArray(result.rows) ? result.rows : [];
-        if (!rows.length) {
-          if (status) status.textContent = "Scrumball screenshot was saved, but GPT could not extract usable rows. Try uploading the saved scrumball-panel.png in Image data import.";
+        rows = Array.isArray(result.rows) ? result.rows : [];
+      } catch (localError) {
+        try {
+          if (status) status.textContent = "Local auto-capture is unavailable. Opening browser capture mode...";
+          const dataUrl = await captureScrumballFromBrowserTab(url, status);
+          rows = await analyzeScrumballDataUrl(dataUrl, url, status);
+        } catch (browserError) {
+          if (status) status.textContent = browserError.message || localError.message;
           return;
         }
-        if (status) status.textContent = `Scrumball panel read: ${rows.length} row(s). Checking YouTube API...`;
-        await analyzeInfluencerRows(rows, "researchStatus");
-      } catch (error) {
-        if (status) status.textContent = error.message;
       }
+      if (!rows.length) {
+        if (status) status.textContent = "Scrumball panel was captured, but GPT could not extract usable rows.";
+        return;
+      }
+      if (status) status.textContent = `Scrumball panel read: ${rows.length} row(s). Checking YouTube API...`;
+      await analyzeInfluencerRows(rows, "researchStatus");
     }
     async function addResearchInfluencer() {
       const name = $("researchName").value.trim() || "NewCreator";
@@ -6378,6 +6440,7 @@ ${labels.note}: ${labels.noteText}`;
   </script>
 </body>
 </html>
+
 
 
 
