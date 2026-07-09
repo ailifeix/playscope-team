@@ -1353,17 +1353,18 @@
     function splitAgeGender(ageValue, genderValue = "") {
       let ageText = String(ageValue || "").replace(/\s+/g, " ").trim();
       let genderText = String(genderValue || "").replace(/\s+/g, " ").trim();
-      const genderMatches = ageText.match(/(?:M(?:ale)?|F(?:emale)?)[\s:]*\d+(?:\.\d+)?%/gi) || [];
+      const approxAge = /^≈/.test(ageText);
+      const genderMatches = ageText.match(/≈?\s*(?:M(?:ale)?|F(?:emale)?)[\s:]*\d+(?:\.\d+)?%/gi) || [];
       if (genderMatches.length && (!genderText || genderText === "Missing")) {
-        const male = genderMatches.find((item) => /^m/i.test(item));
-        const female = genderMatches.find((item) => /^f/i.test(item));
+        const male = genderMatches.find((item) => /^≈?\s*m/i.test(item));
+        const female = genderMatches.find((item) => /^≈?\s*f/i.test(item));
         genderText = [male, female]
           .filter(Boolean)
-          .map((item) => item.replace(/^male/i, "M").replace(/^female/i, "F").replace(/\s*:\s*/g, ""))
+          .map((item) => item.replace(/^≈?\s*male/i, "M").replace(/^≈?\s*female/i, "F").replace(/\s*:\s*/g, "").replace(/\s+/g, ""))
           .join(" / ");
       }
       const ageSegments = [];
-      const segmentRegex = /(\d{1,2}\s*[-–]\s*\d{1,2})\s*:?\s*([^;|]+?)(?=\s*\d{1,2}\s*[-–]\s*\d{1,2}\s*:?|$|;|\|)/g;
+      const segmentRegex = /≈?\s*(\d{1,2}\s*[-–]\s*\d{1,2})\s*:?\s*([^;|]+?)(?=\s*≈?\s*\d{1,2}\s*[-–]\s*\d{1,2}\s*:?|$|;|\|)/g;
       let segmentMatch;
       while ((segmentMatch = segmentRegex.exec(ageText))) {
         const range = segmentMatch[1].replace(/\s+/g, "");
@@ -1379,7 +1380,7 @@
         .replace(/(?:dominant|baskin)\s*(?:age|yas|yaş)\s*[:~-]?\s*/gi, "")
         .replace(/avg\.?\s*(?:age|yas|yaş)\s*[:~-]?\s*/gi, "")
         .replace(/(?:average|ortalama)\s*(?:age|yas|yaş)\s*[:~-]?\s*/gi, "")
-        .replace(/(?:M(?:ale)?|F(?:emale)?)[\s:]*\d+(?:\.\d+)?%/gi, "")
+        .replace(/≈?\s*(?:M(?:ale)?|F(?:emale)?)[\s:]*\d+(?:\.\d+)?%/gi, "")
         .replace(/[;,/|]+\s*[;,/|]+/g, "; ")
         .replace(/^[\s:;,.~\-]+|[\s:;,.~\-]+$/g, "")
         .replace(/\s{2,}/g, " ");
@@ -1391,6 +1392,7 @@
         return match ? `${match[1]}-${match[2]}: ${match[3]}%` : range;
       }).join("; ");
       else if (avg) ageText = avg[0].replace(/^~/, "").trim();
+      if (approxAge && ageText && !/^≈/.test(ageText)) ageText = `≈${ageText}`;
       return { age: ageText || "Missing", gender: genderText || "Missing" };
     }
     function normalizeInfluencer(item) {
@@ -1415,7 +1417,7 @@
       };
     }
     state.influencers = (state.influencers || []).map(normalizeInfluencer);
-    function unavailableDemo(value) { return !value || value === "Missing" || value === "-" || value === "Unknown"; }
+    function unavailableDemo(value) { return isNoDataValue(value); }
     function demoValue(value) { return unavailableDemo(value) ? "Free data yok" : value; }
     function views(value) {
       const num = Number(value || 0);
@@ -3689,9 +3691,34 @@ Return exactly this JSON shape:
       const entries = Object.entries(row);
       const wanted = aliases.map(compactKey);
       const exact = entries.find(([key]) => wanted.includes(compactKey(key)));
-      if (exact) return String(exact[1] || "").trim();
+      if (exact) return cleanImportedValue(exact[1]);
       const loose = entries.find(([key]) => wanted.some((alias) => compactKey(key).includes(alias)));
-      return loose ? String(loose[1] || "").trim() : "";
+      return loose ? cleanImportedValue(loose[1]) : "";
+    }
+
+    function cleanImportedValue(value) {
+      const text = String(value || "").replace(/\s+/g, " ").trim();
+      if (isNoDataValue(text)) return "";
+      return text;
+    }
+
+    function isNoDataValue(value) {
+      const text = String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
+      return !text ||
+        text === "-" ||
+        text === "missing" ||
+        text === "unknown" ||
+        text === "free data yok" ||
+        text === "free data" ||
+        text === "yok" ||
+        text === "n/a" ||
+        text === "na" ||
+        text === "null" ||
+        text === "undefined";
+    }
+
+    function firstUsefulValue(...values) {
+      return values.map(cleanImportedValue).find(Boolean) || "";
     }
 
     function extractAudienceHintsFromText(value) {
@@ -3730,6 +3757,13 @@ Return exactly this JSON shape:
         if (fmMatch) result.gender = `F${Math.round(Number(normalizeNumberText(fmMatch[1])))}% / M${Math.round(Number(normalizeNumberText(fmMatch[2])))}%`;
         else if (mfMatch) result.gender = `F${Math.round(Number(normalizeNumberText(mfMatch[2])))}% / M${Math.round(Number(normalizeNumberText(mfMatch[1])))}%`;
       }
+      const countryMatches = [];
+      const countryPattern = /(Turkey|Azerbaijan|Germany|Netherlands|United Kingdom|United States|USA|France|Brazil|Japan|Korea|China|India|Spain|Italy)\s+(\d+(?:[.,]\d+)?)\s*%/gi;
+      let countryMatch;
+      while ((countryMatch = countryPattern.exec(compact))) {
+        countryMatches.push(`${countryMatch[1]} ${normalizeNumberText(countryMatch[2])}%`);
+      }
+      if (countryMatches.length) result.geo = countryMatches.join("; ");
       return result;
     }
 
@@ -3737,9 +3771,9 @@ Return exactly this JSON shape:
       const combinedAudienceText = Object.entries(row || {}).map(([key, value]) => `${key}: ${value}`).join("\n");
       const audienceHints = extractAudienceHintsFromText(combinedAudienceText);
       return {
-        geo: fieldFromRow(row, ["geo", "country", "market", "ülke", "ulke", "audience location", "analyze the audience location", "location", "top country"]),
-        gender: fieldFromRow(row, ["gender", "cinsiyet", "audience gender", "gender split", "female male", "female/male", "demographics"]) || audienceHints.gender,
-        age: fieldFromRow(row, ["age", "yas", "yaş", "audience age", "age gender", "age/gender", "age distribution", "audience age gender", "audience age&gender analysis", "age gender analysis"]) || audienceHints.age,
+        geo: firstUsefulValue(fieldFromRow(row, ["geo", "country", "market", "ülke", "ulke", "audience location", "analyze the audience location", "location", "top country"]), audienceHints.geo),
+        gender: firstUsefulValue(fieldFromRow(row, ["gender", "cinsiyet", "audience gender", "gender split", "female male", "female/male", "demographics"]), audienceHints.gender),
+        age: firstUsefulValue(fieldFromRow(row, ["age", "yas", "yaş", "audience age", "age gender", "age/gender", "age distribution", "audience age gender", "audience age&gender analysis", "age gender analysis"]), audienceHints.age),
         subscribers: fieldFromRow(row, ["subscribers", "followers", "takipci", "takipçi", "subs"]),
         views: fieldFromRow(row, ["avg views", "views", "average views", "avg view", "izlenme"]),
         avgComments: fieldFromRow(row, ["avg comments", "average comments", "yorum ortalama"]),
@@ -3797,7 +3831,7 @@ Return exactly this JSON shape:
       const current = state.influencers[existingIndex];
       const merged = normalizeInfluencer({
         ...current,
-        ...Object.fromEntries(Object.entries(normalized).filter(([, value]) => value !== "" && value !== "-" && value !== 0 && value !== "Free data yok")),
+        ...Object.fromEntries(Object.entries(normalized).filter(([, value]) => value !== 0 && !isNoDataValue(value))),
         note: current.note || normalized.note,
         comments: [current.comments, normalized.comments].filter(Boolean).join("; "),
         notes: [current.notes, normalized.notes].filter(Boolean).join("; ")
@@ -3854,25 +3888,27 @@ Return exactly this JSON shape:
         return;
       }
       await ensureBrowserYouTubeKey();
-      if (!state.api?.youtube) {
-        if (status) status.textContent = "YouTube API key gerekli. Settings sayfasina key'i kaydet.";
-        return;
-      }
       const imported = [];
       const skipped = [];
       for (let index = 0; index < seeds.length; index += 1) {
         const seed = seeds[index];
         if (status) status.textContent = `Analyzing ${index + 1}/${seeds.length}: ${seed.name || seed.link}`;
-        const live = await youtubeFromBrowser({
+        const hints = getImportedRowHints(seed.raw || {});
+        const live = state.api?.youtube ? await youtubeFromBrowser({
           name: seed.link || seed.name,
           fallbackName: seed.name,
-          country: seed.country || "Turkey",
+          country: seed.country || hints.geo || "Turkey",
           channel: "YouTube",
           views: 0,
           genres: "",
           project: state.project
-        }, state.api.youtube);
-        const hints = getImportedRowHints(seed.raw || {});
+        }, state.api.youtube) : localResearchResult({
+          name: seed.name || seed.link,
+          country: hints.geo || seed.country || "Turkey",
+          channel: "YouTube",
+          views: 0,
+          genres: ""
+        });
         if (live.source !== "youtube-live" && !hasUsefulImportedMetrics(hints)) {
           skipped.push(seed.name || seed.link);
           continue;
@@ -3883,10 +3919,10 @@ Return exactly this JSON shape:
           ...live,
           name: live.name || seed.name,
           link: live.link || seed.link,
-          country: live.country || seed.country,
-          geo: hints.geo || live.geo || seed.country,
-          gender: hints.gender || live.gender,
-          age: hints.age || live.age,
+          country: firstUsefulValue(hints.geo, live.country, seed.country, "Turkey"),
+          geo: firstUsefulValue(hints.geo, live.geo, seed.country),
+          gender: firstUsefulValue(hints.gender, live.gender),
+          age: firstUsefulValue(hints.age, live.age),
           subscribers: live.source === "youtube-live" ? live.subscribers : (hints.subscribers || live.subscribers),
           views: live.source === "youtube-live" ? live.views : (Number(String(hints.views || "").replace(/[^\d]/g, "")) || live.views),
           avgComments: live.source === "youtube-live" ? live.avgComments : (Number(String(hints.avgComments || "").replace(/[^\d]/g, "")) || live.avgComments),
@@ -4298,20 +4334,20 @@ Return exactly this JSON shape:
       const inChartZone = (x, y) => x >= plotLeft - 8 && x <= plotRight + 8 && y >= topGrid - 8 && y <= baseline + 8;
       const isPink = (x, y) => {
         const [r, g, b] = pixel(x, y);
-        return inChartZone(x, y) && r > 190 && g < 120 && b > 120;
+        return inChartZone(x, y) && r > 170 && g < 155 && b > 105 && r > g + 45 && b > g + 25;
       };
       const isBlue = (x, y) => {
         const [r, g, b] = pixel(x, y);
-        return inChartZone(x, y) && b > 160 && r < 140 && g > 90;
+        return inChartZone(x, y) && b > 145 && g > 80 && r < 170 && b > r + 35 && b >= g + 10;
       };
       const isRealBar = (box) =>
-        box.height >= 3 &&
+        box.height >= 2 &&
         box.width >= 2 &&
-        box.width <= 34 &&
-        box.count >= 10 &&
+        box.width <= Math.max(34, Math.round(canvas.width * 0.08)) &&
+        box.count >= 6 &&
         box.minY >= topGrid - 4 &&
         box.maxY <= baseline + 5 &&
-        box.maxY >= baseline - 10;
+        box.maxY >= baseline - Math.max(12, Math.round((baseline - topGrid) * 0.16));
       const femaleBars = connectedColorComponents(canvas.width, canvas.height, isPink).filter(isRealBar);
       const maleBars = connectedColorComponents(canvas.width, canvas.height, isBlue).filter(isRealBar);
       const bars = [...femaleBars.map((box) => ({ ...box, gender: "F" })), ...maleBars.map((box) => ({ ...box, gender: "M" }))]
@@ -4347,9 +4383,9 @@ Return exactly this JSON shape:
         return `${age}: ${ageTotal}%`;
       }).filter(Boolean);
       return parts.length ? {
-        ageGenderApprox: parts.join("; "),
-        genderApprox: total ? `F${Math.round(totalF / total * 100)}% / M${Math.round(totalM / total * 100)}%` : "",
-        demographicsSource: "Scrumball screenshot visual estimate"
+        ageGenderApprox: `≈${parts.join("; ")}`,
+        genderApprox: total ? `≈F${Math.round(totalF / total * 100)}% / M${Math.round(totalM / total * 100)}%` : "",
+        demographicsSource: "Scrumball screenshot bar estimate"
       } : {};
     }
 
