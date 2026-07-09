@@ -1826,6 +1826,7 @@
               <div class="field-label">Excel / CSV file</div>
               <input id="excelFile" type="file" accept=".xlsx,.xls,.csv,.tsv,text/csv">
               <button class="primary" id="excelUploadBtn" type="button" style="margin-top:12px">Upload and analyze</button>
+              <button class="coral" id="excelScrumballBtn" type="button" style="margin-top:12px;margin-left:8px">Upload + auto Scrumball</button>
               <p class="note" id="excelStatus">Upload a file with a Link, URL, YouTube, Channel Name, or Name column.</p>
             </div>
             <div>
@@ -1850,6 +1851,7 @@
       $("importExtensionBtn").addEventListener("click", importExtensionData);
       $("autoScrumballBtn").addEventListener("click", autoScrumballResearch);
       $("excelUploadBtn").addEventListener("click", uploadExcelFile);
+      $("excelScrumballBtn").addEventListener("click", uploadExcelAndRunScrumball);
       $("bulkAddBtn").addEventListener("click", addBulkInfluencers);
       $("imageImportBtn").addEventListener("click", uploadImageData);
       $("imagePasteZone").addEventListener("paste", handleImagePaste);
@@ -2735,7 +2737,7 @@ Return exactly this JSON shape:
 
 
     async function captureWithPlayScopeLocalAgent(url, status) {
-      if (status) status.textContent = "Connecting to PlayScope Local Agent...";
+      if (status) status.textContent = "Connected to PlayScope Local Agent. PC is opening YouTube and waiting for Scrumball to load...";
       const response = await fetch("http://127.0.0.1:5199/api/capture-scrumball", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -3958,6 +3960,24 @@ Return exactly this JSON shape:
       await analyzeInfluencerRows(rows, "bulkStatus");
     }
 
+    async function readInfluencerRowsFromFile(file, status) {
+      let rows = [];
+      let xlsxBuffer = null;
+      if (/\.csv$|\.tsv$|\.txt$/i.test(file.name)) {
+        rows = rowsToObjects(parseDelimitedRows(await file.text()));
+      } else {
+        if (!window.XLSX) {
+          throw new Error("Excel parser could not load. Save the file as CSV or use copy-paste.");
+        }
+        xlsxBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(xlsxBuffer, { type: "array" });
+        const firstSheet = workbook.SheetNames[0];
+        const sheetRows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { header: 1, defval: "" });
+        rows = rowsToObjects(sheetRows);
+      }
+      return { rows, xlsxBuffer };
+    }
+
     async function uploadExcelFile() {
       const status = $("excelStatus");
       const file = $("excelFile").files?.[0];
@@ -3966,21 +3986,7 @@ Return exactly this JSON shape:
         return;
       }
       try {
-        let rows = [];
-        let xlsxBuffer = null;
-        if (/\.csv$|\.tsv$|\.txt$/i.test(file.name)) {
-          rows = rowsToObjects(parseDelimitedRows(await file.text()));
-        } else {
-          if (!window.XLSX) {
-            if (status) status.textContent = "Excel parser could not load. Save the file as CSV or use copy-paste.";
-            return;
-          }
-          xlsxBuffer = await file.arrayBuffer();
-          const workbook = XLSX.read(xlsxBuffer, { type: "array" });
-          const firstSheet = workbook.SheetNames[0];
-          const sheetRows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { header: 1, defval: "" });
-          rows = rowsToObjects(sheetRows);
-        }
+        const { rows, xlsxBuffer } = await readInfluencerRowsFromFile(file, status);
         await analyzeInfluencerRows(rows, "excelStatus");
         if (xlsxBuffer) {
           const imageFiles = await extractImagesFromXlsxBuffer(xlsxBuffer);
@@ -4018,6 +4024,76 @@ Return exactly this JSON shape:
         }
       } catch (error) {
         if (status) status.textContent = "File could not be read: " + error.message;
+      }
+    }
+
+    function uniqueYouTubeSeedsFromRows(rows) {
+      const seen = new Set();
+      return rows
+        .map(findYouTubeSeedFromRow)
+        .filter((seed) => seed.link && /youtube\.com|youtu\.be|^@/i.test(seed.link))
+        .filter((seed) => {
+          const key = cleanYouTubeSeedLink(seed.link).toLowerCase();
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+    }
+
+    function scrumballUrlFromSeed(seed) {
+      const link = cleanYouTubeSeedLink(seed?.link || "");
+      if (/^@/.test(link)) return `https://www.youtube.com/${link}`;
+      if (/^https?:\/\//i.test(link)) return link;
+      return "";
+    }
+
+    async function uploadExcelAndRunScrumball() {
+      const status = $("excelStatus");
+      const file = $("excelFile").files?.[0];
+      if (!file) {
+        if (status) status.textContent = "Choose an Excel or CSV file first.";
+        return;
+      }
+      try {
+        const { rows } = await readInfluencerRowsFromFile(file, status);
+        const seeds = uniqueYouTubeSeedsFromRows(rows);
+        if (!seeds.length) {
+          if (status) status.textContent = "No YouTube links found in this Excel/CSV file.";
+          return;
+        }
+        const capturedRows = [];
+        const failed = [];
+        for (let index = 0; index < seeds.length; index += 1) {
+          const seed = seeds[index];
+          const targetUrl = scrumballUrlFromSeed(seed);
+          if (!targetUrl) {
+            failed.push(seed.name || seed.link);
+            continue;
+          }
+          if (status) status.textContent = `Scrumball ${index + 1}/${seeds.length}: opening ${seed.name || targetUrl}`;
+          try {
+            const rowsFromScrumball = await captureWithPlayScopeLocalAgent(targetUrl, status);
+            capturedRows.push(...rowsFromScrumball.map((row) => ({
+              ...row,
+              "Channel Name": fieldFromRow(row, ["channel name", "name", "creator", "influencer"]) || seed.name || "",
+              "Link": fieldFromRow(row, ["link", "url", "youtube", "youtube link"]) || targetUrl,
+              "Comments": [fieldFromRow(row, ["comments", "notes", "comment"]), `Excel Scrumball row ${index + 1}`].filter(Boolean).join("; ")
+            })));
+          } catch (error) {
+            failed.push(seed.name || seed.link);
+            if (status) status.textContent = `Scrumball ${index + 1}/${seeds.length} failed: ${error.message}`;
+          }
+        }
+        if (!capturedRows.length) {
+          if (status) status.textContent = `No Scrumball rows could be read. Failed: ${failed.length}/${seeds.length}.`;
+          return;
+        }
+        if (status) status.textContent = `Scrumball read ${capturedRows.length} row(s). Adding to list...`;
+        await analyzeInfluencerRows(capturedRows, "excelStatus");
+        const nextStatus = $("excelStatus");
+        if (nextStatus && failed.length) nextStatus.textContent += ` ${failed.length} link failed.`;
+      } catch (error) {
+        if (status) status.textContent = "Excel Scrumball run failed: " + error.message;
       }
     }
 
