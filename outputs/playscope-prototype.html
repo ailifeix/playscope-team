@@ -2736,17 +2736,20 @@ Return exactly this JSON shape:
 
 
 
-    async function captureWithPlayScopeLocalAgent(url, status) {
-      if (status) status.textContent = "Connected to PlayScope Local Agent. PC is opening YouTube and waiting for Scrumball to load...";
+    async function captureWithPlayScopeLocalAgent(url, status, options = {}) {
+      const waitSeconds = Number(options.waitSeconds || 20);
+      const postClickWaitSeconds = Number(options.postClickWaitSeconds || 8);
+      const allowOcrFallback = options.allowOcrFallback !== false;
+      if (status) status.textContent = `Connected to PlayScope Local Agent. PC is opening YouTube and waiting ${waitSeconds}s for Scrumball...`;
       const response = await fetch("http://127.0.0.1:5199/api/capture-scrumball", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           url,
-          waitSeconds: 20,
+          waitSeconds,
           clickXPercent: 96,
           clickYPercent: 8,
-          postClickWaitSeconds: 8,
+          postClickWaitSeconds,
           cropRightPercent: 42,
           cropTopPixels: 70
         })
@@ -2759,6 +2762,7 @@ Return exactly this JSON shape:
       try {
         return await analyzeScrumballDataUrl(result.image, url, status);
       } catch (gptError) {
+        if (!allowOcrFallback) throw gptError;
         if (status) status.textContent = `GPT did not read it (${gptError.message}). Trying local OCR...`;
         const file = dataUrlToFile(result.image, "scrumball-panel.png");
         return readImageRowsWithOcr(file, status, { channelLink: url, source: "playscope-local-agent", screenshotPath: result.panelPath || "" });
@@ -3808,6 +3812,49 @@ Return exactly this JSON shape:
       };
     }
 
+    function parsePercentNumbers(value) {
+      return [...String(value || "").matchAll(/(\d+(?:[.,]\d+)?)\s*%/g)].map((match) => Number(normalizeNumberText(match[1]))).filter(Number.isFinite);
+    }
+
+    function isValidScrumballGeo(value) {
+      const text = String(value || "");
+      return /(Turkey|Azerbaijan|Germany|Netherlands|United Kingdom|United States|USA|France|Brazil|Japan|Korea|China|India|Spain|Italy)\s+\d+(?:[.,]\d+)?\s*%/i.test(text);
+    }
+
+    function isValidScrumballGender(value) {
+      const text = String(value || "");
+      const female = text.match(/F(?:emale)?\s*(\d+(?:[.,]\d+)?)\s*%/i);
+      const male = text.match(/M(?:ale)?\s*(\d+(?:[.,]\d+)?)\s*%/i);
+      if (!female || !male) return false;
+      const total = Number(normalizeNumberText(female[1])) + Number(normalizeNumberText(male[1]));
+      return total >= 95 && total <= 105;
+    }
+
+    function isValidScrumballAge(value) {
+      const text = String(value || "");
+      const groups = [...text.matchAll(/(?:13-17|18-24|25-34|35-44|45-54|55-64|65\+)\s*:?\s*(\d+(?:[.,]\d+)?)\s*%/g)];
+      if (groups.length < 2) return false;
+      const total = groups.reduce((sum, match) => sum + Number(normalizeNumberText(match[1])), 0);
+      return total > 20 && total <= 130;
+    }
+
+    function validateScrumballHints(hints) {
+      const validGeo = isValidScrumballGeo(hints.geo);
+      const validGender = isValidScrumballGender(hints.gender);
+      const validAge = isValidScrumballAge(hints.age);
+      return {
+        validGeo,
+        validGender,
+        validAge,
+        ok: validGeo && (validGender || validAge),
+        reason: [
+          validGeo ? "" : "geo missing/invalid",
+          validGender ? "" : "gender missing/invalid",
+          validAge ? "" : "age missing/invalid"
+        ].filter(Boolean).join(", ")
+      };
+    }
+
     function hasUsefulImportedMetrics(hints) {
       return Boolean(hints && (
         hints.subscribers || hints.views || hints.gender || hints.age || hints.geo ||
@@ -4089,7 +4136,7 @@ Return exactly this JSON shape:
           if (status) status.textContent = `No YouTube links found in this Excel/CSV file. Rows read: ${rows.length}. Make sure the link is visible or stored as an Excel hyperlink.`;
           return;
         }
-        if (status) status.textContent = `Found ${seeds.length} YouTube link(s). Starting Scrumball one by one...`;
+        if (status) status.textContent = `Found ${seeds.length} YouTube link(s). Fast batch mode: GPT only, OCR skipped to avoid wrong reads.`;
         const capturedRows = [];
         const failed = [];
         for (let index = 0; index < seeds.length; index += 1) {
@@ -4101,8 +4148,22 @@ Return exactly this JSON shape:
           }
           if (status) status.textContent = `Scrumball ${index + 1}/${seeds.length}: opening ${seed.name || targetUrl}`;
           try {
-            const rowsFromScrumball = await captureWithPlayScopeLocalAgent(targetUrl, status);
-            capturedRows.push(...rowsFromScrumball.map((row) => ({
+            const rowsFromScrumball = await captureWithPlayScopeLocalAgent(targetUrl, status, {
+              waitSeconds: 10,
+              postClickWaitSeconds: 3,
+              allowOcrFallback: false
+            });
+            const usefulRows = rowsFromScrumball.filter((row) => {
+              const hints = getImportedRowHints(row);
+              const validation = validateScrumballHints(hints);
+              return validation.ok;
+            });
+            if (!usefulRows.length) {
+              const firstHints = getImportedRowHints(rowsFromScrumball[0] || {});
+              const validation = validateScrumballHints(firstHints);
+              throw new Error(`Scrumball read was rejected: ${validation.reason || "low-confidence demographics"}.`);
+            }
+            capturedRows.push(...usefulRows.map((row) => ({
               ...row,
               "Channel Name": fieldFromRow(row, ["channel name", "name", "creator", "influencer"]) || seed.name || "",
               "Link": fieldFromRow(row, ["link", "url", "youtube", "youtube link"]) || targetUrl,

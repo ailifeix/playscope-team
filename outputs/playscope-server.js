@@ -15,7 +15,7 @@ const publicDir = __dirname;
 const envPath = path.join(root, ".env.local");
 const dataDir = path.join(root, "work");
 const sharedStatePath = path.join(dataDir, "playscope-shared-state.json");
-const appVersion = "excel-hyperlink-scrumball-2026-07-09-1";
+const appVersion = "scrumball-validated-demographics-2026-07-09-1";
 
 function readEnv() {
   const env = { ...process.env };
@@ -509,11 +509,12 @@ async function readImageData(input) {
   let lastError = "";
   for (const model of modelCandidates) {
     const prompt = `Read this image. It belongs to this creator/channel when provided: ${JSON.stringify(input.context || {})}. Extract every visible influencer/creator row as JSON. Return exactly: {"rows":[{"Channel Name":"","Link":"","GEO":"","Gender":"","Age":"","Category":"","Subcategory":"","Subscribers":"","avg Views":"","Avg Comments":"","Format":"","Duration":"","Keywords":"","Comments":""}]}. If a cell is not visible, leave it empty. Preserve YouTube links and names exactly.
-For Scrumball screenshots, focus on the Scrumball analytics panel. Read the creator name, followers, avg engagement, avg view rate, monthly post, Audience age&gender analysis chart, and Analyze the audience location list.
+For Scrumball screenshots, focus only on the visible Scrumball analytics panel. If the Scrumball panel, Audience age&gender chart, or audience location list is not visible, return {"rows":[]} rather than guessing.
+Read the creator name, followers, avg engagement, avg view rate, monthly post, Audience age&gender analysis chart, and Analyze the audience location list.
 For GEO, use the visible audience location countries with percentages, especially the top country, formatted like "Turkey 92.34%; Azerbaijan 3.12%; Germany 1.89%".
 For Age, if exact values are not printed, estimate from the visible bar heights by combining Female+Male bars per age group. Prefix estimates with ≈, formatted like "≈13-17: 14%; 18-24: 44%; 25-34: 25%".
 For Gender, if exact values are not printed, estimate total Female vs Male from the same pink/blue chart bars. Prefix estimates with ≈, formatted like "≈F52% / M48%".
-Do not put gender percentages inside Age. Do not put age groups inside Gender. Do not invent demographics when the chart is not visible. Put avg engagement, avg view rate, monthly post, and "Audience location: ..." in Comments.`;
+Do not put gender percentages inside Age. Do not put age groups inside Gender. Do not invent demographics when the chart is not visible. If GEO does not contain country percentages and neither Age nor Gender can be read/estimated from the chart, return {"rows":[]}. Put avg engagement, avg view rate, monthly post, and "Audience location: ..." in Comments.`;
     const result = await callVisionJsonModel(
       model,
       "Extract influencer research table data from images. Return strict JSON only. Do not invent missing values.",
