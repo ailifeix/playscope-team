@@ -2741,9 +2741,10 @@ Return exactly this JSON shape:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           url,
-          waitSeconds: 12,
+          waitSeconds: 20,
           clickXPercent: 96,
           clickYPercent: 8,
+          postClickWaitSeconds: 8,
           cropRightPercent: 42,
           cropTopPixels: 70
         })
@@ -4359,10 +4360,10 @@ Return exactly this JSON shape:
         return pct <= 1 && bar.height >= 2 ? 1 : pct;
       };
       const ageGroups = ["13-17", "18-24", "25-34", "35-44", "45-54", "55-64", "65+"];
-      const step = ageGroups.length > 1 ? (plotRight - plotLeft) / (ageGroups.length - 1) : 1;
+      const groupWidth = Math.max(1, (plotRight - plotLeft) / ageGroups.length);
       const values = {};
       bars.forEach((bar) => {
-        const ageIndex = Math.max(0, Math.min(ageGroups.length - 1, Math.round((bar.centerX - plotLeft) / step)));
+        const ageIndex = Math.max(0, Math.min(ageGroups.length - 1, Math.floor((bar.centerX - plotLeft) / groupWidth)));
         const pct = pctFromBar(bar);
         const key = ageGroups[ageIndex];
         values[key] = values[key] || {};
