@@ -15,7 +15,7 @@ const publicDir = __dirname;
 const envPath = path.join(root, ".env.local");
 const dataDir = path.join(root, "work");
 const sharedStatePath = path.join(dataDir, "playscope-shared-state.json");
-const appVersion = "social-ai-text-fallback-2026-06-17-1";
+const appVersion = "pc-agent-first-codex5-model-2026-07-08-1";
 
 function readEnv() {
   const env = { ...process.env };
@@ -43,31 +43,25 @@ function getAiBaseUrl() {
   return base;
 }
 
-function getAiModel() {
-  return env.GPT_MODEL && env.GPT_MODEL !== "auto" ? env.GPT_MODEL : "gpt-4o-mini";
-}
-
-function autoModelCandidates() {
-  const configured = String(env.AUTO_MODEL_CANDIDATES || "")
-    .split(/[;,\s]+/)
-    .map((value) => value.trim())
-    .filter(Boolean);
-  const fallback = ["gpt-4o", "gpt-4o-mini"];
-  return [...new Set([...(configured.length ? configured : fallback), ...fallback])];
-}
-
-function allowedConfiguredModel(value) {
-  const model = String(value || "").trim();
-  if (!model || model === "auto") return "";
-  if (/^gpt-4\.1/i.test(model) || /^gpt-5/i.test(model) || /^chatgpt/i.test(model)) return "";
+function normalizeModelName(value) {
+  const model = String(value || "auto").trim() || "auto";
+  if (/^chatgpt/i.test(model)) return "auto";
   return model;
 }
+
+function resolveAiModel(value) {
+  const model = normalizeModelName(value);
+  const base = getAiModuleBaseUrl();
+  if (model === "auto" && /codex5\.net/i.test(base)) return "gpt-5.4";
+  return model;
+}
+
+function getAiModel() {
+  return resolveAiModel(env.GPT_MODEL || env.AI_MODEL || "auto");
+}
+
 function getAiModelCandidates() {
-  const preferred = allowedConfiguredModel(env.GPT_MODEL);
-  return [...new Set([
-    preferred,
-    ...autoModelCandidates()
-  ].filter(Boolean))];
+  return [resolveAiModel(env.GPT_MODEL || env.AI_MODEL || "auto")];
 }
 
 function getAiModuleBaseUrl() {
@@ -91,15 +85,10 @@ function getAiModuleWireApi() {
 }
 
 function getAiModuleModelCandidates(module) {
-  const preferred = module === "review"
-    ? allowedConfiguredModel(env.REVIEW_MODEL || env.AI_REVIEW_MODEL || env.AI_MODEL)
-    : allowedConfiguredModel(env.AI_MODEL);
-  const legacyModel = allowedConfiguredModel(env.GPT_MODEL);
-  return [...new Set([
-    preferred,
-    legacyModel,
-    ...autoModelCandidates()
-  ].filter(Boolean))];
+  const model = module === "review"
+    ? (env.REVIEW_MODEL || env.AI_REVIEW_MODEL || env.AI_MODEL || env.GPT_MODEL || "auto")
+    : (env.AI_MODEL || env.GPT_MODEL || "auto");
+  return [resolveAiModel(model)];
 }
 
 function getAiReasoningEffort() {
@@ -517,7 +506,12 @@ async function readImageData(input) {
   const modelCandidates = getAiModuleModelCandidates("vision");
   let lastError = "";
   for (const model of modelCandidates) {
-    const prompt = `Read this image. It belongs to this creator/channel when provided: ${JSON.stringify(input.context || {})}. Extract every visible influencer/creator row as JSON. Return exactly: {"rows":[{"Channel Name":"","Link":"","GEO":"","Gender":"","Age":"","Category":"","Subcategory":"","Subscribers":"","avg Views":"","Avg Comments":"","Format":"","Duration":"","Keywords":"","Comments":""}]}. If a cell is not visible, leave it empty. Preserve YouTube links and names exactly. For Scrumball screenshots, include followers, avg engagement, avg view rate, monthly post, audience location countries, and visible age/gender analysis. If an age/gender bar chart is visible, calculate Age as total Female+Male per age group, formatted like "13-17: 14%; 18-24: 44%; 25-34: 25%". Calculate Gender separately as total Female vs Male, formatted like "F52% / M48%". Do not put gender percentages inside Age.`;
+    const prompt = `Read this image. It belongs to this creator/channel when provided: ${JSON.stringify(input.context || {})}. Extract every visible influencer/creator row as JSON. Return exactly: {"rows":[{"Channel Name":"","Link":"","GEO":"","Gender":"","Age":"","Category":"","Subcategory":"","Subscribers":"","avg Views":"","Avg Comments":"","Format":"","Duration":"","Keywords":"","Comments":""}]}. If a cell is not visible, leave it empty. Preserve YouTube links and names exactly.
+For Scrumball screenshots, focus on the Scrumball analytics panel. Read the creator name, followers, avg engagement, avg view rate, monthly post, Audience age&gender analysis chart, and Analyze the audience location list.
+For GEO, use the visible audience location countries with percentages, especially the top country, formatted like "Turkey 92.34%; Azerbaijan 3.12%; Germany 1.89%".
+For Age, read or estimate the age chart by combining Female+Male bars per age group, formatted exactly like "13-17: 14%; 18-24: 44%; 25-34: 25%".
+For Gender, calculate total Female vs Male from the same chart, formatted exactly like "F52% / M48%".
+Do not put gender percentages inside Age. Do not put age groups inside Gender. Do not guess invisible demographics. Put avg engagement, avg view rate, monthly post, and "Audience location: ..." in Comments.`;
     const result = await callVisionJsonModel(
       model,
       "Extract influencer research table data from images. Return strict JSON only. Do not invent missing values.",
@@ -1900,6 +1894,10 @@ const server = http.createServer(async (req, res) => {
         version: appVersion,
         youtube: Boolean(env.YOUTUBE_API_KEY),
         openai: hasOpenAiKey(),
+        aiBaseUrl: getAiModuleBaseUrl(),
+        aiModel: getAiModel(),
+        visionModel: getAiModuleModelCandidates("vision")[0],
+        wireApi: getAiModuleWireApi(),
         apify: Boolean(getApifyToken()),
         googleSecret: Boolean(env.GOOGLE_CLIENT_SECRET)
       });
@@ -1922,6 +1920,11 @@ const port = Number(process.env.PORT || 5177);
 server.listen(port, "0.0.0.0", () => {
   console.log(`PlayScope running at http://0.0.0.0:${port}`);
 });
+
+
+
+
+
 
 
 

@@ -1818,7 +1818,7 @@
             <div><div class="field-label">${tr("country")}</div><input id="researchCountry" value="Turkey"></div>
             <div><div class="field-label">${tr("channel")}</div><select id="researchChannel"><option>YouTube</option><option>Twitch</option><option>TikTok</option></select></div>
             <div><div class="field-label">${tr("avgViews")}</div><input id="researchViews" type="number" value="88000"></div>
-          </div><div class="field-label">Genres</div><input id="researchGenres" value="strategy mobile space"><button class="primary" id="addResearchBtn" type="button" style="margin-top:12px">${tr("analyze")}</button><button class="coral" id="importExtensionBtn" type="button" style="margin-top:12px;margin-left:8px">Import Extension Data</button><div class="field-label" style="margin-top:14px">YouTube + Scrumball auto OCR</div><input id="scrumballYoutubeUrl" placeholder="Paste YouTube channel/video link"><button class="primary" id="autoScrumballBtn" type="button" style="margin-top:12px">Open, screenshot Scrumball, analyze</button><p class="note" id="researchStatus">${tr("apiSafe")}</p><p class="note">On Render, the browser will ask you to select the YouTube/Scrumball tab for capture. Local backend can capture automatically.</p>`)}
+          </div><div class="field-label">Genres</div><input id="researchGenres" value="strategy mobile space"><button class="primary" id="addResearchBtn" type="button" style="margin-top:12px">${tr("analyze")}</button><button class="coral" id="importExtensionBtn" type="button" style="margin-top:12px;margin-left:8px">Import Extension Data</button><div class="field-label" style="margin-top:14px">YouTube + Scrumball auto OCR</div><input id="scrumballYoutubeUrl" placeholder="Paste YouTube channel/video link"><button class="primary" id="autoScrumballBtn" type="button" style="margin-top:12px">Open, screenshot Scrumball, analyze</button><p class="note" id="researchStatus">${tr("apiSafe")}</p><p class="note">Install and run PlayScope Local Agent for automatic browser/mouse control. If Agent is unavailable, Render asks you to select the YouTube/Scrumball tab.</p>`)}
           ${panel("Excel / Copy-paste import", `<div class="form-grid">
             <div>
               <div class="field-label">Excel / CSV file</div>
@@ -2731,6 +2731,25 @@ Return exactly this JSON shape:
     }
 
 
+
+    async function captureWithPlayScopeLocalAgent(url, status) {
+      if (status) status.textContent = "Connecting to PlayScope Local Agent...";
+      const response = await fetch("http://127.0.0.1:5199/api/capture-scrumball", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url,
+          waitSeconds: 12,
+          clickXPercent: 96,
+          clickYPercent: 8,
+          cropRightPercent: 42,
+          cropTopPixels: 70
+        })
+      });
+      const result = await response.json();
+      if (!result.ok || !result.image) throw new Error(result.error || "PlayScope Local Agent could not capture Scrumball.");
+      return analyzeScrumballDataUrl(result.image, url, status);
+    }
     async function captureScrumballFromBrowserTab(url, status) {
       if (!navigator.mediaDevices?.getDisplayMedia) {
         throw new Error("This browser does not support screen capture. Use Chrome/Edge and HTTPS Render URL.");
@@ -2793,7 +2812,61 @@ Return exactly this JSON shape:
       }
       let rows = [];
       try {
-        if (status) status.textContent = "Opening YouTube and waiting for Scrumball panel...";
+        if (status) status.textContent = "Using your PC through PlayScope Local Agent...";
+        rows = await captureWithPlayScopeLocalAgent(url, status);
+      } catch (agentError) {
+        try {
+          if (status) status.textContent = "PC agent is unavailable. Trying backend capture...";
+          const response = await fetchTeamApi("/api/capture-scrumball", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...sharedHeaders() },
+            body: JSON.stringify({ url, waitSeconds: 15, cropRightPercent: 42, cropTopPixels: 70 })
+          });
+          const result = await response.json();
+          if (!result.ok) throw new Error(result.error || "Scrumball capture failed.");
+          rows = Array.isArray(result.rows) ? result.rows : [];
+        } catch (localError) {
+          try {
+            if (status) status.textContent = "PC agent is not running. Select the YouTube/Scrumball tab manually...";
+            const dataUrl = await captureScrumballFromBrowserTab(url, status);
+            rows = await analyzeScrumballDataUrl(dataUrl, url, status);
+          } catch (browserError) {
+            if (status) status.textContent = browserError.message || localError.message || agentError.message;
+            return;
+          }
+        }
+      }
+      if (!rows.length) {
+        if (status) status.textContent = "Scrumball panel was captured, but GPT could not extract usable rows.";
+        return;
+      }
+      if (status) status.textContent = `Scrumball panel read: ${rows.length} row(s). Checking YouTube API...`;
+      await analyzeInfluencerRows(rows, "researchStatus");
+    }
+    async function addResearchInfluencer() {
+      const name = $("researchName").value.trim() || "NewCreator";
+      const genres = $("researchGenres").value.split(/[,\s]+/).filter(Boolean);
+      const input = { name, country: $("researchCountry").value || "Turkey", channel: $("researchChannel").value, views: Number($("researchViews").value) || 50000, genres: genres.join(" "), project: state.project };
+      const status = $("researchStatus");
+      if (status) status.textContent = "Researching YouTube...";
+      let result = null;
+      await ensureBrowserYouTubeKey();
+      try {
+        result = await postTeamJson("/api/research-influencer", input);
+        if (!result.ok) throw new Error(result.error || "Backend research failed.");
+      } catch (error) {
+        result = await researchWithYouTubeApi(input);
+      }
+      state.influencers.unshift(result || { name, link: "", handle: "@" + name.toLowerCase().replace(/[^a-z0-9]/g, ""), country: input.country, geo: input.country, category: "Unclear", subcategory: "Needs YouTube API analysis", subscribers: "-", gender: "Missing", age: "Missing", avgComments: 0, flag: "TR", channel: input.channel, views: input.views, match: genres.includes("strategy") ? 86 : 68, format: "-", duration: "-", keywords: genres.join(", "), comments: "Created locally because backend was unavailable.", genres, tone: "research", audience: "estimated players", notes: "Created locally because backend was unavailable.", shortlisted: false, note: "" });
+      if (status) status.textContent = "Influencer added.";
+      saveState();
+      render();
+    }
+    async function addResearchInfluencer_old_removed() {
+      const status = $("researchStatus");
+      const url = $("scrumballYoutubeUrl")?.value.trim() || $("researchName")?.value.trim() || "";
+      let rows = [];
+      try {
         const response = await fetchTeamApi("/api/capture-scrumball", {
           method: "POST",
           headers: { "Content-Type": "application/json", ...sharedHeaders() },
@@ -2819,7 +2892,7 @@ Return exactly this JSON shape:
       if (status) status.textContent = `Scrumball panel read: ${rows.length} row(s). Checking YouTube API...`;
       await analyzeInfluencerRows(rows, "researchStatus");
     }
-    async function addResearchInfluencer() {
+    async function addResearchInfluencer_duplicate_removed() {
       const name = $("researchName").value.trim() || "NewCreator";
       const genres = $("researchGenres").value.split(/[,\s]+/).filter(Boolean);
       const input = { name, country: $("researchCountry").value || "Turkey", channel: $("researchChannel").value, views: Number($("researchViews").value) || 50000, genres: genres.join(" "), project: state.project };
@@ -3655,7 +3728,7 @@ Return exactly this JSON shape:
       const combinedAudienceText = Object.entries(row || {}).map(([key, value]) => `${key}: ${value}`).join("\n");
       const audienceHints = extractAudienceHintsFromText(combinedAudienceText);
       return {
-        geo: fieldFromRow(row, ["geo", "country", "market", "ülke", "ulke"]),
+        geo: fieldFromRow(row, ["geo", "country", "market", "ülke", "ulke", "audience location", "analyze the audience location", "location", "top country"]),
         gender: fieldFromRow(row, ["gender", "cinsiyet", "audience gender", "gender split", "female male", "female/male", "demographics"]) || audienceHints.gender,
         age: fieldFromRow(row, ["age", "yas", "yaş", "audience age", "age gender", "age/gender", "age distribution", "audience age gender", "audience age&gender analysis", "age gender analysis"]) || audienceHints.age,
         subscribers: fieldFromRow(row, ["subscribers", "followers", "takipci", "takipçi", "subs"]),
@@ -6440,6 +6513,7 @@ ${labels.note}: ${labels.noteText}`;
   </script>
 </body>
 </html>
+
 
 
 
