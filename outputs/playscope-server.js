@@ -80,7 +80,9 @@ function getOpenAiKey() {
 }
 
 function getAiModuleWireApi() {
-  const value = String(env.OPENAI_WIRE_API || env.GPT_WIRE_API || env.AI_WIRE_API || env.WIRE_API || "responses").trim().toLowerCase();
+  const explicit = env.OPENAI_WIRE_API || env.GPT_WIRE_API || env.AI_WIRE_API || env.WIRE_API || "";
+  if (!explicit && /codex5\.net/i.test(getAiModuleBaseUrl())) return "chat";
+  const value = String(explicit || "responses").trim().toLowerCase();
   return value === "responses" ? "responses" : "chat";
 }
 

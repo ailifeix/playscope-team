@@ -2748,7 +2748,16 @@ Return exactly this JSON shape:
       });
       const result = await response.json();
       if (!result.ok || !result.image) throw new Error(result.error || "PlayScope Local Agent could not capture Scrumball.");
-      return analyzeScrumballDataUrl(result.image, url, status);
+      if (status && result.mouse) {
+        status.textContent = `PC mouse clicked at ${result.mouse.x}, ${result.mouse.y}. Reading Scrumball panel...`;
+      }
+      try {
+        return await analyzeScrumballDataUrl(result.image, url, status);
+      } catch (gptError) {
+        if (status) status.textContent = `GPT did not read it (${gptError.message}). Trying local OCR...`;
+        const file = dataUrlToFile(result.image, "scrumball-panel.png");
+        return readImageRowsWithOcr(file, status, { channelLink: url, source: "playscope-local-agent", screenshotPath: result.panelPath || "" });
+      }
     }
     async function captureScrumballFromBrowserTab(url, status) {
       if (!navigator.mediaDevices?.getDisplayMedia) {
