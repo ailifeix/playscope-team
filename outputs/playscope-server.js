@@ -15,7 +15,7 @@ const publicDir = __dirname;
 const envPath = path.join(root, ".env.local");
 const dataDir = path.join(root, "work");
 const sharedStatePath = path.join(dataDir, "playscope-shared-state.json");
-const appVersion = "excel-scrumball-batch-2026-07-09-1";
+const appVersion = "excel-hyperlink-scrumball-2026-07-09-1";
 
 function readEnv() {
   const env = { ...process.env };

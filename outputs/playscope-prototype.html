@@ -3686,6 +3686,25 @@ Return exactly this JSON shape:
       return rows.slice(1).map((row, index) => withRowIndex(Object.fromEntries(headers.map((header, cellIndex) => [header, row[cellIndex] || ""])), index + 2));
     }
 
+    function sheetRowsWithHyperlinks(sheet) {
+      if (!sheet?.["!ref"] || !window.XLSX) return [];
+      const range = XLSX.utils.decode_range(sheet["!ref"]);
+      const rows = [];
+      for (let rowIndex = range.s.r; rowIndex <= range.e.r; rowIndex += 1) {
+        const row = [];
+        for (let colIndex = range.s.c; colIndex <= range.e.c; colIndex += 1) {
+          const address = XLSX.utils.encode_cell({ r: rowIndex, c: colIndex });
+          const cell = sheet[address];
+          const value = String(cell?.w ?? cell?.v ?? "").trim();
+          const formulaTarget = String(cell?.f || "").match(/HYPERLINK\(\s*"([^"]+)"/i)?.[1] || "";
+          const target = String(cell?.l?.Target || formulaTarget || "").trim();
+          row.push(target && !/youtube\.com|youtu\.be|^@[\w.-]+$/i.test(value) ? `${value} ${target}`.trim() : (target || value));
+        }
+        if (row.some(Boolean)) rows.push(row);
+      }
+      return rows;
+    }
+
     function compactKey(value) {
       return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
     }
@@ -3862,16 +3881,25 @@ Return exactly this JSON shape:
     }
 
     function isInvalidYouTubeSeedLink(value) {
-      const text = String(value || "").trim().replace(/^＠/, "@");
+      const text = extractYouTubeSeedLink(value);
       if (!text || text === "@" || /^@[\W_]*$/u.test(text)) return true;
       if (/^@/.test(text)) return !/^@[\p{L}\p{N}._-]{2,}$/u.test(text);
       return !/youtube\.com|youtu\.be/i.test(text);
     }
 
+    function extractYouTubeSeedLink(value) {
+      const text = String(value || "").trim().replace(/＠/g, "@");
+      const url = text.match(/(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com|youtu\.be)\/[^\s"'<>),;]+/i)?.[0] || "";
+      if (url) return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+      const handle = text.match(/(^|[\s,;])(@[\p{L}\p{N}._-]{2,})($|[\s,;])/u)?.[2] || "";
+      return handle;
+    }
+
     function cleanYouTubeSeedLink(value) {
-      const text = String(value || "").trim().replace(/^＠/, "@");
+      const text = extractYouTubeSeedLink(value);
       if (isInvalidYouTubeSeedLink(text)) return "";
       if (/^www\.youtube\.com/i.test(text)) return `https://${text}`;
+      if (/^m\.youtube\.com/i.test(text)) return `https://${text}`;
       return text;
     }
 
@@ -3972,7 +4000,7 @@ Return exactly this JSON shape:
         xlsxBuffer = await file.arrayBuffer();
         const workbook = XLSX.read(xlsxBuffer, { type: "array" });
         const firstSheet = workbook.SheetNames[0];
-        const sheetRows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { header: 1, defval: "" });
+        const sheetRows = sheetRowsWithHyperlinks(workbook.Sheets[firstSheet]);
         rows = rowsToObjects(sheetRows);
       }
       return { rows, xlsxBuffer };
@@ -4058,9 +4086,10 @@ Return exactly this JSON shape:
         const { rows } = await readInfluencerRowsFromFile(file, status);
         const seeds = uniqueYouTubeSeedsFromRows(rows);
         if (!seeds.length) {
-          if (status) status.textContent = "No YouTube links found in this Excel/CSV file.";
+          if (status) status.textContent = `No YouTube links found in this Excel/CSV file. Rows read: ${rows.length}. Make sure the link is visible or stored as an Excel hyperlink.`;
           return;
         }
+        if (status) status.textContent = `Found ${seeds.length} YouTube link(s). Starting Scrumball one by one...`;
         const capturedRows = [];
         const failed = [];
         for (let index = 0; index < seeds.length; index += 1) {
