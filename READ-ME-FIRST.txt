@@ -1,18 +1,17 @@
-﻿PlayScope 2026-07-07 Update
+﻿PlayScope 2026-07-08 Model Fix - SAME FOLDER
 
-Bu klasor bugun guncellenen temiz pakettir.
+Bu klasor guncel ana klasordur. Yeni klasor acilmadi.
 
-Render/GitHub icin ana dosyalar:
-- package.json
-- render.yaml
-- outputs/playscope-server.js
-- outputs/playscope-prototype.html
+Codex5 API icin Render env:
+- OPENAI_API_KEY = yeni/rotate edilmis key
+- GPT_API_BASE_URL = https://www.codex5.net/v1
+- GPT_MODEL = gpt-5.4
+- AI_MODEL bos birakilabilir veya gpt-5.4 yapilabilir
+- REVIEW_MODEL bos birakilabilir veya gpt-5.4 yapilabilir
 
-Yerel Scrumball screenshot araci:
-- scripts/capture-youtube-scrumball.bat
-- scripts/playscope-capture-screen.ps1
+Guvenlik:
+- API key sohbete yazildigi icin panelden yenisini olusturup eskisini iptal etmen onerilir.
 
-Notlar:
-- .env.local, work klasoru, eski state dosyalari ve secret degerleri bu pakete konmadi.
-- OpenAI/GPT key tarayici ayarlarindan kaldirildi. AI sadece Render/server environment uzerinden calisir.
-- YouTube linki + Scrumball panel screenshot icin scripts/capture-youtube-scrumball.bat dosyasini calistir.
+Kontrol:
+- Deploydan sonra /api/status icinde version su olmali:
+  codex5-gpt54-model-2026-07-08-1
